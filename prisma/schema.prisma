@@ -1,14 +1,176 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// Prisma schema for Cigar Platform
+// Database: PostgreSQL via Supabase
 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum ClubRole {
+  admin
+  member
+}
+
+// ============================================
+// MODELS
+// ============================================
+
+model User {
+  id          String   @id @default(uuid()) @db.Uuid
+  email       String   @unique
+  displayName String
+  avatarUrl   String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  clubMemberships ClubMember[]
+  createdClubs    Club[]       @relation("CreatedClubs")
+  evaluations     Evaluation[]
+  createdCigars   Cigar[]      @relation("CreatedCigars")
+  createdEvents   Event[]      @relation("CreatedEvents")
+
+  @@map("users")
+}
+
+model Club {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  description String?
+  imageUrl    String?
+  createdBy   String   @db.Uuid
+  createdAt   DateTime @default(now())
+
+  // Relations
+  creator User         @relation("CreatedClubs", fields: [createdBy], references: [id], onDelete: Cascade)
+  members ClubMember[]
+  events  Event[]
+
+  @@map("clubs")
+}
+
+model ClubMember {
+  id       String   @id @default(uuid()) @db.Uuid
+  clubId   String   @db.Uuid
+  userId   String   @db.Uuid
+  role     ClubRole @default(member)
+  joinedAt DateTime @default(now())
+
+  // Relations
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([clubId, userId])
+  @@index([userId])
+  @@index([clubId])
+  @@map("club_members")
+}
+
+model Event {
+  id          String   @id @default(uuid()) @db.Uuid
+  clubId      String   @db.Uuid
+  cigarId     String?  @db.Uuid
+  name        String
+  description String?
+  date        DateTime
+  createdBy   String   @db.Uuid
+  createdAt   DateTime @default(now())
+
+  // Relations
+  club        Club         @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  cigar       Cigar?       @relation(fields: [cigarId], references: [id], onDelete: SetNull)
+  creator     User         @relation("CreatedEvents", fields: [createdBy], references: [id], onDelete: Cascade)
+  evaluations Evaluation[]
+
+  @@index([clubId])
+  @@map("events")
+}
+
+model Cigar {
+  id        String   @id @default(uuid()) @db.Uuid
+  brand     String
+  name      String
+  origin    String?
+  wrapper   String?
+  createdBy String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  // Relations
+  creator     User         @relation("CreatedCigars", fields: [createdBy], references: [id], onDelete: Cascade)
+  evaluations Evaluation[]
+  events      Event[]
+
+  @@unique([brand, name])
+  @@index([brand, name])
+  @@map("cigars")
+}
+
+model Evaluation {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  cigarId   String   @db.Uuid
+  eventId   String?  @db.Uuid
+  rating    Int // 1-5
+  photoUrl  String?
+  date      DateTime
+  duration  Int? // minutes
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  // Présentation (avant allumage)
+  capeAspects String[] // Multi-select: ['tight', 'oily', ...]
+  capeColor   String? // Single select
+  touch       String? // Single select
+
+  // Tirage à cru
+  coldTastes  String[] // Multi-select
+  coldAromas  String[] // Multi-select
+  coldNotes   String?  @db.Text
+
+  // 1er tiers
+  firstTastes   String[] // Multi-select
+  firstAromas   String[] // Multi-select
+  firstStrength Int? // 1-5
+  firstNotes    String?  @db.Text
+
+  // 2e tiers
+  secondTastes   String[] // Multi-select
+  secondAromas   String[] // Multi-select
+  secondStrength Int? // 1-5
+  secondNotes    String?  @db.Text
+
+  // 3e tiers
+  thirdTastes   String[] // Multi-select
+  thirdAromas   String[] // Multi-select
+  thirdStrength Int? // 1-5
+  thirdNotes    String?  @db.Text
+
+  // Bilan global
+  startImpressions  String[] // Multi-select
+  finalImpressions  String[] // Multi-select
+  persistence       String? // Single select
+  draw              String? // Single select
+  terroir           String? // Single select
+  balance           String? // Single select
+  moment            String? // Single select
+  ashNature         String? // Single select
+  situation         String? // Single select
+
+  // Relations
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cigar Cigar  @relation(fields: [cigarId], references: [id], onDelete: Cascade)
+  event Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([eventId])
+  @@index([cigarId])
+  @@map("evaluations")
 }
