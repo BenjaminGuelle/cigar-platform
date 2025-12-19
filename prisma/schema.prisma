@@ -8,7 +8,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ============================================
@@ -131,9 +130,9 @@ model Evaluation {
   touch       String? // Single select
 
   // Tirage à cru
-  coldTastes  String[] // Multi-select
-  coldAromas  String[] // Multi-select
-  coldNotes   String?  @db.Text
+  coldTastes String[] // Multi-select
+  coldAromas String[] // Multi-select
+  coldNotes  String?  @db.Text
 
   // 1er tiers
   firstTastes   String[] // Multi-select
@@ -154,15 +153,15 @@ model Evaluation {
   thirdNotes    String?  @db.Text
 
   // Bilan global
-  startImpressions  String[] // Multi-select
-  finalImpressions  String[] // Multi-select
-  persistence       String? // Single select
-  draw              String? // Single select
-  terroir           String? // Single select
-  balance           String? // Single select
-  moment            String? // Single select
-  ashNature         String? // Single select
-  situation         String? // Single select
+  startImpressions String[] // Multi-select
+  finalImpressions String[] // Multi-select
+  persistence      String? // Single select
+  draw             String? // Single select
+  terroir          String? // Single select
+  balance          String? // Single select
+  moment           String? // Single select
+  ashNature        String? // Single select
+  situation        String? // Single select
 
   // Relations
   user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
