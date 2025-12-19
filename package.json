@@ -12,7 +12,7 @@
     "web:test": "nx test web",
     "api:serve": "nx serve api",
     "api:build": "nx build api",
-    "api:test": "nx test api-e2e",
+    "api:test": "nx test api",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
