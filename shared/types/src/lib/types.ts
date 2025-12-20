@@ -43,18 +43,6 @@ export interface Club {
   createdAt: Date;
 }
 
-export interface CreateClubDto {
-  name: string;
-  description?: string;
-  imageUrl?: string;
-}
-
-export interface UpdateClubDto {
-  name?: string;
-  description?: string;
-  imageUrl?: string;
-}
-
 // ============================================
 // CLUB MEMBER TYPES
 // ============================================
