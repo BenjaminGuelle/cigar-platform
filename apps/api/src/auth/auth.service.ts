@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  ConflictException,
-  UnauthorizedException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { SupabaseService } from './supabase.service';
 import { PrismaService } from '../app/prisma.service';
 import {
@@ -14,6 +9,13 @@ import {
   UserDto,
   SessionDto,
 } from '../../../../shared/types/src/dto/auth';
+import {
+  EmailConfirmationRequiredException,
+  InvalidCredentialsException,
+  UserAlreadyExistsException,
+  UserNotFoundException,
+  AccountCreationFailedException,
+} from '../common/exceptions';
 
 /**
  * Service handling authentication business logic
@@ -39,18 +41,20 @@ export class AuthService {
     });
 
     if (error) {
-      throw new ConflictException(error.message);
+      // Check for specific Supabase errors
+      if (error.message.includes('already registered')) {
+        throw new UserAlreadyExistsException();
+      }
+      throw new AccountCreationFailedException(error.message);
     }
 
     if (!data.user) {
-      throw new ConflictException('Failed to create user account');
+      throw new AccountCreationFailedException();
     }
 
     // Check if email confirmation is required (session is null when confirmation is needed)
     if (!data.session) {
-      throw new ConflictException(
-        'User created but email confirmation is required. Please check your email and confirm your account before signing in.'
-      );
+      throw new EmailConfirmationRequiredException();
     }
 
     // Create user in Prisma database
@@ -77,7 +81,7 @@ export class AuthService {
     });
 
     if (error || !data.user || !data.session) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new InvalidCredentialsException();
     }
 
     // Fetch user from database
@@ -86,7 +90,9 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found in database');
+      throw new UserNotFoundException(
+        'User exists in authentication but not in database. Please contact support.'
+      );
     }
 
     return this.buildAuthResponse(user, data.session);
@@ -109,7 +115,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new UserNotFoundException();
     }
 
     return this.mapUserToDto(user);

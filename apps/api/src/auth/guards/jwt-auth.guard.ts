@@ -1,10 +1,6 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { SupabaseService } from '../supabase.service';
+import { InvalidTokenException } from '../../common/exceptions';
 
 /**
  * Guard to protect routes with JWT authentication
@@ -19,13 +15,13 @@ export class JwtAuthGuard implements CanActivate {
     const token = this.extractTokenFromHeader(request);
 
     if (!token) {
-      throw new UnauthorizedException('No authentication token provided');
+      throw new InvalidTokenException('No authentication token provided');
     }
 
     const user = await this.supabaseService.verifyToken(token);
 
     if (!user) {
-      throw new UnauthorizedException('Invalid or expired token');
+      throw new InvalidTokenException();
     }
 
     // Attach user to request for use in controllers
