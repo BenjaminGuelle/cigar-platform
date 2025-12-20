@@ -8,6 +8,13 @@ import {
   HttpStatus,
   Patch,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiBody,
+} from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -23,6 +30,7 @@ import {
  * Controller handling authentication endpoints
  * Follows RESTful conventions and modern NestJS practices
  */
+@ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -33,6 +41,14 @@ export class AuthController {
    */
   @Post('signup')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Sign up a new user' })
+  @ApiBody({ type: SignUpDto })
+  @ApiResponse({
+    status: 201,
+    description: 'User successfully created',
+    type: AuthResponseDto,
+  })
+  @ApiResponse({ status: 409, description: 'User already exists' })
   async signUp(@Body() dto: SignUpDto): Promise<AuthResponseDto> {
     return this.authService.signUp(dto);
   }
@@ -43,6 +59,14 @@ export class AuthController {
    */
   @Post('signin')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Sign in an existing user' })
+  @ApiBody({ type: SignInDto })
+  @ApiResponse({
+    status: 200,
+    description: 'User successfully authenticated',
+    type: AuthResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async signIn(@Body() dto: SignInDto): Promise<AuthResponseDto> {
     return this.authService.signIn(dto);
   }
@@ -53,7 +77,11 @@ export class AuthController {
    */
   @Post('signout')
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Sign out the current user' })
+  @ApiResponse({ status: 204, description: 'User successfully signed out' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   async signOut(@CurrentUser() user: any): Promise<void> {
     return this.authService.signOut(user.id);
   }
@@ -64,6 +92,15 @@ export class AuthController {
    */
   @Get('profile')
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({
+    status: 200,
+    description: 'User profile retrieved successfully',
+    type: UserDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   async getProfile(@CurrentUser() user: any): Promise<UserDto> {
     return this.authService.getProfile(user.id);
   }
@@ -74,6 +111,16 @@ export class AuthController {
    */
   @Patch('profile')
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Update current user profile' })
+  @ApiBody({ type: UpdateProfileDto })
+  @ApiResponse({
+    status: 200,
+    description: 'User profile updated successfully',
+    type: UserDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   async updateProfile(
     @CurrentUser() user: any,
     @Body() dto: UpdateProfileDto

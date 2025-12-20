@@ -42,8 +42,15 @@ export class AuthService {
       throw new ConflictException(error.message);
     }
 
-    if (!data.user || !data.session) {
-      throw new ConflictException('Failed to create user');
+    if (!data.user) {
+      throw new ConflictException('Failed to create user account');
+    }
+
+    // Check if email confirmation is required (session is null when confirmation is needed)
+    if (!data.session) {
+      throw new ConflictException(
+        'User created but email confirmation is required. Please check your email and confirm your account before signing in.'
+      );
     }
 
     // Create user in Prisma database

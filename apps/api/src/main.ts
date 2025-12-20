@@ -5,6 +5,7 @@
 
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
@@ -13,6 +14,26 @@ async function bootstrap() {
   // Global prefix for all routes
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
+
+  // Swagger configuration
+  const config = new DocumentBuilder()
+    .setTitle('Cigar Platform API')
+    .setDescription('API for cigar tasting club management')
+    .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'JWT-auth'
+    )
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
 
   // Enable global validation with class-validator
   app.useGlobalPipes(
