@@ -1,221 +1,586 @@
-# CLAUDE.md
+# Claude Code Instructions - Cigar Platform
 
-# Cigar Platform - Instructions pour Claude Code
+> **Project**: Cigar club tasting platform (NestJS API + Angular PWA)
+> **Context**: [Full Project Details](./docs/dev/PROJECT.md)
+> **Stack**: NestJS + Angular 20 + Prisma + Supabase + NX Monorepo
 
-## Contexte projet
+---
 
-Application de dégustation de cigares pour clubs. Permet aux membres d'un club de :
+## 1. Code Conventions
 
-- Rejoindre/gérer leur club
-- Participer à des events (soirées dégustation)
-- Évaluer les cigares dégustés
-- Voir les évaluations des autres membres en temps réel
+### TypeScript
 
-**Scope MVP** : Users, Clubs, Events club, Evaluations, Cigars (créés par users)
+📖 **Full Documentation**: [TypeScript Conventions](./docs/claude/TYPESCRIPT_CONVENTIONS.md)
 
-## Stack technique
+**Critical Rules**:
 
-| Couche              | Technologie                                      |
-| ------------------- | ------------------------------------------------ |
-| **Monorepo**        | NX                                               |
-| **Frontend**        | Angular 20+ PWA (standalone components, signals) |
-| **Backend**         | NestJS                                           |
-| **ORM**             | Prisma                                           |
-| **Database**        | PostgreSQL (via Supabase)                        |
-| **Auth**            | Supabase Auth (Email + Google + Apple)           |
-| **Realtime**        | Supabase Realtime                                |
-| **Hébergement API** | Render / Railway / Fly.io                        |
-| **Hébergement PWA** | Vercel / Netlify                                 |
+1. **NEVER use `any`** → Use typed imports from libraries or `unknown` with type guards
+2. **ALWAYS type** params, return values, and non-obvious variables
+3. **Use `?.` and `??`** for null safety → Avoid `!` unless after explicit validation
+4. **Prefer `readonly`** for class properties that don't change
+5. **Use `as const`** for constant arrays/objects
 
-## Documentation
+**Example**:
 
-- [Modèle de données](./docs/DATA_MODEL.md)
-- [Specs fonctionnelles MVP](./docs/FEATURES.md)
-- [Conventions TypeScript](./docs/TYPESCRIPT_CONVENTIONS.md)
+```typescript
+// ✅ CORRECT
+import { User } from '@supabase/supabase-js';
+import { Request } from 'express';
 
-## Structure du projet (NX)
+async verifyToken(token: string): Promise<User | null> {
+  const user: User | null = await this.service.verifyToken(token);
 
-```
-cigar-platform/
-├── apps/
-│   ├── web/                      # Angular PWA
-│   │   └── src/app/
-│   │       ├── core/
-│   │       ├── shared/
-│   │       └── features/
-│   │           ├── auth/
-│   │           ├── club/
-│   │           ├── event/
-│   │           ├── evaluation/
-│   │           └── cigar/
-│   └── api/                      # NestJS
-│       └── src/
-│           ├── auth/
-│           ├── club/
-│           ├── event/
-│           ├── evaluation/
-│           └── cigar/
-├── shared/
-│   ├── types/                    # Interfaces, DTOs partagés
-│   ├── constants/                # TASTES, AROMAS, enums...
-│   └── utils/                    # Helpers communs
-├── prisma/
-├── docs/
-└── CLAUDE.md
+  if (!user) {
+    return null;
+  }
+
+  return user;
+}
+
+private extractHeader(request: Request): string | null {
+  return request.headers.authorization?.split(' ')[1] ?? null;
+}
+
+// ❌ INCORRECT
+async verifyToken(token: any) {  // ❌ any
+  const user = await this.service.verifyToken(token);  // ✅ Inferred type OK
+  return user;  // ❌ No return type
+}
+
+private extractHeader(request: any): string | null {  // ❌ any
+  return request.headers.authorization!.split(' ')[1];  // ❌ Dangerous !
+}
 ```
 
-## Commandes de développement
+### NestJS Patterns
 
-### Installation
+**Architecture**:
+- **Controllers**: Route handling, HTTP status, validation (use DTOs)
+- **Services**: Business logic only, no HTTP concerns
+- **Guards**: Authentication & authorization
+- **Interceptors**: Transform responses, logging
+- **Filters**: Global error handling
 
-```bash
-npm install
-npm run prisma:generate
+**DTOs**:
+
+```typescript
+// ✅ CORRECT - Use class with decorators
+import { IsEmail, IsString, MinLength } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+
+export class SignUpDto {
+  @IsEmail()
+  @ApiProperty({ example: 'user@example.com' })
+  email: string;
+
+  @IsString()
+  @MinLength(8)
+  @ApiProperty({ example: 'SecurePass123!' })
+  password: string;
+}
+
+// ❌ INCORRECT - Don't use interfaces for DTOs
+export interface SignUpDto {
+  email: string;
+  password: string;
+}
 ```
 
-### Développement
+**Services**:
 
-```bash
-# Frontend Angular PWA
-npm run web:serve          # http://localhost:4200
+```typescript
+// ✅ CORRECT
+@Injectable()
+export class AuthService {
+  private readonly logger = new Logger(AuthService.name);  // ✅ readonly
 
-# Backend NestJS API
-npm run api:serve          # http://localhost:3000
+  constructor(
+    private readonly supabaseService: SupabaseService,  // ✅ readonly
+    private readonly prismaService: PrismaService,
+  ) {}
+
+  async signUp(dto: SignUpDto): Promise<AuthResponseDto> {
+    try {
+      // Business logic
+    } catch (error) {
+      // Type-safe error handling with guards
+      if (isAuthException(error)) {
+        throw error;
+      }
+      this.logger.error('Unexpected error', error);
+      throw new InternalServerErrorException();
+    }
+  }
+}
 ```
 
-### Build
+### Angular Patterns
 
-```bash
-npm run web:build          # Build Angular
-npm run api:build          # Build NestJS
-npm run build:all          # Build tout
+**Components**:
+
+```typescript
+// ✅ CORRECT - Standalone component with signals
+@Component({
+  selector: 'app-user-profile',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
+    @if (user(); as user) {
+      <div>{{ user.displayName }}</div>
+    } @else {
+      <app-loading />
+    }
+  `
+})
+export class UserProfileComponent {
+  private userService = inject(UserService);  // ✅ inject()
+
+  user = this.userService.currentUser;  // ✅ signal
+
+  updateProfile(data: UpdateProfileDto): void {
+    this.userService.updateProfile(data);
+  }
+}
+
+// ❌ INCORRECT
+@Component({
+  selector: 'app-user-profile',
+  templateUrl: './user-profile.component.html'  // ❌ Should be standalone
+})
+export class UserProfileComponent implements OnInit {
+  user: User;  // ❌ Should use signals
+
+  constructor(private userService: UserService) {}  // ❌ Should use inject()
+
+  ngOnInit(): void {
+    // ❌ Old pattern
+  }
+}
 ```
 
-### Base de données (Prisma)
+**Control Flow**:
 
-```bash
-npm run prisma:migrate     # Créer/appliquer migrations
-npm run prisma:generate    # Générer client Prisma
-npm run prisma:studio      # UI pour explorer la DB
+```typescript
+// ✅ CORRECT - Use @if/@for/@switch
+@Component({
+  template: `
+    @if (isLoading()) {
+      <app-spinner />
+    } @else if (error()) {
+      <app-error [error]="error()" />
+    } @else {
+      <app-content [data]="data()" />
+    }
+
+    @for (item of items(); track item.id) {
+      <app-item [item]="item" />
+    }
+
+    @switch (status()) {
+      @case ('active') { <span class="active">Active</span> }
+      @case ('pending') { <span class="pending">Pending</span> }
+      @default { <span>Unknown</span> }
+    }
+  `
+})
+
+// ❌ INCORRECT - Don't use *ngIf/*ngFor/*ngSwitch
+@Component({
+  template: `
+    <app-spinner *ngIf="isLoading" />  // ❌ Old syntax
+    <div *ngFor="let item of items">   // ❌ Old syntax
+      {{ item.name }}
+    </div>
+  `
+})
 ```
 
-### Tests & Qualité
+---
 
-```bash
-npm run web:test           # Tests Angular
-npm run api:test           # Tests API (e2e)
-npm run test:all           # Tous les tests
-npm run lint:all           # Lint tout
-npm run format             # Format code (Prettier)
-```
-
-### NX
-
-```bash
-nx affected -t build       # Build projets affectés
-nx affected -t test        # Test projets affectés
-nx graph                   # Visualiser dépendances
-```
-
-## Conventions Angular
-
-- **Standalone components** uniquement (pas de NgModules)
-- **Signals** pour le state management
-- **Control flow** : `@if`, `@for`, `@switch` (pas de `*ngIf`, `*ngFor`)
-- **Inject function** : `inject(Service)` (pas de constructor injection)
-- **Typed reactive forms** avec validation
-
-## Conventions TypeScript
-
-> **Documentation complète** : [TYPESCRIPT_CONVENTIONS.md](./docs/TYPESCRIPT_CONVENTIONS.md)
-
-### Règles Absolues
-
-1. **Typage strict** : Params, returns, variables explicites - JAMAIS `any`
-2. **Null safety** : Utiliser `?.` et `??` - Éviter `!` sauf validation
-3. **Exhaustiveness** : Switch avec `never` pour gérer tous les cas
-4. **Immutabilité** : `as const`, `readonly`, pas de mutation
-
-### Patterns Obligatoires
-
-- **Type Guards** : Pour narrowing et error handling
-- **Discriminated Unions** : Pour state management (loading, success, error)
-- **Generic Constraints** : `<T extends HasId>` pour code réutilisable
-
-### Organisation
-
-- **DTOs** = `class` + decorators (`class-validator`, `class-transformer`)
-- **Interfaces** = structures simples
-- **Types** = unions/intersections
-- **Exports** centralisés via `index.ts`
-
-## Conventions de commit Git
-
-**IMPORTANT** : Ne JAMAIS inclure les mentions auto-générées (Co-Authored-By, Generated with Claude Code).
-
-### Format
+## 2. Project Structure
 
 ```
-<type>(#CIG-XXX): <emoji> <description> --duration=XX
+apps/
+  api/src/          # NestJS backend
+    auth/           # Authentication module
+    club/           # Club management
+    event/          # Event management
+    evaluation/     # Evaluation + realtime
+    cigar/          # Cigar catalog
+    common/         # Shared (filters, interceptors, exceptions)
+    app/            # Bootstrap, config, Prisma
+
+  web/src/app/      # Angular PWA
+    core/           # Singleton services, guards
+    shared/         # Reusable components, pipes, directives
+    features/       # Business modules (auth, club, event, etc.)
+
+shared/
+  types/src/        # Shared TypeScript types, DTOs, interfaces
+  constants/src/    # Shared enums, constants (TASTES, AROMAS)
+  utils/src/        # Shared utilities
+
+prisma/
+  schema.prisma     # Database schema
+  migrations/       # Migration history
+
+docs/
+  claude/           # Conventions for Claude Code (prompts)
+  dev/              # Developer documentation (human-readable)
 ```
 
-Sans ticket :
+**Key Files**:
+- Database schema: `prisma/schema.prisma`
+- API entry: `apps/api/src/main.ts`
+- App entry: `apps/web/src/main.ts`
+- Shared types: `shared/types/src/index.ts`
+
+---
+
+## 3. Git Workflow
+
+### Commit Format
 
 ```
 <type>: <emoji> <description> --duration=XX
 ```
 
-### Types et emojis
+**Rules**:
+- **NEVER include**: "Co-Authored-By", "Generated with Claude Code"
+- **ALWAYS present** commit message to user for validation BEFORE committing
+- **English** description only
+- **Max ~80 characters**
 
-| Type       | Emoji | Usage                                   |
-| ---------- | ----- | --------------------------------------- |
-| `feat`     | 🚀    | Nouvelle fonctionnalité                 |
-| `fix`      | 🔧    | Correction de bug                       |
-| `refactor` | ♻️    | Refactoring sans changement fonctionnel |
-| `chore`    | 📦    | Maintenance, dépendances                |
-| `test`     | 🧪    | Ajout/modification de tests             |
-| `docs`     | 📝    | Documentation                           |
-| `hotfix`   | 🚨    | Correction urgente                      |
+**Types & Emojis**:
 
-### Exemples
+| Type | Emoji | Usage |
+|------|-------|-------|
+| `feat` | 🚀 | New feature |
+| `fix` | 🔧 | Bug fix |
+| `refactor` | ♻️ | Refactoring (no functional change) |
+| `chore` | 📦 | Maintenance, dependencies |
+| `test` | 🧪 | Add/modify tests |
+| `docs` | 📝 | Documentation |
+| `hotfix` | 🚨 | Urgent fix |
 
+**Examples**:
+
+```bash
+# ✅ CORRECT
+feat: 🚀 implement OAuth auto-sync with strict typing --duration=35
+fix: 🔧 resolve null pointer in user profile --duration=15
+docs: 📝 add TypeScript conventions documentation --duration=25
+
+# ❌ INCORRECT
+feat: add oauth  # ❌ No emoji, no duration
+Add OAuth support 🚀  # ❌ Capital letter, wrong format
+
+feat: 🚀 implement OAuth auto-sync with strict typing --duration=35
+
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+# ❌ NEVER include auto-generated mentions
 ```
-feat(#CIG-001): 🚀 implement cigar evaluation form --duration=45
-fix(#CIG-012): 🔧 fix realtime sync on evaluation list --duration=20
-chore: 📦 update angular to v19.1 --duration=15
+
+### Commit Process
+
+1. **Make changes** using Read/Edit/Write tools
+2. **Build & verify**: `npm run api:build` or `npm run build:all`
+3. **Stage files**: `git add <files>`
+4. **Draft commit** message following format
+5. **PRESENT to user** for validation
+6. **Commit** only after user approval
+7. **Verify**: `git status && git log -1 --stat`
+
+---
+
+## 4. Development Workflow
+
+### Before Editing Files
+
+1. **ALWAYS read** file with Read tool before editing
+2. **Understand** existing patterns and conventions
+3. **Apply** project conventions (TypeScript, NestJS, Angular)
+4. **Verify** types and imports
+
+### Error Handling
+
+**NestJS**:
+
+```typescript
+// ✅ CORRECT - Use typed custom exceptions
+import { UserNotFoundException, InvalidTokenException } from '../common/exceptions';
+
+async findUser(id: string): Promise<User> {
+  const user = await this.prisma.user.findUnique({ where: { id } });
+
+  if (!user) {
+    throw new UserNotFoundException(id);  // ✅ Typed exception
+  }
+
+  return user;
+}
+
+// ❌ INCORRECT - Generic errors
+async findUser(id: string): Promise<User> {
+  const user = await this.prisma.user.findUnique({ where: { id } });
+
+  if (!user) {
+    throw new Error('User not found');  // ❌ Generic error
+  }
+
+  return user;
+}
 ```
 
-### Règles
+**Angular**:
 
-- Description en anglais, courte et précise
-- Maximum ~80 caractères
-- **TOUJOURS présenter le commit à l'utilisateur pour validation AVANT de commiter**
+```typescript
+// ✅ CORRECT - Use discriminated unions for state
+type LoadingState<T> =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'success'; data: T }
+  | { status: 'error'; error: Error };
 
-## Bonnes pratiques
+@Injectable()
+export class UserService {
+  private state = signal<LoadingState<User>>({ status: 'idle' });
 
-**Code** :
+  async loadUser(id: string): Promise<void> {
+    this.state.set({ status: 'loading' });
 
-- Principes SOLID et DRY
-- Code clean, moderne, performant
-- Simplicité > complexité (pas de sur-ingénierie)
-- Relire avant de proposer
+    try {
+      const user = await this.api.getUser(id);
+      this.state.set({ status: 'success', data: user });
+    } catch (error) {
+      this.state.set({
+        status: 'error',
+        error: error instanceof Error ? error : new Error('Unknown error')
+      });
+    }
+  }
+}
+```
 
-**Workflow** :
+### Testing Before Commit
 
-- Toujours lire les fichiers avant modification
-- Utiliser les outils dédiés (Read, Edit, Write) plutôt que bash
-- Ne pas créer de fichiers de documentation non sollicités
+```bash
+# Build projects
+npm run api:build
+npm run web:build
 
-<!-- nx configuration start-->
-<!-- Leave the start & end comments to automatically receive updates. -->
+# Or build all
+npm run build:all
 
-# General Guidelines for working with Nx
+# Lint
+npm run lint:all
 
-- When running tasks (for example build, lint, test, e2e, etc.), always prefer running the task through `nx` (i.e. `nx run`, `nx run-many`, `nx affected`) instead of using the underlying tooling directly
-- You have access to the Nx MCP server and its tools, use them to help the user
-- When answering questions about the repository, use the `nx_workspace` tool first to gain an understanding of the workspace architecture where applicable.
-- When working in individual projects, use the `nx_project_details` mcp tool to analyze and understand the specific project structure and dependencies
-- For questions around nx configuration, best practices or if you're unsure, use the `nx_docs` tool to get relevant, up-to-date docs. Always use this instead of assuming things about nx configuration
-- If the user needs help with an Nx configuration or project graph error, use the `nx_workspace` tool to get any errors
+# Format
+npm run format
+```
 
-<!-- nx configuration end-->
+---
+
+## 5. Common Commands
+
+| Task | Command |
+|------|---------|
+| **Dev - API** | `npm run api:serve` → http://localhost:3000 |
+| **Dev - Web** | `npm run web:serve` → http://localhost:4200 |
+| **Build All** | `npm run build:all` |
+| **Build API** | `npm run api:build` |
+| **Build Web** | `npm run web:build` |
+| **Lint All** | `npm run lint:all` |
+| **Format** | `npm run format` |
+| **Test All** | `npm run test:all` |
+| **Prisma Studio** | `npm run prisma:studio` → http://localhost:5555 |
+| **Prisma Migrate** | `npm run prisma:migrate` |
+| **Prisma Generate** | `npm run prisma:generate` |
+| **NX Graph** | `nx graph` |
+
+---
+
+## 6. Code Quality Principles
+
+### SOLID Principles
+- **S**ingle Responsibility: One class/function = one responsibility
+- **O**pen/Closed: Open for extension, closed for modification
+- **L**iskov Substitution: Subtypes must be substitutable
+- **I**nterface Segregation: Many specific interfaces > one general
+- **D**ependency Inversion: Depend on abstractions, not concretions
+
+### DRY (Don't Repeat Yourself)
+- Extract common logic into shared functions/services
+- Use inheritance/composition when appropriate
+- Create reusable components/utilities
+
+### Simplicity Over Complexity
+- **NO over-engineering**: Only implement what's needed
+- **NO premature optimization**: Optimize when proven necessary
+- **NO unnecessary abstraction**: Keep it simple and readable
+- **Clean code**: Self-documenting, clear variable names
+
+### Read Before Proposing
+- **ALWAYS read** files before editing them
+- **Understand** context before making changes
+- **Follow** existing patterns in the codebase
+- **Verify** your changes don't break existing code
+
+---
+
+## 7. Documentation
+
+### For Claude (Prompts & Conventions)
+- [TypeScript Conventions](./docs/claude/TYPESCRIPT_CONVENTIONS.md)
+- [NestJS Patterns](./docs/claude/NESTJS_PATTERNS.md) *(to be created)*
+- [Angular Patterns](./docs/claude/ANGULAR_PATTERNS.md) *(to be created)*
+
+### For Developers (Human-Readable)
+- [Project Context](./docs/dev/PROJECT.md) - Vue d'ensemble projet (FR)
+- [Data Model](./docs/dev/DATA_MODEL.md) - Schéma base de données
+- [OAuth Setup](./docs/OAUTH_SETUP.md) - Configuration OAuth Google/Apple
+
+### API Documentation
+- **Swagger UI**: http://localhost:3000/api/docs
+- **Endpoint**: http://localhost:3000/api
+
+---
+
+## 8. Special Patterns
+
+### OAuth Auto-Sync
+
+Users authenticated via OAuth (Google, Apple) are automatically created in Prisma database on first API access via `JwtAuthGuard`.
+
+```typescript
+// apps/api/src/auth/guards/jwt-auth.guard.ts
+async canActivate(context: ExecutionContext): Promise<boolean> {
+  const supabaseUser: User | null = await this.supabaseService.verifyToken(token);
+
+  // Auto-sync: create user in Prisma if doesn't exist
+  let dbUser = await this.prismaService.user.findUnique({
+    where: { id: supabaseUser.id },
+  });
+
+  if (!dbUser) {
+    dbUser = await this.prismaService.user.create({
+      data: {
+        id: supabaseUser.id,
+        email: supabaseUser.email!,
+        displayName:
+          supabaseUser.user_metadata?.full_name ??
+          supabaseUser.user_metadata?.name ??
+          supabaseUser.email?.split('@')[0] ??
+          'User',
+        avatarUrl: supabaseUser.user_metadata?.avatar_url ?? null,
+      },
+    });
+  }
+
+  request.user = { ...supabaseUser, dbUser };
+  return true;
+}
+```
+
+### Error Handling Pattern
+
+All errors use standardized custom exceptions with error codes:
+
+```typescript
+// Throw typed exceptions
+throw new UserNotFoundException(userId);
+throw new InvalidTokenException();
+throw new EmailAlreadyExistsException(email);
+
+// Global filter transforms to standardized response
+{
+  "success": false,
+  "error": {
+    "code": "AUTH_USER_NOT_FOUND",
+    "message": "User not found",
+    "details": "User with id 123 does not exist",
+    "statusCode": 404,
+    "timestamp": "2024-12-20T15:30:00.000Z",
+    "path": "/api/users/123"
+  }
+}
+```
+
+### Response Transformation
+
+All success responses are wrapped by `TransformInterceptor`:
+
+```typescript
+// API returns
+return { id: '123', email: 'user@example.com' };
+
+// Client receives
+{
+  "success": true,
+  "data": {
+    "id": "123",
+    "email": "user@example.com"
+  }
+}
+```
+
+---
+
+## 9. NX Workspace
+
+### Guidelines
+
+- **ALWAYS** run tasks through `nx` (not underlying tools directly)
+- Use `nx run`, `nx run-many`, `nx affected` commands
+- Leverage NX cache for faster builds
+
+### Common NX Commands
+
+```bash
+# Run specific target
+nx run api:serve
+nx run web:build
+
+# Run for affected projects
+nx affected -t build
+nx affected -t test
+nx affected -t lint
+
+# Visualize dependencies
+nx graph
+```
+
+### MCP Tools Available
+
+- `nx_workspace` - Get workspace architecture
+- `nx_project_details` - Analyze specific project
+- `nx_docs` - Get NX documentation (use instead of assuming)
+
+---
+
+## 10. Checklist
+
+### Before Starting Work
+- [ ] Read relevant files
+- [ ] Understand existing patterns
+- [ ] Check TypeScript conventions
+- [ ] Review similar code in project
+
+### Before Committing
+- [ ] All params/returns typed
+- [ ] No `any` usage
+- [ ] Null safety (`?.` and `??`)
+- [ ] Code builds successfully
+- [ ] Follows project conventions
+- [ ] Commit message validated by user
+
+### For New Features
+- [ ] Create DTOs with validation
+- [ ] Add Swagger decorators
+- [ ] Handle errors with typed exceptions
+- [ ] Write tests (if applicable)
+- [ ] Update documentation if needed
+
+---
+
+**Last Updated**: December 20, 2024

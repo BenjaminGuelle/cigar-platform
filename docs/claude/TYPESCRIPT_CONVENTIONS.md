@@ -1,4 +1,4 @@
-# TypeScript Conventions - All Stars
+oui on # TypeScript Conventions - All Stars
 
 Ce document définit les conventions TypeScript **niveau senior** pour le projet Cigar Platform. Ces conventions garantissent un code type-safe, maintenable et sans bugs runtime.
 
