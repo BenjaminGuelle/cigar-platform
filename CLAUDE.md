@@ -31,6 +31,7 @@ Application de dégustation de cigares pour clubs. Permet aux membres d'un club 
 
 - [Modèle de données](./docs/DATA_MODEL.md)
 - [Specs fonctionnelles MVP](./docs/FEATURES.md)
+- [Conventions TypeScript](./docs/TYPESCRIPT_CONVENTIONS.md)
 
 ## Structure du projet (NX)
 
@@ -123,6 +124,30 @@ nx graph                   # Visualiser dépendances
 - **Control flow** : `@if`, `@for`, `@switch` (pas de `*ngIf`, `*ngFor`)
 - **Inject function** : `inject(Service)` (pas de constructor injection)
 - **Typed reactive forms** avec validation
+
+## Conventions TypeScript
+
+> **Documentation complète** : [TYPESCRIPT_CONVENTIONS.md](./docs/TYPESCRIPT_CONVENTIONS.md)
+
+### Règles Absolues
+
+1. **Typage strict** : Params, returns, variables explicites - JAMAIS `any`
+2. **Null safety** : Utiliser `?.` et `??` - Éviter `!` sauf validation
+3. **Exhaustiveness** : Switch avec `never` pour gérer tous les cas
+4. **Immutabilité** : `as const`, `readonly`, pas de mutation
+
+### Patterns Obligatoires
+
+- **Type Guards** : Pour narrowing et error handling
+- **Discriminated Unions** : Pour state management (loading, success, error)
+- **Generic Constraints** : `<T extends HasId>` pour code réutilisable
+
+### Organisation
+
+- **DTOs** = `class` + decorators (`class-validator`, `class-transformer`)
+- **Interfaces** = structures simples
+- **Types** = unions/intersections
+- **Exports** centralisés via `index.ts`
 
 ## Conventions de commit Git
 
