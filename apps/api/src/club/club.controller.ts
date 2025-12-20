@@ -27,6 +27,7 @@ import {
 } from '../../../../shared/types/src/dto/club';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { ClubRolesGuard } from '../common/guards/club-roles.guard';
 
 @ApiTags('clubs')
 @Controller('clubs')
@@ -96,6 +97,7 @@ export class ClubController {
   }
 
   @Patch(':id')
+  @UseGuards(ClubRolesGuard)
   @ApiOperation({ summary: 'Update a club' })
   @ApiParam({
     name: 'id',
@@ -106,6 +108,10 @@ export class ClubController {
     status: 200,
     description: 'Club updated successfully',
     type: ClubResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Only club admins or project admins/moderators can update',
   })
   @ApiResponse({
     status: 404,
@@ -127,6 +133,7 @@ export class ClubController {
   }
 
   @Delete(':id')
+  @UseGuards(ClubRolesGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a club' })
   @ApiParam({
@@ -137,6 +144,10 @@ export class ClubController {
   @ApiResponse({
     status: 204,
     description: 'Club deleted successfully',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Only club admins or project admins/moderators can delete',
   })
   @ApiResponse({
     status: 404,

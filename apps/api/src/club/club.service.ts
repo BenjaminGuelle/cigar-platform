@@ -7,6 +7,7 @@ import {
   ClubResponseDto,
   FilterClubDto,
 } from '../../../../shared/types/src/dto/club';
+import { ClubRole } from '../../../../shared/types/src/lib/enums';
 import {
   ClubNotFoundException,
   ClubAlreadyExistsException,
@@ -47,16 +48,31 @@ export class ClubService {
     }
 
     try {
-      const club = await this.prisma.club.create({
-        data: {
-          name: createClubDto.name,
-          description: createClubDto.description ?? null,
-          imageUrl: createClubDto.imageUrl ?? null,
-          createdBy: userId,
-        },
+      // Use transaction to create club and club member atomically
+      const club = await this.prisma.$transaction(async (tx) => {
+        // Create the club
+        const newClub = await tx.club.create({
+          data: {
+            name: createClubDto.name,
+            description: createClubDto.description ?? null,
+            imageUrl: createClubDto.imageUrl ?? null,
+            createdBy: userId,
+          },
+        });
+
+        // Automatically add creator as club admin
+        await tx.clubMember.create({
+          data: {
+            clubId: newClub.id,
+            userId: userId,
+            role: ClubRole.Admin,
+          },
+        });
+
+        return newClub;
       });
 
-      this.logger.log(`Club created: ${club.id} by user ${userId}`);
+      this.logger.log(`Club created: ${club.id} by user ${userId} (auto-assigned as admin)`);
       return this.mapToResponse(club);
     } catch (error) {
       if (
