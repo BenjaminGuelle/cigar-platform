@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 
 /**
  * Service for managing Supabase client and authentication
@@ -35,7 +35,7 @@ export class SupabaseService implements OnModuleInit {
   /**
    * Verify a JWT token and return the user
    */
-  async verifyToken(token: string) {
+  async verifyToken(token: string): Promise<User | null> {
     const {
       data: { user },
       error,
