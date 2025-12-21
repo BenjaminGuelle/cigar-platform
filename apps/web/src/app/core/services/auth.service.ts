@@ -182,6 +182,17 @@ export class AuthService {
     );
   }
 
+  updatePassword(newPassword: string): Observable<AuthResult> {
+    return from(
+      this.#supabaseService.client.auth.updateUser({
+        password: newPassword,
+      })
+    ).pipe(
+      map(({ error }) => ({ error })),
+      catchError((error) => of({ error: error as AuthError }))
+    );
+  }
+
   getAccessToken(): string | null {
     return this.#sessionSignal()?.access_token ?? null;
   }
