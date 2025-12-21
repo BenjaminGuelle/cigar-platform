@@ -1,7 +1,5 @@
-@import "tailwindcss";
-
-/* Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Parisienne&display=swap');
+@import "tailwindcss";
 
 /**
  * Cigar Platform Design System - "Smoke & Gold"

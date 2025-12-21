@@ -1,8 +1,9 @@
-import { Injectable, signal, computed, inject, WritableSignal, Signal } from '@angular/core';
+import { Injectable, signal, computed, inject, WritableSignal, Signal, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { AuthError, Session } from '@supabase/supabase-js';
 import { Observable, from, of, EMPTY } from 'rxjs';
-import { tap, map, catchError, switchMap } from 'rxjs/operators';
+import { tap, map, catchError, switchMap, take } from 'rxjs/operators';
 import { SupabaseService } from './supabase.service';
 import { AuthApiService } from '../api';
 import { UserModel } from '@cigar-platform/types';
@@ -18,6 +19,7 @@ export class AuthService {
   #supabaseService = inject(SupabaseService);
   #authApiService = inject(AuthApiService);
   #router = inject(Router);
+  #destroyRef = inject(DestroyRef);
 
   #currentUserSignal: WritableSignal<UserModel | null> = signal<UserModel | null>(null);
   #sessionSignal: WritableSignal<Session | null> = signal<Session | null>(null);
@@ -47,18 +49,24 @@ export class AuthService {
           console.error('Error initializing auth:', error);
           return EMPTY;
         }),
-        tap(() => this.#loadingSignal.set(false))
+        tap(() => this.#loadingSignal.set(false)),
+        takeUntilDestroyed(this.#destroyRef)
       )
       .subscribe();
 
-    this.#supabaseService.client.auth.onAuthStateChange((_event, session) => {
+    const { data } = this.#supabaseService.client.auth.onAuthStateChange((_event, session) => {
       this.#sessionSignal.set(session);
 
       if (session?.user) {
-        this.#loadUserProfile().subscribe();
+        this.#loadUserProfile().pipe(take(1)).subscribe();
       } else {
         this.#currentUserSignal.set(null);
       }
+    });
+
+    // Cleanup auth state listener on service destroy
+    this.#destroyRef.onDestroy(() => {
+      data.subscription.unsubscribe();
     });
   }
 
@@ -160,6 +168,17 @@ export class AuthService {
         console.error('Error signing out:', error);
         return EMPTY;
       })
+    );
+  }
+
+  resetPassword(email: string): Observable<AuthResult> {
+    return from(
+      this.#supabaseService.client.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      })
+    ).pipe(
+      map(({ error }) => ({ error })),
+      catchError((error) => of({ error: error as AuthError }))
     );
   }
 

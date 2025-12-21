@@ -14,10 +14,10 @@ import { AuthService } from '../../../core/services';
 import { ButtonComponent, InputComponent } from '@cigar-platform/shared/ui';
 
 @Component({
-  selector: 'app-login',
+  selector: 'app-register',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, ButtonComponent, InputComponent],
-  templateUrl: './login.component.html',
+  templateUrl: './register.component.html',
   styles: [`
     :host {
       display: block;
@@ -25,7 +25,7 @@ import { ButtonComponent, InputComponent } from '@cigar-platform/shared/ui';
     }
   `],
 })
-export class LoginComponent {
+export class RegisterComponent {
   #authService = inject(AuthService);
   #router = inject(Router);
   #fb = inject(FormBuilder);
@@ -38,36 +38,43 @@ export class LoginComponent {
   readonly loading = this.#loadingSignal.asReadonly();
   readonly googleLoading = this.#googleLoadingSignal.asReadonly();
 
-  loginForm: FormGroup = this.#fb.group({
+  registerForm: FormGroup = this.#fb.group({
+    displayName: ['', [Validators.required, Validators.minLength(2)]],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(6)]],
+    confirmPassword: ['', [Validators.required]],
   });
 
   onSubmit(): void {
-    if (this.loginForm.invalid) {
-      this.loginForm.markAllAsTouched();
+    if (this.registerForm.invalid) {
+      this.registerForm.markAllAsTouched();
+      return;
+    }
+
+    const { displayName, email, password, confirmPassword } = this.registerForm.value;
+
+    if (password !== confirmPassword) {
+      this.#errorSignal.set('Les mots de passe ne correspondent pas');
       return;
     }
 
     this.#loadingSignal.set(true);
     this.#errorSignal.set(null);
 
-    const { email, password } = this.loginForm.value;
-
-    this.#authService.signIn(email, password).pipe(
+    this.#authService.signUp(email, password, displayName).pipe(
       take(1),
       tap(() => this.#loadingSignal.set(false)),
       tap(({ error }) => {
         if (error) {
-          this.#errorSignal.set(error.message || 'Votre Email ou Mot de passe est incorrect');
+          this.#errorSignal.set(error.message || 'Erreur lors de l\'inscription');
         } else {
-          this.#router.navigate(['/']);
+          this.#router.navigate(['/auth/login']);
         }
       }),
       catchError((err) => {
         this.#loadingSignal.set(false);
         this.#errorSignal.set('Une erreur inattendue s\'est produite');
-        console.error('Sign in error:', err);
+        console.error('Sign up error:', err);
         return EMPTY;
       })
     ).subscribe();
@@ -94,19 +101,23 @@ export class LoginComponent {
     ).subscribe();
   }
 
-  navigateToRegister(): void {
-    this.#router.navigate(['/auth/register']);
+  navigateToLogin(): void {
+    this.#router.navigate(['/auth/login']);
   }
 
-  navigateToForgotPassword(): void {
-    this.#router.navigate(['/auth/forgot-password']);
+  get displayNameControl() {
+    return this.registerForm.get('displayName') as FormControl;
   }
 
   get emailControl() {
-    return this.loginForm.get('email') as FormControl;
+    return this.registerForm.get('email') as FormControl;
   }
 
   get passwordControl() {
-    return this.loginForm.get('password') as FormControl;
+    return this.registerForm.get('password') as FormControl;
+  }
+
+  get confirmPasswordControl() {
+    return this.registerForm.get('confirmPassword') as FormControl;
   }
 }
