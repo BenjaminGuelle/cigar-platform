@@ -1,4 +1,4 @@
-export * from './lib';
-export * from './dto/auth';
-export * from './dto/club';
+export * from './enums';
+export * from './models';
+export * from './requests';
 export * from './error';

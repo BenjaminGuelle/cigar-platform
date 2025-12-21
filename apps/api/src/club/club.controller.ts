@@ -24,7 +24,7 @@ import {
   UpdateClubDto,
   ClubResponseDto,
   FilterClubDto,
-} from '../../../../shared/types/src/dto/club';
+} from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ClubRolesGuard } from '../common/guards/club-roles.guard';

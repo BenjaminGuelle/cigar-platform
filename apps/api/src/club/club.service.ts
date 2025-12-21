@@ -6,8 +6,8 @@ import {
   UpdateClubDto,
   ClubResponseDto,
   FilterClubDto,
-} from '../../../../shared/types/src/dto/club';
-import { ClubRole } from '../../../../shared/types/src/lib/enums';
+} from './dto';
+import { ClubRole } from '@cigar-platform/types';
 import {
   ClubNotFoundException,
   ClubAlreadyExistsException,

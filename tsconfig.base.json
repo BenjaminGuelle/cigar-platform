@@ -17,7 +17,8 @@
     "paths": {
       "@cigar-platform/types": ["shared/types/src/index.ts"],
       "@cigar-platform/constants": ["shared/constants/src/index.ts"],
-      "@cigar-platform/utils": ["shared/utils/src/index.ts"]
+      "@cigar-platform/utils": ["shared/utils/src/index.ts"],
+      "@cigar-platform/shared/ui": ["shared/ui/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

@@ -3,8 +3,3 @@ export enum Role {
   MODERATOR = 'MODERATOR',
   USER = 'USER',
 }
-
-export enum ClubRole {
-  Admin = 'admin',
-  Member = 'member',
-}

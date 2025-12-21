@@ -24,7 +24,7 @@ import {
   UpdateProfileDto,
   AuthResponseDto,
   UserDto,
-} from '../../../../shared/types/src/dto/auth';
+} from './dto';
 
 /**
  * Controller handling authentication endpoints

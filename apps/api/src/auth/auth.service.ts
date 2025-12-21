@@ -8,7 +8,7 @@ import {
   AuthResponseDto,
   UserDto,
   SessionDto,
-} from '../../../../shared/types/src/dto/auth';
+} from './dto';
 import {
   EmailConfirmationRequiredException,
   InvalidCredentialsException,
@@ -148,6 +148,7 @@ export class AuthService {
       email: user.email,
       displayName: user.displayName,
       avatarUrl: user.avatarUrl,
+      role: user.role,
       createdAt: user.createdAt,
     };
   }

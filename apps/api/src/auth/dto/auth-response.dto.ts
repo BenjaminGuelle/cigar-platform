@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
+import { Role } from '@cigar-platform/types';
 
 /**
  * User data returned in authentication responses
@@ -20,6 +21,10 @@ export class UserDto {
   @Expose()
   @ApiProperty({ example: 'https://example.com/avatar.jpg', nullable: true })
   avatarUrl: string | null;
+
+  @Expose()
+  @ApiProperty({ enum: Role, example: Role.USER })
+  role: Role;
 
   @Expose()
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
