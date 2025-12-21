@@ -33,10 +33,12 @@ export class ResetPasswordComponent implements OnInit {
   #errorSignal: WritableSignal<string | null> = signal<string | null>(null);
   #successSignal: WritableSignal<string | null> = signal<string | null>(null);
   #loadingSignal: WritableSignal<boolean> = signal<boolean>(false);
+  #hasValidSessionSignal: WritableSignal<boolean> = signal<boolean>(true);
 
   readonly error = this.#errorSignal.asReadonly();
   readonly success = this.#successSignal.asReadonly();
   readonly loading = this.#loadingSignal.asReadonly();
+  readonly hasValidSession = this.#hasValidSessionSignal.asReadonly();
 
   resetPasswordForm: FormGroup = this.#fb.group({
     password: ['', [Validators.required, Validators.minLength(6)]],
@@ -47,6 +49,7 @@ export class ResetPasswordComponent implements OnInit {
     // Check if user is authenticated (has valid session from email link)
     if (!this.#authService.session()) {
       this.#errorSignal.set('Lien de réinitialisation invalide ou expiré');
+      this.#hasValidSessionSignal.set(false);
     }
   }
 

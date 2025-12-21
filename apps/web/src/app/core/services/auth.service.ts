@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { AuthError, Session } from '@supabase/supabase-js';
 import { Observable, from, of, EMPTY } from 'rxjs';
-import { tap, map, catchError, switchMap, take } from 'rxjs/operators';
+import { tap, map, catchError, switchMap, take, finalize } from 'rxjs/operators';
 import { SupabaseService } from './supabase.service';
 import { AuthApiService } from '../api';
 import { UserModel } from '@cigar-platform/types';
@@ -43,13 +43,13 @@ export class AuthService {
           }
         }),
         switchMap(({ data: { session } }) =>
-          session ? this.#loadUserProfile() : EMPTY
+          session ? this.#loadUserProfile() : of(null)
         ),
         catchError((error) => {
           console.error('Error initializing auth:', error);
-          return EMPTY;
+          return of(null);
         }),
-        tap(() => this.#loadingSignal.set(false)),
+        finalize(() => this.#loadingSignal.set(false)),
         takeUntilDestroyed(this.#destroyRef)
       )
       .subscribe();

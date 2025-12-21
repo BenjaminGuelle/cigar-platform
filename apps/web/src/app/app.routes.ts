@@ -10,7 +10,6 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'auth',
-    canActivate: [guestGuard],
     loadChildren: () =>
       import('./features/auth/auth.routes').then((m) => m.authRoutes),
   },
