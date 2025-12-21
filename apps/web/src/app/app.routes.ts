@@ -1,5 +1,5 @@
 import { Route } from '@angular/router';
-import { authGuard } from './core/guards';
+import { authGuard, guestGuard } from './core/guards';
 
 export const appRoutes: Route[] = [
   {
@@ -10,6 +10,7 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'auth',
+    canActivate: [guestGuard],
     loadChildren: () =>
       import('./features/auth/auth.routes').then((m) => m.authRoutes),
   },
