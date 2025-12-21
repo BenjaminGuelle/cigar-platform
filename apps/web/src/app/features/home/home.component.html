@@ -2,16 +2,16 @@
   <header class="border-b border-smoke-700 bg-smoke-800 shadow-lg shadow-smoke-950/50">
     <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
       <h1 class="text-2xl font-bold text-gold-500">
-        Cigar Platform
+        Cigar & Club
       </h1>
       @if (currentUser(); as user) {
         <div class="flex items-center gap-4">
-          <span class="text-sm text-smoke-200">Welcome, {{ user.displayName || user.email }}</span>
+          <span class="text-sm text-smoke-200">Bienvenue, {{ user.displayName || user.email }}</span>
           <button
             class="rounded-lg border-2 border-gold-500 px-4 py-2 text-sm font-semibold text-gold-500 transition-all duration-200 hover:bg-gold-500 hover:text-smoke-950 hover:shadow-md hover:shadow-gold-500/20"
             (click)="onSignOut()"
           >
-            Sign Out
+            Déconnexion
           </button>
         </div>
       }
@@ -20,8 +20,8 @@
 
   <main class="mx-auto max-w-7xl px-6 py-12">
     <div class="rounded-xl bg-smoke-800 border border-smoke-700 p-12 text-center shadow-xl shadow-smoke-950/50">
-      <h2 class="mb-4 text-4xl font-bold text-smoke-50">Welcome to Cigar Platform</h2>
-      <p class="text-xl text-smoke-300">Your cigar club management application</p>
+      <h2 class="mb-4 text-4xl font-bold text-smoke-50">Bienvenue sur Cigar & Club</h2>
+      <p class="text-xl text-smoke-300">Votre application de gestion de club de cigares</p>
     </div>
   </main>
 </div>

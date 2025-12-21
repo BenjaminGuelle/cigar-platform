@@ -1,94 +1,70 @@
-<div class="flex min-h-screen items-center justify-center bg-linear-to-br from-smoke-950 via-smoke-900 to-smoke-850 p-4">
+<div class="w-full rounded-xl bg-smoke-800 p-10 shadow-2xl shadow-smoke-950/50 backdrop-blur-sm border border-smoke-700">
+    <h1 class="mb-2 text-center text-3xl font-bold text-smoke-50">Connexion</h1>
+    <p class="mb-6 text-center text-sm text-smoke-300">Bienvenue sur Cigar & Club</p>
 
-    <div class="hidden lg:flex items-center justify-center relative">
-        <!-- IMAGE HERO -->
-        <img
-                ngSrc="/images/club.png"
-                alt="Cigar Club"
-                height="1536" width="1024"
-                class="max-h-[75vh] object-contain relative z-10"
-        />
-
-        <!-- OVERLAY FONDU -->
-        <div class="absolute inset-0 bg-linear-to-r from-black/70 via-black/30 to-black/0 z-20"></div>
-
-        <!-- EFFET FUMEE -->
-        <div class="absolute inset-0 z-10 pointer-events-none">
-            <div class="w-full h-full bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.03),transparent)] blur-3xl"></div>
-            <div class="w-full h-full bg-[radial-gradient(ellipse_at_bottom_right,rgba(255,255,255,0.02),transparent)] blur-3xl"></div>
+    @if (error(); as errorMessage) {
+        <div class="mb-6 rounded-lg border border-error-500/30 bg-error-950/30 p-3 text-sm text-error-400">
+            {{ errorMessage }}
         </div>
+    }
+
+    <ui-button variant="outline"
+               fullWidth
+               icon="google"
+               [loading]="googleLoading()"
+               [disabled]="googleLoading()"
+               (clicked)="onGoogleSignIn()"
+               class="mb-4"
+    >
+        Continuer avec Google
+    </ui-button>
+
+    <div class="mb-6 flex items-center gap-3">
+        <div class="h-px flex-1 bg-smoke-700"></div>
+        <span class="text-sm text-smoke-400">ou continuer avec email</span>
+        <div class="h-px flex-1 bg-smoke-700"></div>
     </div>
 
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <div class="mb-4">
+            <ui-input
+                    inputId="email"
+                    type="email"
+                    label="Email"
+                    placeholder="Entrez votre email"
+                    [control]="emailControl"
+                    required
+            />
+        </div>
 
+        <div class="mb-6">
+            <ui-input
+                    inputId="password"
+                    type="password"
+                    label="Mot de passe"
+                    placeholder="Entrez votre mot de passe"
+                    [control]="passwordControl"
+                    required
+            />
+        </div>
 
-    <div class="w-full max-w-md rounded-xl bg-smoke-800 p-8 shadow-2xl shadow-smoke-950/50 backdrop-blur-sm border border-smoke-700">
-        <h1 class="mb-2 text-center text-3xl font-bold text-smoke-50">Sign In</h1>
-        <p class="mb-6 text-center text-sm text-smoke-300">Welcome back to Cigar Platform</p>
-
-        @if (error(); as errorMessage) {
-            <div class="mb-6 rounded-lg border border-error-500/30 bg-error-950/30 p-3 text-sm text-error-400">
-                {{ errorMessage }}
-            </div>
-        }
-
-        <ui-button variant="outline"
-                   fullWidth
-                   icon="google"
-                   [loading]="googleLoading()"
-                   [disabled]="googleLoading()"
-                   (clicked)="onGoogleSignIn()"
-                   class="mb-4"
+        <ui-button
+                type="submit"
+                variant="primary"
+                fullWidth
+                [loading]="loading()"
+                [disabled]="loading()"
         >
-            Continue with Google
+            Se connecter
         </ui-button>
+    </form>
 
-        <div class="mb-6 flex items-center gap-3">
-            <div class="h-px flex-1 bg-smoke-700"></div>
-            <span class="text-sm text-smoke-400">or continue with email</span>
-            <div class="h-px flex-1 bg-smoke-700"></div>
-        </div>
-
-        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-            <div class="mb-4">
-                <ui-input
-                        inputId="email"
-                        type="email"
-                        label="Email"
-                        placeholder="Enter your email"
-                        [control]="emailControl"
-                        required
-                />
-            </div>
-
-            <div class="mb-6">
-                <ui-input
-                        inputId="password"
-                        type="password"
-                        label="Password"
-                        placeholder="Enter your password"
-                        [control]="passwordControl"
-                        required
-                />
-            </div>
-
-            <ui-button
-                    type="submit"
-                    variant="primary"
-                    fullWidth
-                    [loading]="loading()"
-                    [disabled]="loading()"
-            >
-                Sign In
+    <div class="mt-6 text-center">
+        <p class="text-sm text-smoke-300">
+            Pas encore de compte ?
+            <ui-button variant="link" size="sm" (clicked)="navigateToSignup()">
+                S'inscrire
             </ui-button>
-        </form>
-
-        <div class="mt-6 text-center">
-            <p class="text-sm text-smoke-300">
-                Don't have an account?
-                <ui-button variant="link" size="sm" (clicked)="navigateToSignup()">
-                    Sign up
-                </ui-button>
-            </p>
-        </div>
+        </p>
     </div>
 </div>

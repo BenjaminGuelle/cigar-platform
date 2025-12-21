@@ -7,15 +7,21 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { CommonModule, NgOptimizedImage } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/services';
 import { ButtonComponent, InputComponent } from '@cigar-platform/shared/ui';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ButtonComponent, InputComponent, NgOptimizedImage],
+  imports: [CommonModule, ReactiveFormsModule, ButtonComponent, InputComponent],
   templateUrl: './login.component.html',
+  styles: [`
+    :host {
+      display: block;
+      width: 100%;
+    }
+  `],
 })
 export class LoginComponent {
   #authService = inject(AuthService);
