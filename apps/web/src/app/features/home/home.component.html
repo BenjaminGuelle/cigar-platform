@@ -1,14 +1,14 @@
-<div class="min-h-screen bg-gray-50">
-  <header class="border-b border-gray-200 bg-white shadow-sm">
+<div class="min-h-screen bg-smoke-900">
+  <header class="border-b border-smoke-700 bg-smoke-800 shadow-lg shadow-smoke-950/50">
     <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-      <h1 class="bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-2xl font-bold text-transparent">
+      <h1 class="text-2xl font-bold text-gold-500">
         Cigar Platform
       </h1>
       @if (currentUser(); as user) {
         <div class="flex items-center gap-4">
-          <span class="text-sm text-gray-700">Welcome, {{ user.displayName || user.email }}</span>
+          <span class="text-sm text-smoke-200">Welcome, {{ user.displayName || user.email }}</span>
           <button
-            class="rounded-lg border-2 border-purple-600 px-4 py-2 text-sm font-semibold text-purple-600 transition-colors hover:bg-purple-600 hover:text-white"
+            class="rounded-lg border-2 border-gold-500 px-4 py-2 text-sm font-semibold text-gold-500 transition-all duration-200 hover:bg-gold-500 hover:text-smoke-950 hover:shadow-md hover:shadow-gold-500/20"
             (click)="onSignOut()"
           >
             Sign Out
@@ -19,9 +19,9 @@
   </header>
 
   <main class="mx-auto max-w-7xl px-6 py-12">
-    <div class="rounded-xl bg-white p-12 text-center shadow-md">
-      <h2 class="mb-4 text-4xl font-bold text-gray-900">Welcome to Cigar Platform</h2>
-      <p class="text-xl text-gray-600">Your cigar club management application</p>
+    <div class="rounded-xl bg-smoke-800 border border-smoke-700 p-12 text-center shadow-xl shadow-smoke-950/50">
+      <h2 class="mb-4 text-4xl font-bold text-smoke-50">Welcome to Cigar Platform</h2>
+      <p class="text-xl text-smoke-300">Your cigar club management application</p>
     </div>
   </main>
 </div>

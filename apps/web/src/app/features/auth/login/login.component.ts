@@ -3,16 +3,18 @@ import { Router } from '@angular/router';
 import {
   FormBuilder,
   FormGroup,
+  FormControl,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { CommonModule } from '@angular/common';
+import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { AuthService } from '../../../core/services';
+import { ButtonComponent, InputComponent } from '@cigar-platform/shared/ui';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, ButtonComponent, InputComponent, NgOptimizedImage],
   templateUrl: './login.component.html',
 })
 export class LoginComponent {
@@ -88,10 +90,10 @@ export class LoginComponent {
   }
 
   get emailControl() {
-    return this.loginForm.get('email');
+    return this.loginForm.get('email') as FormControl;
   }
 
   get passwordControl() {
-    return this.loginForm.get('password');
+    return this.loginForm.get('password') as FormControl;
   }
 }

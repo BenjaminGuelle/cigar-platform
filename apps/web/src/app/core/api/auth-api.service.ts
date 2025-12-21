@@ -16,31 +16,22 @@ export class AuthApiService {
   #callerService = inject(CallerService);
 
   signUp(request: SignUpRequest): Observable<ApiResponse<AuthResponseModel>> {
-    return this.#callerService.post<SignUpRequest, AuthResponseModel>(
-      '/auth/signup',
-      request
-    );
+    return this.#callerService.call('AUTH_SIGNUP', { request });
   }
 
   signIn(request: SignInRequest): Observable<ApiResponse<AuthResponseModel>> {
-    return this.#callerService.post<SignInRequest, AuthResponseModel>(
-      '/auth/signin',
-      request
-    );
+    return this.#callerService.call('AUTH_SIGNIN', { request });
   }
 
   getProfile(): Observable<ApiResponse<UserModel>> {
-    return this.#callerService.get<UserModel>('/auth/profile');
+    return this.#callerService.call('AUTH_PROFILE');
   }
 
   updateProfile(request: UpdateProfileRequest): Observable<ApiResponse<UserModel>> {
-    return this.#callerService.patch<UpdateProfileRequest, UserModel>(
-      '/auth/profile',
-      request
-    );
+    return this.#callerService.call('AUTH_UPDATE_PROFILE', { request });
   }
 
   signOut(): Observable<ApiResponse<void>> {
-    return this.#callerService.post<void, void>('/auth/signout', undefined);
+    return this.#callerService.call('AUTH_SIGNOUT');
   }
 }
