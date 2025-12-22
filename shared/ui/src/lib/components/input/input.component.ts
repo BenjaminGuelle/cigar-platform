@@ -7,10 +7,11 @@ import {
   signal,
   Signal,
   WritableSignal,
-  InputSignal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl, ValidationErrors } from '@angular/forms';
+import { merge, startWith, Subscription } from 'rxjs';
+import clsx from 'clsx';
 
 export type InputType = 'text' | 'email' | 'password' | 'number' | 'tel' | 'url' | 'search';
 export type InputSize = 'sm' | 'md' | 'lg';
@@ -27,6 +28,25 @@ const DEFAULT_ERROR_MESSAGES: ErrorMessages = {
   min: (error: ValidationErrors) => `La valeur minimale est ${error['min']}`,
   max: (error: ValidationErrors) => `La valeur maximale est ${error['max']}`,
   pattern: () => 'Format invalide',
+};
+
+const CLASSES = {
+  base: 'w-full rounded-lg border-2 transition-all duration-200 focus:outline-none bg-smoke-850 text-smoke-100 placeholder:text-smoke-500',
+  size: {
+    sm: 'px-3 py-1.5 text-sm',
+    md: 'px-4 py-2.5 text-base',
+    lg: 'px-5 py-3 text-lg',
+  },
+  state: {
+    error: 'border-error-500/50 focus:border-error-500 focus:ring-2 focus:ring-error-500/20',
+    valid: 'border-smoke-700 focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20',
+    disabled: 'bg-smoke-900 cursor-not-allowed opacity-50',
+    readonly: 'bg-smoke-900 cursor-default',
+  },
+  icon: {
+    prefix: 'pl-10',
+    suffix: 'pr-10',
+  },
 };
 
 let inputIdCounter: number = 0;
@@ -54,27 +74,28 @@ let inputIdCounter: number = 0;
   templateUrl: './input.component.html',
 })
 export class InputComponent {
-  readonly inputId: InputSignal<string> = input<string>(`input-${++inputIdCounter}`);
-  readonly type: InputSignal<InputType> = input<InputType>('text');
-  readonly size: InputSignal<InputSize> = input<InputSize>('md');
-  readonly label: InputSignal<string> = input<string>('');
-  readonly placeholder: InputSignal<string> = input<string>('');
-  readonly hint: InputSignal<string> = input<string>('');
-  readonly required: InputSignal<boolean> = input<boolean, boolean>(false, { transform: booleanAttribute });
-  readonly readonly: InputSignal<boolean> = input<boolean, boolean>(false, { transform: booleanAttribute });
-  readonly autofocus: InputSignal<boolean> = input<boolean, boolean>(false, { transform: booleanAttribute });
-  readonly maxlength: InputSignal<number | null> = input<number | null>(null);
-  readonly minlength: InputSignal<number | null> = input<number | null>(null);
-  readonly prefixIcon: InputSignal<boolean> = input<boolean, boolean>(false, { transform: booleanAttribute });
-  readonly suffixIcon: InputSignal<boolean> = input<boolean, boolean>(false, { transform: booleanAttribute });
-  readonly autocomplete: InputSignal<AutocompleteValue> = input<AutocompleteValue>('off');
-  readonly inputmode: InputSignal<InputMode | null> = input<InputMode | null>(null);
-  readonly control: InputSignal<FormControl> = input.required<FormControl>();
-  readonly errorMessages: InputSignal<ErrorMessages> = input<ErrorMessages>({});
+  readonly inputId = input<string>(`input-${++inputIdCounter}`);
+  readonly type = input<InputType>('text');
+  readonly size = input<InputSize>('md');
+  readonly label = input<string>('');
+  readonly placeholder = input<string>('');
+  readonly hint = input<string>('');
+  readonly required = input(false, { transform: booleanAttribute });
+  readonly readonly = input(false, { transform: booleanAttribute });
+  readonly autofocus = input(false, { transform: booleanAttribute });
+  readonly maxlength = input<number | null>(null);
+  readonly minlength = input<number | null>(null);
+  readonly prefixIcon = input(false, { transform: booleanAttribute });
+  readonly suffixIcon = input(false, { transform: booleanAttribute });
+  readonly autocomplete = input<AutocompleteValue>('off');
+  readonly inputmode = input<InputMode | null>(null);
+  readonly control = input.required<FormControl>();
+  readonly errorMessages = input<ErrorMessages>({});
 
   readonly #forceShowError: WritableSignal<boolean> = signal<boolean>(false);
   readonly #controlTouched: WritableSignal<boolean> = signal<boolean>(false);
   readonly #controlInvalid: WritableSignal<boolean> = signal<boolean>(false);
+  readonly #controlErrors: WritableSignal<ValidationErrors | null> = signal<ValidationErrors | null>(null);
 
   readonly errorId: Signal<string> = computed<string>(() => `${this.inputId()}-error`);
   readonly hintId: Signal<string> = computed<string>(() => `${this.inputId()}-hint`);
@@ -88,26 +109,44 @@ export class InputComponent {
   });
 
   readonly errorMessage: Signal<string> = computed<string>(() => {
-    const ctrl: FormControl = this.control();
-    const errors: ValidationErrors | null = ctrl?.errors;
+    const errors: ValidationErrors | null = this.#controlErrors();
 
     if (!errors) {
       return '';
     }
 
     const customMessages: ErrorMessages = this.errorMessages();
+
+    if (errors['required']) {
+      return customMessages['required']?.(errors['required']) ?? DEFAULT_ERROR_MESSAGES['required'](errors['required']);
+    }
+
+    if (errors['email']) {
+      return customMessages['email']?.(errors['email']) ?? DEFAULT_ERROR_MESSAGES['email'](errors['email']);
+    }
+
+    if (errors['minlength']) {
+      return customMessages['minlength']?.(errors['minlength']) ?? DEFAULT_ERROR_MESSAGES['minlength'](errors['minlength']);
+    }
+
+    if (errors['maxlength']) {
+      return customMessages['maxlength']?.(errors['maxlength']) ?? DEFAULT_ERROR_MESSAGES['maxlength'](errors['maxlength']);
+    }
+
+    if (errors['min']) {
+      return customMessages['min']?.(errors['min']) ?? DEFAULT_ERROR_MESSAGES['min'](errors['min']);
+    }
+
+    if (errors['max']) {
+      return customMessages['max']?.(errors['max']) ?? DEFAULT_ERROR_MESSAGES['max'](errors['max']);
+    }
+
+    if (errors['pattern']) {
+      return customMessages['pattern']?.(errors['pattern']) ?? DEFAULT_ERROR_MESSAGES['pattern'](errors['pattern']);
+    }
+
     const errorKey: string = Object.keys(errors)[0];
-    const errorValue: ValidationErrors = errors[errorKey];
-
-    if (customMessages[errorKey]) {
-      return customMessages[errorKey](errorValue);
-    }
-
-    if (DEFAULT_ERROR_MESSAGES[errorKey]) {
-      return DEFAULT_ERROR_MESSAGES[errorKey](errorValue);
-    }
-
-    return 'Valeur invalide';
+    return customMessages[errorKey]?.(errors[errorKey]) ?? 'Valeur invalide';
   });
 
   readonly ariaDescribedBy: Signal<string> = computed<string>(() => {
@@ -123,53 +162,48 @@ export class InputComponent {
   });
 
   readonly inputClasses: Signal<string> = computed<string>(() => {
-    const sizeClasses: Record<InputSize, string> = {
-      sm: 'px-3 py-1.5 text-sm',
-      md: 'px-4 py-2.5 text-base',
-      lg: 'px-5 py-3 text-lg',
-    };
-
-    const baseClasses: string = 'w-full rounded-lg border-2 transition-all duration-200 focus:outline-none bg-smoke-850 text-smoke-100 placeholder:text-smoke-500';
-    const prefixPadding: string = this.prefixIcon() ? 'pl-10' : '';
-    const suffixPadding: string = this.suffixIcon() ? 'pr-10' : '';
-    const errorClasses: string = this.showError()
-      ? 'border-error-500/50 focus:border-error-500 focus:ring-2 focus:ring-error-500/20'
-      : 'border-smoke-700 focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20';
     const ctrl: FormControl = this.control();
-    const disabledClasses: string = ctrl?.disabled ? 'bg-smoke-900 cursor-not-allowed opacity-50' : '';
-    const readonlyClasses: string = this.readonly() ? 'bg-smoke-900 cursor-default' : '';
 
-    return [
-      baseClasses,
-      sizeClasses[this.size()],
-      prefixPadding,
-      suffixPadding,
-      errorClasses,
-      disabledClasses,
-      readonlyClasses,
-    ]
-      .filter(Boolean)
-      .join(' ');
+    return clsx(
+      CLASSES.base,
+      CLASSES.size[this.size()],
+      this.prefixIcon() && CLASSES.icon.prefix,
+      this.suffixIcon() && CLASSES.icon.suffix,
+      this.showError() ? CLASSES.state.error : CLASSES.state.valid,
+      ctrl?.disabled && CLASSES.state.disabled,
+      this.readonly() && CLASSES.state.readonly
+    );
   });
 
   constructor() {
-    effect(() => {
-      const ctrl: FormControl | undefined = this.control();
+    effect((onCleanup) => {
+      const ctrl: FormControl = this.control();
 
-      this.#controlTouched.set(ctrl?.touched || false);
-      this.#controlInvalid.set(ctrl?.invalid || false);
+      this.#updateSignals(ctrl);
 
-      const subscription = ctrl?.events?.subscribe(() => {
-        this.#controlTouched.set(ctrl.touched);
-        this.#controlInvalid.set(ctrl.invalid);
+      const subscription: Subscription = merge(
+        ctrl.statusChanges,
+        ctrl.valueChanges
+      )
+        .pipe(startWith(null))
+        .subscribe(() => {
+          this.#updateSignals(ctrl);
 
-        if (ctrl.touched) {
-          this.#forceShowError.set(false);
-        }
+          if (ctrl.touched) {
+            this.#forceShowError.set(false);
+          }
+        });
+
+      onCleanup(() => {
+        subscription.unsubscribe();
       });
-
-      return (): void => subscription?.unsubscribe();
     });
+  }
+
+  #updateSignals(ctrl: FormControl): void {
+    this.#controlTouched.set(ctrl.touched);
+    this.#controlInvalid.set(ctrl.invalid);
+    this.#controlErrors.set(ctrl.errors);
   }
 
   /**
