@@ -3,37 +3,33 @@ import {
   input,
   computed,
   booleanAttribute,
-  numberAttribute,
   effect,
   signal,
-  inject,
+  Signal,
+  WritableSignal,
+  InputSignal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl, ValidationErrors } from '@angular/forms';
 
-// Types
 export type InputType = 'text' | 'email' | 'password' | 'number' | 'tel' | 'url' | 'search';
 export type InputSize = 'sm' | 'md' | 'lg';
 export type AutocompleteValue = 'on' | 'off' | 'name' | 'email' | 'username' | 'new-password' | 'current-password' | 'tel' | 'url';
 export type InputMode = 'none' | 'text' | 'decimal' | 'numeric' | 'tel' | 'search' | 'email' | 'url';
-
-// Error messages type
 export type ErrorMessageFn = (error: ValidationErrors) => string;
 export type ErrorMessages = Record<string, ErrorMessageFn>;
 
-// Default French error messages
 const DEFAULT_ERROR_MESSAGES: ErrorMessages = {
   required: () => 'Ce champ est obligatoire',
   email: () => 'Veuillez saisir une adresse email valide',
-  minlength: (error) => `Minimum ${error['requiredLength']} caractères`,
-  maxlength: (error) => `Maximum ${error['requiredLength']} caractères`,
-  min: (error) => `La valeur minimale est ${error['min']}`,
-  max: (error) => `La valeur maximale est ${error['max']}`,
+  minlength: (error: ValidationErrors) => `Minimum ${error['requiredLength']} caractères`,
+  maxlength: (error: ValidationErrors) => `Maximum ${error['requiredLength']} caractères`,
+  min: (error: ValidationErrors) => `La valeur minimale est ${error['min']}`,
+  max: (error: ValidationErrors) => `La valeur maximale est ${error['max']}`,
   pattern: () => 'Format invalide',
 };
 
-// ID counter for unique IDs
-let inputIdCounter = 0;
+let inputIdCounter: number = 0;
 
 /**
  * Input component - Form input with validation, error messages, and accessibility
@@ -58,64 +54,55 @@ let inputIdCounter = 0;
   templateUrl: './input.component.html',
 })
 export class InputComponent {
-  // Inputs - Identification & Type
-  inputId = input<string>(`input-${++inputIdCounter}`);
-  type = input<InputType>('text');
-  size = input<InputSize>('md');
+  readonly inputId: InputSignal<string> = input<string>(`input-${++inputIdCounter}`);
+  readonly type: InputSignal<InputType> = input<InputType>('text');
+  readonly size: InputSignal<InputSize> = input<InputSize>('md');
+  readonly label: InputSignal<string> = input<string>('');
+  readonly placeholder: InputSignal<string> = input<string>('');
+  readonly hint: InputSignal<string> = input<string>('');
+  readonly required: InputSignal<boolean> = input<boolean, boolean>(false, { transform: booleanAttribute });
+  readonly readonly: InputSignal<boolean> = input<boolean, boolean>(false, { transform: booleanAttribute });
+  readonly autofocus: InputSignal<boolean> = input<boolean, boolean>(false, { transform: booleanAttribute });
+  readonly maxlength: InputSignal<number | null> = input<number | null>(null);
+  readonly minlength: InputSignal<number | null> = input<number | null>(null);
+  readonly prefixIcon: InputSignal<boolean> = input<boolean, boolean>(false, { transform: booleanAttribute });
+  readonly suffixIcon: InputSignal<boolean> = input<boolean, boolean>(false, { transform: booleanAttribute });
+  readonly autocomplete: InputSignal<AutocompleteValue> = input<AutocompleteValue>('off');
+  readonly inputmode: InputSignal<InputMode | null> = input<InputMode | null>(null);
+  readonly control: InputSignal<FormControl> = input.required<FormControl>();
+  readonly errorMessages: InputSignal<ErrorMessages> = input<ErrorMessages>({});
 
-  // Inputs - Labels & Text
-  label = input<string>('');
-  placeholder = input<string>('');
-  hint = input<string>('');
+  readonly #forceShowError: WritableSignal<boolean> = signal<boolean>(false);
+  readonly #controlTouched: WritableSignal<boolean> = signal<boolean>(false);
+  readonly #controlInvalid: WritableSignal<boolean> = signal<boolean>(false);
 
-  // Inputs - Validation
-  required = input(false, { transform: booleanAttribute });
-  readonly = input(false, { transform: booleanAttribute });
-  autofocus = input(false, { transform: booleanAttribute });
-  maxlength = input<number | null>(null);
-  minlength = input<number | null>(null);
+  readonly errorId: Signal<string> = computed<string>(() => `${this.inputId()}-error`);
+  readonly hintId: Signal<string> = computed<string>(() => `${this.inputId()}-hint`);
 
-  // Inputs - Icons
-  prefixIcon = input(false, { transform: booleanAttribute });
-  suffixIcon = input(false, { transform: booleanAttribute });
+  readonly showError: Signal<boolean> = computed<boolean>(() => {
+    const isInvalid: boolean = this.#controlInvalid();
+    const isTouched: boolean = this.#controlTouched();
+    const isForced: boolean = this.#forceShowError();
 
-  // Inputs - HTML Attributes
-  autocomplete = input<AutocompleteValue>('off');
-  inputmode = input<InputMode | null>(null);
-
-  // Inputs - Form Control & Errors
-  control = input.required<FormControl>();
-  errorMessages = input<ErrorMessages>({});
-
-  // Internal signals
-  #forceShowError = signal(false);
-
-  // Computed IDs for ARIA
-  errorId = computed(() => `${this.inputId()}-error`);
-  hintId = computed(() => `${this.inputId()}-hint`);
-
-  // Computed - Show error (touched OR forced by validation trigger)
-  showError = computed<boolean>(() => {
-    const ctrl = this.control();
-    return !!(ctrl?.invalid && (ctrl?.touched || this.#forceShowError()));
+    return isInvalid && (isTouched || isForced);
   });
 
-  // Computed - Error message
-  errorMessage = computed<string>(() => {
-    const ctrl = this.control();
-    const errors = ctrl?.errors;
-    if (!errors) return '';
+  readonly errorMessage: Signal<string> = computed<string>(() => {
+    const ctrl: FormControl = this.control();
+    const errors: ValidationErrors | null = ctrl?.errors;
 
-    const customMessages = this.errorMessages();
-    const errorKey = Object.keys(errors)[0];
-    const errorValue = errors[errorKey];
+    if (!errors) {
+      return '';
+    }
 
-    // Custom error message
+    const customMessages: ErrorMessages = this.errorMessages();
+    const errorKey: string = Object.keys(errors)[0];
+    const errorValue: ValidationErrors = errors[errorKey];
+
     if (customMessages[errorKey]) {
       return customMessages[errorKey](errorValue);
     }
 
-    // Default error message
     if (DEFAULT_ERROR_MESSAGES[errorKey]) {
       return DEFAULT_ERROR_MESSAGES[errorKey](errorValue);
     }
@@ -123,34 +110,34 @@ export class InputComponent {
     return 'Valeur invalide';
   });
 
-  // Computed - ARIA describedby
-  ariaDescribedBy = computed<string>(() => {
+  readonly ariaDescribedBy: Signal<string> = computed<string>(() => {
     if (this.showError()) {
       return this.errorId();
     }
+
     if (this.hint()) {
       return this.hintId();
     }
+
     return '';
   });
 
-  // Computed - Input classes with size variants
-  inputClasses = computed<string>(() => {
-    const sizeClasses = {
+  readonly inputClasses: Signal<string> = computed<string>(() => {
+    const sizeClasses: Record<InputSize, string> = {
       sm: 'px-3 py-1.5 text-sm',
       md: 'px-4 py-2.5 text-base',
       lg: 'px-5 py-3 text-lg',
     };
 
-    const baseClasses = 'w-full rounded-lg border-2 transition-all duration-200 focus:outline-none bg-smoke-850 text-smoke-100 placeholder:text-smoke-500';
-    const prefixPadding = this.prefixIcon() ? 'pl-10' : '';
-    const suffixPadding = this.suffixIcon() ? 'pr-10' : '';
-    const errorClasses = this.showError()
+    const baseClasses: string = 'w-full rounded-lg border-2 transition-all duration-200 focus:outline-none bg-smoke-850 text-smoke-100 placeholder:text-smoke-500';
+    const prefixPadding: string = this.prefixIcon() ? 'pl-10' : '';
+    const suffixPadding: string = this.suffixIcon() ? 'pr-10' : '';
+    const errorClasses: string = this.showError()
       ? 'border-error-500/50 focus:border-error-500 focus:ring-2 focus:ring-error-500/20'
       : 'border-smoke-700 focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20';
-    const ctrl = this.control();
-    const disabledClasses = ctrl?.disabled ? 'bg-smoke-900 cursor-not-allowed opacity-50' : '';
-    const readonlyClasses = this.readonly() ? 'bg-smoke-900 cursor-default' : '';
+    const ctrl: FormControl = this.control();
+    const disabledClasses: string = ctrl?.disabled ? 'bg-smoke-900 cursor-not-allowed opacity-50' : '';
+    const readonlyClasses: string = this.readonly() ? 'bg-smoke-900 cursor-default' : '';
 
     return [
       baseClasses,
@@ -166,19 +153,26 @@ export class InputComponent {
   });
 
   constructor() {
-    // React to control status changes to show/hide forced errors
     effect(() => {
-      const ctrl = this.control();
+      const ctrl: FormControl | undefined = this.control();
 
-      // Listen to control touched state
-      if (ctrl?.touched) {
-        this.#forceShowError.set(false);
-      }
+      this.#controlTouched.set(ctrl?.touched || false);
+      this.#controlInvalid.set(ctrl?.invalid || false);
+
+      const subscription = ctrl?.events?.subscribe(() => {
+        this.#controlTouched.set(ctrl.touched);
+        this.#controlInvalid.set(ctrl.invalid);
+
+        if (ctrl.touched) {
+          this.#forceShowError.set(false);
+        }
+      });
+
+      return (): void => subscription?.unsubscribe();
     });
   }
 
   /**
-   * Force display of error (called by FormService.triggerValidation)
    * @internal
    */
   forceShowError(): void {
