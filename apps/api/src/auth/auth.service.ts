@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import type { Session } from '@supabase/supabase-js';
+import { User } from '@cigar-platform/types';
 import { SupabaseService } from './supabase.service';
 import { PrismaService } from '../app/prisma.service';
 import {
@@ -7,7 +9,6 @@ import {
   UpdateProfileDto,
   AuthResponseDto,
   UserDto,
-  SessionDto,
 } from './dto';
 import {
   EmailConfirmationRequiredException,
@@ -142,13 +143,13 @@ export class AuthService {
   /**
    * Map Prisma User to UserDto
    */
-  private mapUserToDto(user: any): UserDto {
+  private mapUserToDto(user: User): UserDto {
     return {
       id: user.id,
       email: user.email,
       displayName: user.displayName,
       avatarUrl: user.avatarUrl,
-      role: user.role,
+      role: user.role as unknown as UserDto['role'],
       createdAt: user.createdAt,
     };
   }
@@ -156,17 +157,10 @@ export class AuthService {
   /**
    * Build authentication response with user and session data
    */
-  private buildAuthResponse(user: any, session: any): AuthResponseDto {
-    const sessionDto: SessionDto = {
-      accessToken: session.access_token,
-      refreshToken: session.refresh_token,
-      expiresIn: session.expires_in,
-      expiresAt: session.expires_at,
-    };
-
+  private buildAuthResponse(user: User, session: Session): AuthResponseDto {
     return {
       user: this.mapUserToDto(user),
-      session: sessionDto,
+      session,
     };
   }
 }

@@ -65,7 +65,7 @@ export class ClubService {
           data: {
             clubId: newClub.id,
             userId: userId,
-            role: ClubRole.Admin,
+            role: ClubRole.admin,
           },
         });
 

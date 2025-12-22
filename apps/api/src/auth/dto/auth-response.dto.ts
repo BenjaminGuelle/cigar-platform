@@ -1,11 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { Role } from '@cigar-platform/types';
+import { Role, UserModel } from '@cigar-platform/types';
+import type { Session } from '@supabase/supabase-js';
 
 /**
  * User data returned in authentication responses
+ * Implements UserModel to ensure consistency with frontend
  */
-export class UserDto {
+export class UserDto implements UserModel {
   @Expose()
   @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000' })
   id: string;
@@ -32,27 +34,6 @@ export class UserDto {
 }
 
 /**
- * Session data returned in authentication responses
- */
-export class SessionDto {
-  @Expose()
-  @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' })
-  accessToken: string;
-
-  @Expose()
-  @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' })
-  refreshToken: string;
-
-  @Expose()
-  @ApiProperty({ example: 3600 })
-  expiresIn: number;
-
-  @Expose()
-  @ApiProperty({ example: 1704067200 })
-  expiresAt: number;
-}
-
-/**
  * Complete authentication response
  */
 export class AuthResponseDto {
@@ -61,6 +42,8 @@ export class AuthResponseDto {
   user: UserDto;
 
   @Expose()
-  @ApiProperty({ type: SessionDto })
-  session: SessionDto;
+  @ApiProperty({
+    description: 'Supabase session with access token, refresh token, and expiry info',
+  })
+  session: Session;
 }

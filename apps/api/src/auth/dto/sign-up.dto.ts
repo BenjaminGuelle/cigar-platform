@@ -1,10 +1,12 @@
 import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { SignUpRequest } from '@cigar-platform/types';
 
 /**
  * DTO for user sign-up with email/password
+ * Implements SignUpRequest to ensure consistency with frontend
  */
-export class SignUpDto {
+export class SignUpDto implements SignUpRequest {
   @ApiProperty({ example: 'user@example.com', description: 'User email address' })
   @IsEmail({}, { message: 'Please provide a valid email address' })
   @IsNotEmpty({ message: 'Email is required' })

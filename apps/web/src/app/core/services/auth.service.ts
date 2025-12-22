@@ -86,33 +86,22 @@ export class AuthService {
     password: string,
     displayName: string
   ): Observable<AuthResult> {
-    return from(
-      this.#supabaseService.client.auth.signUp({
-        email,
-        password,
-      })
-    ).pipe(
-      switchMap(({ data, error }) => {
-        if (error) {
-          return of({ error });
+    return this.#authApiService.signUp({ email, password, displayName }).pipe(
+      tap((result) => {
+        if (result.success && result.data) {
+          this.#sessionSignal.set(result.data.session);
+          this.#currentUserSignal.set(result.data.user);
         }
-
-        if (!data.session) {
-          return of({ error: null });
-        }
-
-        this.#sessionSignal.set(data.session);
-
-        return this.#authApiService.signUp({ email, password, displayName }).pipe(
-          tap((result) => {
-            if (result.success && result.data) {
-              this.#currentUserSignal.set(result.data.user);
-            }
-          }),
-          map(() => ({ error: null }))
-        );
       }),
-      catchError((error) => of({ error: error as AuthError }))
+      map(() => ({ error: null })),
+      catchError((httpError) => {
+        console.error('Sign up error:', httpError);
+        const error: AuthError = {
+          message: httpError.error?.error?.message || httpError.error?.message || 'Erreur lors de l\'inscription',
+          status: httpError.status,
+        } as AuthError;
+        return of({ error });
+      })
     );
   }
 

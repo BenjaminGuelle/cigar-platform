@@ -29,6 +29,6 @@ export class ClubRolesGuard implements CanActivate {
       },
     });
 
-    return clubMember?.role === ClubRole.Admin;
+    return clubMember?.role === ClubRole.admin;
   }
 }

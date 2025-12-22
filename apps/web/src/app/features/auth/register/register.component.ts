@@ -68,7 +68,8 @@ export class RegisterComponent {
         if (error) {
           this.#errorSignal.set(error.message || 'Erreur lors de l\'inscription');
         } else {
-          this.#router.navigate(['/auth/login']);
+          // User is now logged in, redirect to home
+          this.#router.navigate(['/']);
         }
       }),
       catchError((err) => {

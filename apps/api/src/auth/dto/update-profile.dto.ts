@@ -1,10 +1,12 @@
 import { IsOptional, IsString, IsUrl } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { UpdateProfileRequest } from '@cigar-platform/types';
 
 /**
  * DTO for updating user profile information
+ * Implements UpdateProfileRequest to ensure consistency with frontend
  */
-export class UpdateProfileDto {
+export class UpdateProfileDto implements UpdateProfileRequest {
   @ApiProperty({ example: 'John Doe', description: 'User display name', required: false })
   @IsOptional()
   @IsString()
