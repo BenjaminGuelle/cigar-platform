@@ -2,15 +2,13 @@ import { Component, inject, signal, WritableSignal } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   FormBuilder,
-  FormGroup,
-  FormControl,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { tap, catchError, take } from 'rxjs/operators';
 import { EMPTY } from 'rxjs';
-import { AuthService } from '../../../core/services';
+import { AuthService, FormService } from '../../../core/services';
 import { ButtonComponent, InputComponent } from '@cigar-platform/shared/ui';
 
 @Component({
@@ -29,6 +27,7 @@ export class LoginComponent {
   #authService = inject(AuthService);
   #router = inject(Router);
   #fb = inject(FormBuilder);
+  #formService = inject(FormService);
 
   #errorSignal: WritableSignal<string | null> = signal<string | null>(null);
   #loadingSignal: WritableSignal<boolean> = signal<boolean>(false);
@@ -38,21 +37,24 @@ export class LoginComponent {
   readonly loading = this.#loadingSignal.asReadonly();
   readonly googleLoading = this.#googleLoadingSignal.asReadonly();
 
-  loginForm: FormGroup = this.#fb.group({
+  // Typed reactive form (Angular 14+)
+  loginForm = this.#fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(6)]],
   });
 
   onSubmit(): void {
+    // Trigger validation and show errors
+    this.#formService.triggerValidation(this.loginForm);
+
     if (this.loginForm.invalid) {
-      this.loginForm.markAllAsTouched();
       return;
     }
 
     this.#loadingSignal.set(true);
     this.#errorSignal.set(null);
 
-    const { email, password } = this.loginForm.value;
+    const { email, password } = this.loginForm.getRawValue();
 
     this.#authService.signIn(email, password).pipe(
       take(1),
@@ -100,13 +102,5 @@ export class LoginComponent {
 
   navigateToForgotPassword(): void {
     this.#router.navigate(['/auth/forgot-password']);
-  }
-
-  get emailControl() {
-    return this.loginForm.get('email') as FormControl;
-  }
-
-  get passwordControl() {
-    return this.loginForm.get('password') as FormControl;
   }
 }

@@ -2,15 +2,13 @@ import { Component, inject, signal, WritableSignal, OnInit } from '@angular/core
 import { Router } from '@angular/router';
 import {
   FormBuilder,
-  FormGroup,
-  FormControl,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { tap, catchError, take } from 'rxjs/operators';
 import { EMPTY } from 'rxjs';
-import { AuthService } from '../../../core/services';
+import { AuthService, FormService } from '../../../core/services';
 import { ButtonComponent, InputComponent } from '@cigar-platform/shared/ui';
 
 @Component({
@@ -29,6 +27,7 @@ export class ResetPasswordComponent implements OnInit {
   #authService = inject(AuthService);
   #router = inject(Router);
   #fb = inject(FormBuilder);
+  #formService = inject(FormService);
 
   #errorSignal: WritableSignal<string | null> = signal<string | null>(null);
   #successSignal: WritableSignal<string | null> = signal<string | null>(null);
@@ -40,7 +39,8 @@ export class ResetPasswordComponent implements OnInit {
   readonly loading = this.#loadingSignal.asReadonly();
   readonly hasValidSession = this.#hasValidSessionSignal.asReadonly();
 
-  resetPasswordForm: FormGroup = this.#fb.group({
+  // Typed reactive form (Angular 14+)
+  resetPasswordForm = this.#fb.nonNullable.group({
     password: ['', [Validators.required, Validators.minLength(6)]],
     confirmPassword: ['', [Validators.required]],
   });
@@ -54,12 +54,14 @@ export class ResetPasswordComponent implements OnInit {
   }
 
   onSubmit(): void {
+    // Trigger validation and show errors
+    this.#formService.triggerValidation(this.resetPasswordForm);
+
     if (this.resetPasswordForm.invalid) {
-      this.resetPasswordForm.markAllAsTouched();
       return;
     }
 
-    const { password, confirmPassword } = this.resetPasswordForm.value;
+    const { password, confirmPassword } = this.resetPasswordForm.getRawValue();
 
     if (password !== confirmPassword) {
       this.#errorSignal.set('Les mots de passe ne correspondent pas');
@@ -94,13 +96,5 @@ export class ResetPasswordComponent implements OnInit {
 
   navigateToLogin(): void {
     this.#router.navigate(['/auth/login']);
-  }
-
-  get passwordControl() {
-    return this.resetPasswordForm.get('password') as FormControl;
-  }
-
-  get confirmPasswordControl() {
-    return this.resetPasswordForm.get('confirmPassword') as FormControl;
   }
 }

@@ -32,7 +32,7 @@
                     type="text"
                     label="Nom"
                     placeholder="Votre nom"
-                    [control]="displayNameControl"
+                    [control]="registerForm.controls.displayName"
                     required
             />
         </div>
@@ -43,7 +43,7 @@
                     type="email"
                     label="Email"
                     placeholder="Entrez votre email"
-                    [control]="emailControl"
+                    [control]="registerForm.controls.email"
                     required
             />
         </div>
@@ -54,7 +54,7 @@
                     type="password"
                     label="Mot de passe"
                     placeholder="Minimum 6 caractères"
-                    [control]="passwordControl"
+                    [control]="registerForm.controls.password"
                     required
             />
         </div>
@@ -65,7 +65,7 @@
                     type="password"
                     label="Confirmer le mot de passe"
                     placeholder="Confirmez votre mot de passe"
-                    [control]="confirmPasswordControl"
+                    [control]="registerForm.controls.confirmPassword"
                     required
             />
         </div>

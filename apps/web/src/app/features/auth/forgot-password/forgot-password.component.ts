@@ -2,15 +2,13 @@ import { Component, inject, signal, WritableSignal } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   FormBuilder,
-  FormGroup,
-  FormControl,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { tap, catchError, take } from 'rxjs/operators';
 import { EMPTY } from 'rxjs';
-import { AuthService } from '../../../core/services';
+import { AuthService, FormService } from '../../../core/services';
 import { ButtonComponent, InputComponent } from '@cigar-platform/shared/ui';
 
 @Component({
@@ -29,6 +27,7 @@ export class ForgotPasswordComponent {
   #authService = inject(AuthService);
   #router = inject(Router);
   #fb = inject(FormBuilder);
+  #formService = inject(FormService);
 
   #errorSignal: WritableSignal<string | null> = signal<string | null>(null);
   #successSignal: WritableSignal<string | null> = signal<string | null>(null);
@@ -38,13 +37,16 @@ export class ForgotPasswordComponent {
   readonly success = this.#successSignal.asReadonly();
   readonly loading = this.#loadingSignal.asReadonly();
 
-  forgotPasswordForm: FormGroup = this.#fb.group({
+  // Typed reactive form (Angular 14+)
+  forgotPasswordForm = this.#fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
   });
 
   onSubmit(): void {
+    // Trigger validation and show errors
+    this.#formService.triggerValidation(this.forgotPasswordForm);
+
     if (this.forgotPasswordForm.invalid) {
-      this.forgotPasswordForm.markAllAsTouched();
       return;
     }
 
@@ -52,7 +54,7 @@ export class ForgotPasswordComponent {
     this.#errorSignal.set(null);
     this.#successSignal.set(null);
 
-    const { email } = this.forgotPasswordForm.value;
+    const { email } = this.forgotPasswordForm.getRawValue();
 
     this.#authService.resetPassword(email).pipe(
       take(1),
@@ -75,9 +77,5 @@ export class ForgotPasswordComponent {
 
   navigateToLogin(): void {
     this.#router.navigate(['/auth/login']);
-  }
-
-  get emailControl() {
-    return this.forgotPasswordForm.get('email') as FormControl;
   }
 }

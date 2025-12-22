@@ -32,7 +32,7 @@
                     type="email"
                     label="Email"
                     placeholder="Entrez votre email"
-                    [control]="emailControl"
+                    [control]="loginForm.controls.email"
                     required
             />
         </div>
@@ -43,7 +43,7 @@
                     type="password"
                     label="Mot de passe"
                     placeholder="Entrez votre mot de passe"
-                    [control]="passwordControl"
+                    [control]="loginForm.controls.password"
                     required
             />
         </div>
