@@ -142,7 +142,6 @@ order?: ClubControllerFindAllOrder;
 export type ClubControllerFindAllSortBy = typeof ClubControllerFindAllSortBy[keyof typeof ClubControllerFindAllSortBy];
 
 
-// eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ClubControllerFindAllSortBy = {
   name: 'name',
   createdAt: 'createdAt',
@@ -151,7 +150,6 @@ export const ClubControllerFindAllSortBy = {
 export type ClubControllerFindAllOrder = typeof ClubControllerFindAllOrder[keyof typeof ClubControllerFindAllOrder];
 
 
-// eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ClubControllerFindAllOrder = {
   asc: 'asc',
   desc: 'desc',

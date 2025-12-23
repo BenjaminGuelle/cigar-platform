@@ -1,11 +1,12 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { NgOptimizedImage } from '@angular/common';
+import { LogoComponent } from '@cigar-platform/shared/ui';
 
 @Component({
   selector: 'app-auth-layout',
   standalone: true,
-  imports: [RouterOutlet, NgOptimizedImage],
+  imports: [RouterOutlet, NgOptimizedImage, LogoComponent],
   template: `
     <div class="flex h-screen bg-linear-to-br from-smoke-950 via-smoke-900 to-smoke-850">
       <!-- LEFT SIDE: Hero Image (hidden on mobile) -->
@@ -36,23 +37,20 @@ import { NgOptimizedImage } from '@angular/common';
           <div class="w-full h-full bg-[radial-gradient(ellipse_at_bottom_right,rgba(255,255,255,0.04),transparent)] blur-3xl"></div>
         </div>
 
-        <!-- CONTENU (logo, titre, etc.) -->
-        <div class="relative z-30 text-white">
-          <!-- Ajout de contenu ici plus tard -->
+        <!-- LOGO MINI - Top Left -->
+        <div class="absolute top-8 left-8 z-30 transition-all duration-300 hover:scale-110">
+          <div class="relative">
+            <ui-logo variant="compact" size="lg" />
+            <!-- Glow effect subtil -->
+            <div class="absolute inset-0 rounded-full bg-smoke-50/10 blur-xl -z-10"></div>
+          </div>
         </div>
       </div>
 
       <!-- RIGHT SIDE: Auth Forms (login, register, etc.) -->
       <div class="w-full md:w-1/2 flex flex-col items-center justify-center px-6 py-8 lg:px-12 xl:px-32 gap-8">
-        <!-- TITRE -->
-        <div class="text-center">
-          <h1 class="text-5xl font-display text-smoke-50 tracking-wide mb-2">
-            Cigar & Club
-          </h1>
-          <p class="text-sm text-smoke-300 tracking-widest uppercase font-light">
-            A Brotherhood of Connoisseurs
-          </p>
-        </div>
+        <!-- LOGO FULL -->
+        <ui-logo variant="full" size="lg" [showTagline]="true" />
 
         <router-outlet />
       </div>

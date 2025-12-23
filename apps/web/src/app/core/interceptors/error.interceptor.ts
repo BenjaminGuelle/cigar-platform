@@ -7,10 +7,8 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       let errorMessage = 'An unexpected error occurred';
 
       if (error.error instanceof ErrorEvent) {
-        // Client-side error
         errorMessage = `Error: ${error.error.message}`;
       } else {
-        // Server-side error
         if (error.status === 0) {
           errorMessage = 'Unable to connect to server';
         } else if (error.error?.message) {
