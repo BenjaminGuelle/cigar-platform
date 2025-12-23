@@ -195,6 +195,38 @@ export class UserProfileComponent implements OnInit {
 })
 ```
 
+**UI Components**:
+
+**ALWAYS use shared UI components from `@cigar-platform/ui` when available**:
+
+```typescript
+// ✅ CORRECT - Use shared UI components
+import { ButtonComponent, InputComponent, AvatarComponent } from '@cigar-platform/ui';
+
+@Component({
+  imports: [ButtonComponent, InputComponent, AvatarComponent],
+  template: `
+    <ui-button variant="primary" [loading]="isLoading()">Save</ui-button>
+    <ui-input [control]="form.controls.email" label="Email" />
+    <ui-avatar [user]="currentUser()" size="md" />
+  `
+})
+
+// ❌ INCORRECT - Don't recreate existing components
+@Component({
+  template: `
+    <button class="btn-primary">Save</button>  // ❌ Use ui-button
+    <input class="custom-input" />             // ❌ Use ui-input
+  `
+})
+```
+
+**Available components**: `ui-button`, `ui-input`, `ui-avatar`, `ui-logo`, `ui-skeleton`, `ui-sidebar`, `ui-sidebar-nav-item`, `ui-sidebar-action`, `ui-sidebar-profile`, `ui-mobile-header`, `ui-bottom-tab-bar`, `ui-bottom-tab-item`
+
+**Rules**:
+- If a UI component exists in `shared/ui`, **MUST** use it. Only create new components if truly different use case.
+- **ALWAYS use shared types from `@cigar-platform/types`** (UserModel, etc.) - NEVER create local duplicates.
+
 ---
 
 ## 2. Project Structure
