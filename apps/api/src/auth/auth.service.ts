@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { Session } from '@supabase/supabase-js';
-import { User } from '@cigar-platform/types';
+import { User } from '@cigar-platform/prisma-client';
 import { SupabaseService } from './supabase.service';
 import { PrismaService } from '../app/prisma.service';
 import {
@@ -110,7 +110,7 @@ export class AuthService {
   /**
    * Get current user profile
    */
-  async getProfile(userId: string): Promise<UserDto> {
+  async getProfile(userId: string, authProvider?: string): Promise<UserDto> {
     const user = await this.prismaService.user.findUnique({
       where: { id: userId },
     });
@@ -119,7 +119,14 @@ export class AuthService {
       throw new UserNotFoundException();
     }
 
-    return this.mapUserToDto(user);
+    const userDto = this.mapUserToDto(user);
+
+    // Add authProvider from Supabase metadata (not stored in DB)
+    if (authProvider) {
+      userDto.authProvider = authProvider as 'google' | 'apple' | 'email';
+    }
+
+    return userDto;
   }
 
   /**

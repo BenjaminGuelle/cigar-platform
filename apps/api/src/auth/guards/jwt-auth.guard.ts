@@ -9,6 +9,10 @@ import { InvalidTokenException } from '../../common/exceptions';
  * Guard to protect routes with JWT authentication
  * Validates Supabase JWT tokens and auto-syncs users to Prisma database
  *
+ * Performance Optimization:
+ * - Uses JWT custom claims (role, displayName) when available → NO DB query (99% of requests)
+ * - Falls back to DB query + auto-sync on first OAuth login → DB query (1% of requests)
+ *
  * This guard ensures that users authenticated via OAuth (Google, Apple, etc.)
  * are automatically created in our Prisma database on first access.
  */
@@ -36,36 +40,65 @@ export class JwtAuthGuard implements CanActivate {
       throw new InvalidTokenException();
     }
 
-    // Auto-sync: Check if user exists in Prisma, create if not
-    let dbUser = await this.prismaService.user.findUnique({
-      where: { id: supabaseUser.id },
-    });
+    // Check if user has custom claims (role) in JWT
+    const hasCustomClaims = !!supabaseUser.app_metadata?.role;
 
-    if (!dbUser) {
-      // User exists in Supabase but not in our DB (OAuth first login)
-      // Create user automatically with data from Supabase
-      this.logger.log(
-        `Auto-creating user ${supabaseUser.email} from OAuth/Supabase`
-      );
+    if (hasCustomClaims) {
+      // ✅ OPTIMIZED PATH: Use custom claims from JWT (no DB query)
+      this.logger.debug(`User ${supabaseUser.email} authenticated via custom claims`);
 
-      dbUser = await this.prismaService.user.create({
-        data: {
+      // Build virtual dbUser from JWT claims
+      request.user = {
+        ...supabaseUser,
+        dbUser: {
           id: supabaseUser.id,
           email: supabaseUser.email!,
-          displayName:
-            supabaseUser.user_metadata?.full_name ||
-            supabaseUser.user_metadata?.name ||
-            supabaseUser.email?.split('@')[0] ||
-            'User',
-          avatarUrl: supabaseUser.user_metadata?.avatar_url || null,
+          displayName: supabaseUser.app_metadata.displayName || supabaseUser.email!,
+          role: supabaseUser.app_metadata.role,
+          avatarUrl: supabaseUser.user_metadata?.avatar_url ?? null,
+          createdAt: new Date(supabaseUser.created_at),
         },
+        authProvider: supabaseUser.app_metadata?.provider || 'email',
+      };
+    } else {
+      // ⚠️ FALLBACK PATH: First login or JWT not refreshed yet - Auto-sync from DB
+      this.logger.log(`User ${supabaseUser.email} missing custom claims - performing DB sync`);
+
+      let dbUser = await this.prismaService.user.findUnique({
+        where: { id: supabaseUser.id },
       });
 
-      this.logger.log(`User ${dbUser.email} auto-created successfully`);
+      if (!dbUser) {
+        // User exists in Supabase but not in our DB (OAuth first login)
+        // Create user automatically with data from Supabase
+        this.logger.log(
+          `Auto-creating user ${supabaseUser.email} from OAuth/Supabase`
+        );
+
+        dbUser = await this.prismaService.user.create({
+          data: {
+            id: supabaseUser.id,
+            email: supabaseUser.email!,
+            displayName:
+              supabaseUser.user_metadata?.full_name ||
+              supabaseUser.user_metadata?.name ||
+              supabaseUser.email?.split('@')[0] ||
+              'User',
+            avatarUrl: supabaseUser.user_metadata?.avatar_url || null,
+          },
+        });
+
+        this.logger.log(`User ${dbUser.email} auto-created successfully`);
+      }
+
+      // Attach Prisma user to request for use in controllers
+      request.user = {
+        ...supabaseUser,
+        dbUser,
+        authProvider: supabaseUser.app_metadata?.provider || 'email',
+      };
     }
 
-    // Attach Prisma user to request for use in controllers
-    request.user = { ...supabaseUser, dbUser };
     return true;
   }
 

@@ -1,6 +1,6 @@
 import { IsOptional, IsString, IsUrl } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { UpdateProfileRequest } from '@cigar-platform/types';
+import type { UpdateProfileRequest } from '@cigar-platform/types';
 
 /**
  * DTO for updating user profile information

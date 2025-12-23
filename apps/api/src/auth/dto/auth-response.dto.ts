@@ -1,13 +1,15 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { Role, UserModel } from '@cigar-platform/types';
+import type { User } from '@cigar-platform/prisma-client';
+import { Role } from '@cigar-platform/prisma-client';
+import type { AuthProvider } from '@cigar-platform/types';
 import type { Session } from '@supabase/supabase-js';
 
 /**
  * User data returned in authentication responses
- * Implements UserModel to ensure consistency with frontend
+ * Implements Prisma User type to ensure consistency with database and frontend
  */
-export class UserDto implements UserModel {
+export class UserDto implements User {
   @Expose()
   @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000' })
   id: string;
@@ -21,7 +23,10 @@ export class UserDto implements UserModel {
   displayName: string;
 
   @Expose()
-  @ApiProperty({ example: 'https://example.com/avatar.jpg', nullable: true })
+  @ApiPropertyOptional({
+    type: String,
+    example: 'https://example.com/avatar.jpg',
+  })
   avatarUrl: string | null;
 
   @Expose()
@@ -31,6 +36,15 @@ export class UserDto implements UserModel {
   @Expose()
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   createdAt: Date;
+
+  @Expose()
+  @ApiProperty({
+    enum: ['google', 'apple', 'email'],
+    example: 'email',
+    required: false,
+    description: 'Authentication provider (from Supabase metadata)',
+  })
+  authProvider?: AuthProvider;
 }
 
 /**
@@ -44,6 +58,16 @@ export class AuthResponseDto {
   @Expose()
   @ApiProperty({
     description: 'Supabase session with access token, refresh token, and expiry info',
+    example: {
+      access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+      refresh_token: 'v1.refresh_token...',
+      expires_in: 3600,
+      token_type: 'bearer',
+      user: {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        email: 'user@example.com'
+      }
+    }
   })
   session: Session;
 }

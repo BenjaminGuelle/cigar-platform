@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { PrismaService } from './prisma.service';
 import { AuthModule } from '../auth/auth.module';
 import { ClubModule } from '../club/club.module';
+import { UsersModule } from '../users/users.module';
 
 @Global()
 @Module({
@@ -15,6 +16,7 @@ import { ClubModule } from '../club/club.module';
     }),
     AuthModule,
     ClubModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

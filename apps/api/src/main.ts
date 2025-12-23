@@ -44,6 +44,11 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
+  // JSON endpoint for Orval type generation
+  app.use('/api-json', (req: any, res: any) => {
+    res.json(document);
+  });
+
   // Enable global validation with class-validator
   app.useGlobalPipes(
     new ValidationPipe({

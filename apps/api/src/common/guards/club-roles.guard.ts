@@ -1,6 +1,6 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { PrismaService } from '../../app/prisma.service';
-import { Role, ClubRole } from '@cigar-platform/types';
+import { Role, ClubRole } from '@cigar-platform/prisma-client';
 import { ClubMember } from '../../../../../generated/prisma';
 
 @Injectable()

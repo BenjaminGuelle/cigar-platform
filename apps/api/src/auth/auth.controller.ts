@@ -102,7 +102,7 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async getProfile(@CurrentUser() user: any): Promise<UserDto> {
-    return this.authService.getProfile(user.id);
+    return this.authService.getProfile(user.id, user.authProvider);
   }
 
   /**

@@ -7,7 +7,7 @@ import {
   ClubResponseDto,
   FilterClubDto,
 } from './dto';
-import { ClubRole } from '@cigar-platform/types';
+import { ClubRole } from '@cigar-platform/prisma-client';
 import {
   ClubNotFoundException,
   ClubAlreadyExistsException,

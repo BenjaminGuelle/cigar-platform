@@ -9,27 +9,52 @@ import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 @Injectable()
 export class SupabaseService implements OnModuleInit {
   private supabase: SupabaseClient;
+  private supabaseAdmin: SupabaseClient;
 
   constructor(private configService: ConfigService) {}
 
   onModuleInit() {
     const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
-    const supabaseKey = this.configService.get<string>('SUPABASE_ANON_KEY');
+    const publishableKey = this.configService.get<string>('SUPABASE_PUBLISHABLE_KEY');
+    const secretKey = this.configService.get<string>('SUPABASE_SECRET_KEY');
 
-    if (!supabaseUrl || !supabaseKey) {
+    if (!supabaseUrl || !publishableKey) {
       throw new Error(
-        'SUPABASE_URL and SUPABASE_ANON_KEY must be defined in environment variables'
+        'SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY must be defined in environment variables'
       );
     }
 
-    this.supabase = createClient(supabaseUrl, supabaseKey);
+    if (!secretKey) {
+      throw new Error(
+        'SUPABASE_SECRET_KEY must be defined in environment variables'
+      );
+    }
+
+    // Client for auth operations (with publishable key)
+    this.supabase = createClient(supabaseUrl, publishableKey);
+
+    // Admin client for backend operations (bypasses RLS)
+    this.supabaseAdmin = createClient(supabaseUrl, secretKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
   }
 
   /**
-   * Get the Supabase client instance
+   * Get the Supabase client instance (for auth operations)
    */
   getClient(): SupabaseClient {
     return this.supabase;
+  }
+
+  /**
+   * Get the Supabase admin client (for backend operations, bypasses RLS)
+   * ⚠️ USE WITH CAUTION - This client has full access
+   */
+  getAdminClient(): SupabaseClient {
+    return this.supabaseAdmin;
   }
 
   /**

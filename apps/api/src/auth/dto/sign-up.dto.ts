@@ -1,6 +1,6 @@
 import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { SignUpRequest } from '@cigar-platform/types';
+import type { SignUpRequest } from '@cigar-platform/types';
 
 /**
  * DTO for user sign-up with email/password
