@@ -1,0 +1,76 @@
+import { Component, input, computed, Signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
+import { IconDirective, type IconName } from '../../directives/icon';
+import clsx from 'clsx';
+
+/**
+ * Bottom Tab Item Component
+ * Individual tab item with iOS-style animations and active state
+ */
+@Component({
+  selector: 'ui-bottom-tab-item',
+  standalone: true,
+  imports: [CommonModule, RouterModule, IconDirective],
+  template: `
+    <a
+      [routerLink]="route()"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: exact() }"
+      [class]="itemClasses()"
+    >
+      <div [class]="pillClasses()"></div>
+
+      <div class="relative z-10 flex items-center justify-center">
+        <i [name]="icon()"
+          class="h-6 w-6 transition-transform duration-200 ease-out group-active:scale-90"
+        ></i>
+
+        @if (badge() && badge()! > 0) {
+          <span
+            class="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-error-500 px-1 text-[10px] font-bold text-white shadow-lg shadow-error-500/30 animate-pulse"
+          >
+            {{ badge()! > 99 ? '99+' : badge() }}
+          </span>
+        }
+      </div>
+
+      @if (label()) {
+        <span [class]="labelClasses()">
+          {{ label() }}
+        </span>
+      }
+    </a>
+  `,
+})
+export class BottomTabItemComponent {
+  readonly icon = input.required<IconName>();
+  readonly label = input<string>('');
+  readonly route = input.required<string>();
+  readonly exact = input<boolean>(false);
+  readonly badge = input<number | null>(null);
+
+  readonly itemClasses: Signal<string> = computed<string>(() => {
+    return clsx(
+      'group relative flex flex-col items-center justify-center gap-1 py-2 px-3 min-w-16',
+      'text-smoke-400 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+      'active:scale-95',
+      '[&.active]:text-gold-500'
+    );
+  });
+
+  readonly pillClasses: Signal<string> = computed<string>(() => {
+    return clsx(
+      'absolute inset-0 mx-auto rounded-2xl transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]',
+      'opacity-0 scale-90 bg-gold-500/10',
+      'group-[.active]:opacity-100 group-[.active]:scale-100',
+    );
+  });
+
+  readonly labelClasses: Signal<string> = computed<string>(() => {
+    return clsx(
+      'relative z-10 text-[10px] font-semibold transition-all duration-300',
+      'group-[.active]:scale-105'
+    );
+  });
+}

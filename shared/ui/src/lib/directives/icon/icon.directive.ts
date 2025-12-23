@@ -13,6 +13,8 @@ export type IconName =
   | 'chevron-right'
   | 'chevron-up'
   | 'menu'
+  | 'home'
+  | 'calendar'
   // Users & Auth
   | 'user'
   | 'users'
@@ -38,6 +40,8 @@ export type IconName =
   | 'eye'
   | 'eye-off'
   | 'x'
+  | 'flame'
+  | 'bell'
   // Feedback
   | 'spinner'
   | 'check'
