@@ -1,12 +1,13 @@
-import { UserModel } from './user.model';
-import { Session } from '@supabase/supabase-js';
+import type { UserDto } from '../lib/generated-api.schemas';
 
 /**
- * Authentication response model
- * Matches backend AuthResponseDto
- * @see apps/api/src/auth/dto/auth-response.dto.ts
+ * Authentication provider type
+ * Indicates how the user authenticated (OAuth or email/password)
  */
-export interface AuthResponseModel {
-  user: UserModel;
-  session: Session;
-}
+export type AuthProvider = 'google' | 'apple' | 'email';
+
+/**
+ * User with authentication provider info
+ * Uses Orval-generated UserDto as base
+ */
+export type UserWithAuth = UserDto;

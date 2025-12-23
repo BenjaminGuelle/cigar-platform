@@ -5,8 +5,8 @@ import { AuthError, Session } from '@supabase/supabase-js';
 import { Observable, from, of, EMPTY } from 'rxjs';
 import { tap, map, catchError, switchMap, take, finalize } from 'rxjs/operators';
 import { SupabaseService } from './supabase.service';
-import { AuthApiService } from '../api';
-import { UserModel } from '@cigar-platform/types';
+import { AuthenticationService } from '@cigar-platform/types/lib/authentication/authentication.service';
+import type { UserWithAuth } from '@cigar-platform/types';
 
 export interface AuthResult {
   error: AuthError | null;
@@ -17,15 +17,15 @@ export interface AuthResult {
 })
 export class AuthService {
   #supabaseService = inject(SupabaseService);
-  #authApiService = inject(AuthApiService);
+  #authenticationService = inject(AuthenticationService);
   #router = inject(Router);
   #destroyRef = inject(DestroyRef);
 
-  #currentUserSignal: WritableSignal<UserModel | null> = signal<UserModel | null>(null);
+  #currentUserSignal: WritableSignal<UserWithAuth | null> = signal<UserWithAuth | null>(null);
   #sessionSignal: WritableSignal<Session | null> = signal<Session | null>(null);
   #loadingSignal: WritableSignal<boolean> = signal<boolean>(true);
 
-  readonly currentUser: Signal<UserModel | null> = this.#currentUserSignal.asReadonly();
+  readonly currentUser: Signal<UserWithAuth | null> = this.#currentUserSignal.asReadonly();
   readonly session: Signal<Session | null> = this.#sessionSignal.asReadonly();
   readonly loading: Signal<boolean> = this.#loadingSignal.asReadonly();
   readonly isAuthenticated: Signal<boolean> = computed(() => this.#currentUserSignal() !== null);
@@ -70,9 +70,9 @@ export class AuthService {
     });
   }
 
-  #loadUserProfile(): Observable<UserModel | null> {
-    return this.#authApiService.getProfile().pipe(
-      map((result) => (result.success && result.data ? result.data : null)),
+  #loadUserProfile(): Observable<UserWithAuth | null> {
+    return from(this.#authenticationService.authControllerGetProfile()).pipe(
+      map((user) => user ?? null),
       tap((user) => this.#currentUserSignal.set(user)),
       catchError((error) => {
         console.error('Error loading user profile:', error);
@@ -86,12 +86,12 @@ export class AuthService {
     password: string,
     displayName: string
   ): Observable<AuthResult> {
-    return this.#authApiService.signUp({ email, password, displayName }).pipe(
+    return from(
+      this.#authenticationService.authControllerSignUp({ email, password, displayName })
+    ).pipe(
       tap((result) => {
-        if (result.success && result.data) {
-          this.#sessionSignal.set(result.data.session);
-          this.#currentUserSignal.set(result.data.user);
-        }
+        this.#sessionSignal.set(result.session as any as Session);
+        this.#currentUserSignal.set(result.user);
       }),
       map(() => ({ error: null })),
       catchError((httpError) => {

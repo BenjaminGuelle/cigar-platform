@@ -1,7 +1,5 @@
-export * from './user.model';
+/**
+ * Business models (non-Prisma)
+ * Only models that combine multiple Prisma types or add business logic
+ */
 export * from './auth-response.model';
-export * from './cigar.model';
-export * from './club.model';
-export * from './club-member.model';
-export * from './event.model';
-export * from './evaluation.model';

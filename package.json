@@ -16,6 +16,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
+    "generate:api": "orval",
+    "generate:api:watch": "orval --watch",
     "build:all": "nx run-many -t build",
     "test:all": "nx run-many -t test",
     "lint:all": "nx run-many -t lint",
@@ -38,6 +40,7 @@
     "@angular/language-service": "~21.0.0",
     "@eslint/js": "^9.8.0",
     "@nestjs/schematics": "^11.0.0",
+    "@nestjs/swagger": "^11.2.3",
     "@nestjs/testing": "^11.0.0",
     "@nx/angular": "^22.3.1",
     "@nx/devkit": "22.3.1",
@@ -58,6 +61,7 @@
     "@swc/core": "~1.5.7",
     "@swc/helpers": "~0.5.11",
     "@tailwindcss/postcss": "^4.1.18",
+    "@types/multer": "^2.0.0",
     "@types/node": "20.19.9",
     "@types/pg": "^8.16.0",
     "@typescript-eslint/utils": "^8.40.0",
@@ -71,8 +75,11 @@
     "jsdom": "^27.1.0",
     "jsonc-eslint-parser": "^2.1.0",
     "nx": "22.3.1",
+    "orval": "^7.13.2",
     "postcss": "^8.5.6",
     "prettier": "~3.6.2",
+    "puppeteer": "^24.34.0",
+    "swagger-ui-express": "^5.0.1",
     "tailwindcss": "^4.1.18",
     "tslib": "^2.3.0",
     "typescript": "^5.9.3",
@@ -94,7 +101,6 @@
     "@nestjs/core": "^11.0.0",
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/platform-express": "^11.0.0",
-    "@nestjs/swagger": "^11.2.3",
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",
     "@supabase/supabase-js": "^2.89.0",
@@ -105,6 +111,7 @@
     "pg": "^8.16.3",
     "prisma": "^7.2.0",
     "reflect-metadata": "^0.1.13",
-    "rxjs": "~7.8.0"
+    "rxjs": "~7.8.0",
+    "sharp": "^0.34.5"
   }
 }

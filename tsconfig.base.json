@@ -4,7 +4,7 @@
     "rootDir": ".",
     "sourceMap": true,
     "declaration": false,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "importHelpers": true,
@@ -16,8 +16,7 @@
     "baseUrl": ".",
     "paths": {
       "@cigar-platform/types": ["shared/types/src/index.ts"],
-      "@cigar-platform/constants": ["shared/constants/src/index.ts"],
-      "@cigar-platform/utils": ["shared/utils/src/index.ts"],
+      "@cigar-platform/types/*": ["shared/types/src/*"],
       "@cigar-platform/shared/ui": ["shared/ui/src/index.ts"],
       "@cigar-platform/prisma-client": ["generated/prisma"]
     }
