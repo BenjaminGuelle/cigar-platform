@@ -13,7 +13,13 @@ import { AuthService, FormService } from '../../../core/services';
 import { injectUserStore, UserStore } from '../../../core/stores';
 import { injectMutation, Mutation } from '../../../core/query';
 import { UsersService } from '@cigar-platform/types/lib/users/users.service';
-import { ButtonComponent, InputComponent, AvatarComponent } from '@cigar-platform/shared/ui';
+import {
+  ButtonComponent,
+  InputComponent,
+  AvatarComponent,
+  PageHeaderComponent,
+  PageSectionComponent,
+} from '@cigar-platform/shared/ui';
 import { UserDto } from '@cigar-platform/types';
 
 @Component({
@@ -25,6 +31,8 @@ import { UserDto } from '@cigar-platform/types';
     ButtonComponent,
     InputComponent,
     AvatarComponent,
+    PageHeaderComponent,
+    PageSectionComponent,
   ],
   templateUrl: './settings.component.html',
 })
