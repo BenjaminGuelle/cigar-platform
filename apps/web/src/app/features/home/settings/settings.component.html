@@ -57,7 +57,7 @@
               for="avatar-upload"
               class="cursor-pointer rounded-lg border-2 border-gold-500 bg-transparent px-4 py-2 text-sm font-semibold text-gold-500 transition-all hover:bg-gold-500/10 focus:outline-none focus:ring-2 focus:ring-gold-500/50"
             >
-              @if (avatarUploadLoading()) {
+              @if (uploadAvatarMutation.loading()) {
                 Chargement...
               } @else {
                 Changer la photo

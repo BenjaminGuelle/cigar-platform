@@ -1,22 +1,7 @@
-import { Component, input } from '@angular/core';
-import { User } from '@cigar-platform/types';
+import { Component, effect, input, InputSignal } from '@angular/core';
+import { User, UserDto } from '@cigar-platform/types';
 import { AvatarComponent } from '../avatar';
 
-/**
- * Sidebar Profile Component
- * User profile display for sidebar footer with collapse/expand animation
- *
- * Features:
- * - Avatar always visible (fixed width)
- * - User name fades and collapses smoothly
- * - Synced with sidebar expanded state
- *
- * @example
- * <ui-sidebar-profile
- *   [user]="currentUser()"
- *   [isExpanded]="sidebar.isExpanded()"
- * />
- */
 @Component({
   selector: 'ui-sidebar-profile',
   standalone: true,
@@ -43,6 +28,6 @@ import { AvatarComponent } from '../avatar';
   `,
 })
 export class SidebarProfileComponent {
-  user = input.required<User>();
-  isExpanded = input<boolean>(true);
+  user: InputSignal<UserDto> = input.required<User>();
+  isExpanded: InputSignal<boolean> = input<boolean>(true);
 }

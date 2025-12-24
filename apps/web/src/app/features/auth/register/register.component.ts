@@ -6,9 +6,8 @@ import {
   Validators,
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { tap, catchError, take } from 'rxjs/operators';
-import { EMPTY } from 'rxjs';
-import { AuthService, FormService } from '../../../core/services';
+import { FormService } from '../../../core/services';
+import { injectAuthStore, AuthStore } from '../../../core/stores';
 import { ButtonComponent, InputComponent } from '@cigar-platform/shared/ui';
 
 @Component({
@@ -24,18 +23,15 @@ import { ButtonComponent, InputComponent } from '@cigar-platform/shared/ui';
   `],
 })
 export class RegisterComponent {
-  #authService = inject(AuthService);
   #router = inject(Router);
   #fb = inject(FormBuilder);
   #formService = inject(FormService);
 
+  readonly authStore: AuthStore = injectAuthStore();
+
   #errorSignal: WritableSignal<string | null> = signal<string | null>(null);
-  #loadingSignal: WritableSignal<boolean> = signal<boolean>(false);
-  #googleLoadingSignal: WritableSignal<boolean> = signal<boolean>(false);
 
   readonly error = this.#errorSignal.asReadonly();
-  readonly loading = this.#loadingSignal.asReadonly();
-  readonly googleLoading = this.#googleLoadingSignal.asReadonly();
 
   // Typed reactive form (Angular 14+)
   registerForm = this.#fb.nonNullable.group({
@@ -45,7 +41,7 @@ export class RegisterComponent {
     confirmPassword: ['', [Validators.required]],
   });
 
-  onSubmit(): void {
+  async onSubmit(): Promise<void> {
     // Trigger validation and show errors
     this.#formService.triggerValidation(this.registerForm);
 
@@ -60,48 +56,25 @@ export class RegisterComponent {
       return;
     }
 
-    this.#loadingSignal.set(true);
     this.#errorSignal.set(null);
 
-    this.#authService.signUp(email, password, displayName).pipe(
-      take(1),
-      tap(() => this.#loadingSignal.set(false)),
-      tap(({ error }) => {
-        if (error) {
-          this.#errorSignal.set(error.message || 'Erreur lors de l\'inscription');
-        } else {
-          // User is now logged in, redirect to home
-          this.#router.navigate(['/']);
-        }
-      }),
-      catchError((err) => {
-        this.#loadingSignal.set(false);
-        this.#errorSignal.set('Une erreur inattendue s\'est produite');
-        console.error('Sign up error:', err);
-        return EMPTY;
-      })
-    ).subscribe();
+    const result = await this.authStore.signUp.mutate({ email, password, displayName });
+
+    if (result?.error) {
+      this.#errorSignal.set(result.error.message || 'Erreur lors de l\'inscription');
+    }
+    // Navigation is handled automatically by authStore.signUp.onSuccess
   }
 
-  onGoogleSignIn(): void {
-    this.#googleLoadingSignal.set(true);
+  async onGoogleSignIn(): Promise<void> {
     this.#errorSignal.set(null);
 
-    this.#authService.signInWithGoogle().pipe(
-      take(1),
-      tap(() => this.#googleLoadingSignal.set(false)),
-      tap(({ error }) => {
-        if (error) {
-          this.#errorSignal.set(error.message || 'Échec de la connexion Google');
-        }
-      }),
-      catchError((err) => {
-        this.#googleLoadingSignal.set(false);
-        this.#errorSignal.set('Échec de la connexion Google');
-        console.error('Google sign in error:', err);
-        return EMPTY;
-      })
-    ).subscribe();
+    const result = await this.authStore.signInWithGoogle.mutate();
+
+    if (result?.error) {
+      this.#errorSignal.set(result.error.message || 'Échec de la connexion Google');
+    }
+    // Note: Google OAuth will redirect, so we don't handle success here
   }
 
   navigateToLogin(): void {

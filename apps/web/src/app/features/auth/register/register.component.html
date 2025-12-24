@@ -11,8 +11,8 @@
     <ui-button variant="outline"
                fullWidth
                icon="google"
-               [loading]="googleLoading()"
-               [disabled]="googleLoading()"
+               [loading]="authStore.signInWithGoogle.loading()"
+               [disabled]="authStore.signInWithGoogle.loading()"
                (clicked)="onGoogleSignIn()"
                class="mb-4"
     >
@@ -74,8 +74,8 @@
                 type="submit"
                 variant="primary"
                 fullWidth
-                [loading]="loading()"
-                [disabled]="loading()"
+                [loading]="authStore.signUp.loading()"
+                [disabled]="authStore.signUp.loading()"
         >
             S'inscrire
         </ui-button>

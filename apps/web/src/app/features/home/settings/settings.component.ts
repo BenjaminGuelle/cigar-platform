@@ -8,10 +8,10 @@ import {
   FormControl,
 } from '@angular/forms';
 import { Router } from '@angular/router';
-import { tap, catchError, take, finalize } from 'rxjs/operators';
-import { EMPTY, from } from 'rxjs';
+import { take } from 'rxjs/operators';
 import { AuthService, FormService } from '../../../core/services';
 import { injectUserStore, UserStore } from '../../../core/stores';
+import { injectMutation, Mutation } from '../../../core/query';
 import { UsersService } from '@cigar-platform/types/lib/users/users.service';
 import { ButtonComponent, InputComponent, AvatarComponent } from '@cigar-platform/shared/ui';
 import { UserDto } from '@cigar-platform/types';
@@ -38,13 +38,31 @@ export class SettingsComponent {
   readonly userStore: UserStore = injectUserStore();
   readonly currentUser: Signal<UserDto | null> = this.userStore.currentUser.data;
 
-  #avatarUploadLoading: WritableSignal<boolean> = signal<boolean>(false);
+  // Avatar upload state
   #avatarMessage: WritableSignal<{ type: 'success' | 'error'; text: string } | null> = signal(null);
   #selectedAvatarPreview: WritableSignal<string | null> = signal<string | null>(null);
 
-  readonly avatarUploadLoading = this.#avatarUploadLoading.asReadonly();
   readonly avatarMessage = this.#avatarMessage.asReadonly();
   readonly selectedAvatarPreview = this.#selectedAvatarPreview.asReadonly();
+
+  // Avatar upload mutation
+  readonly uploadAvatarMutation: Mutation<unknown, { avatar: File }> = injectMutation({
+    mutationFn: (variables: { avatar: File }) =>
+      this.#usersService.usersControllerUploadAvatar(variables),
+    onSuccess: () => {
+      this.#avatarMessage.set({ type: 'success', text: 'Avatar mis à jour avec succès' });
+      this.#selectedAvatarPreview.set(null);
+      this.#selectedAvatarFile = null;
+      // Refetch user to get updated avatar
+      this.userStore.currentUser.refetch();
+    },
+    onError: (error: Error) => {
+      this.#avatarMessage.set({
+        type: 'error',
+        text: (error as any).error?.error?.message || 'Échec de l\'upload de l\'avatar',
+      });
+    },
+  });
 
   #logoutLoading: WritableSignal<boolean> = signal<boolean>(false);
   readonly logoutLoading = this.#logoutLoading.asReadonly();
@@ -125,33 +143,16 @@ export class SettingsComponent {
     this.uploadAvatar();
   }
 
-  uploadAvatar(): void {
+  async uploadAvatar(): Promise<void> {
     if (!this.#selectedAvatarFile) {
       this.#avatarMessage.set({ type: 'error', text: 'Aucun fichier sélectionné' });
       return;
     }
 
-    this.#avatarUploadLoading.set(true);
     this.#avatarMessage.set(null);
 
-    from(this.#usersService.usersControllerUploadAvatar({ avatar: this.#selectedAvatarFile })).pipe(
-      take(1),
-      tap(() => {
-        this.#avatarMessage.set({ type: 'success', text: 'Avatar mis à jour avec succès' });
-        this.#selectedAvatarPreview.set(null);
-        this.#selectedAvatarFile = null;
-        this.userStore.currentUser.refetch();
-      }),
-      catchError((err) => {
-        this.#avatarMessage.set({
-          type: 'error',
-          text: err.error?.error?.message || 'Échec de l\'upload de l\'avatar',
-        });
-        console.error('Avatar upload error:', err);
-        return EMPTY;
-      }),
-      finalize(() => this.#avatarUploadLoading.set(false))
-    ).subscribe();
+    // Use mutation instead of manual subscribe
+    await this.uploadAvatarMutation.mutate({ avatar: this.#selectedAvatarFile });
   }
 
   async onUpdateProfile(): Promise<void> {

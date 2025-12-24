@@ -6,9 +6,8 @@ import {
   Validators,
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { tap, catchError, take } from 'rxjs/operators';
-import { EMPTY } from 'rxjs';
 import { AuthService, FormService } from '../../../core/services';
+import { injectAuthStore, AuthStore } from '../../../core/stores';
 import { ButtonComponent, InputComponent } from '@cigar-platform/shared/ui';
 
 @Component({
@@ -29,14 +28,14 @@ export class ResetPasswordComponent implements OnInit {
   #fb = inject(FormBuilder);
   #formService = inject(FormService);
 
+  readonly authStore: AuthStore = injectAuthStore();
+
   #errorSignal: WritableSignal<string | null> = signal<string | null>(null);
   #successSignal: WritableSignal<string | null> = signal<string | null>(null);
-  #loadingSignal: WritableSignal<boolean> = signal<boolean>(false);
   #hasValidSessionSignal: WritableSignal<boolean> = signal<boolean>(true);
 
   readonly error = this.#errorSignal.asReadonly();
   readonly success = this.#successSignal.asReadonly();
-  readonly loading = this.#loadingSignal.asReadonly();
   readonly hasValidSession = this.#hasValidSessionSignal.asReadonly();
 
   // Typed reactive form (Angular 14+)
@@ -53,7 +52,7 @@ export class ResetPasswordComponent implements OnInit {
     }
   }
 
-  onSubmit(): void {
+  async onSubmit(): Promise<void> {
     // Trigger validation and show errors
     this.#formService.triggerValidation(this.resetPasswordForm);
 
@@ -68,30 +67,19 @@ export class ResetPasswordComponent implements OnInit {
       return;
     }
 
-    this.#loadingSignal.set(true);
     this.#errorSignal.set(null);
     this.#successSignal.set(null);
 
-    this.#authService.updatePassword(password).pipe(
-      take(1),
-      tap(() => this.#loadingSignal.set(false)),
-      tap(({ error }) => {
-        if (error) {
-          this.#errorSignal.set(error.message || 'Erreur lors de la mise à jour du mot de passe');
-        } else {
-          this.#successSignal.set('Mot de passe mis à jour avec succès. Redirection...');
-          setTimeout(() => {
-            this.#router.navigate(['/']);
-          }, 2000);
-        }
-      }),
-      catchError((err) => {
-        this.#loadingSignal.set(false);
-        this.#errorSignal.set('Une erreur inattendue s\'est produite');
-        console.error('Reset password error:', err);
-        return EMPTY;
-      })
-    ).subscribe();
+    const result = await this.authStore.updatePassword.mutate({ password });
+
+    if (result?.error) {
+      this.#errorSignal.set(result.error.message || 'Erreur lors de la mise à jour du mot de passe');
+    } else {
+      this.#successSignal.set('Mot de passe mis à jour avec succès. Redirection...');
+      setTimeout(() => {
+        this.#router.navigate(['/']);
+      }, 2000);
+    }
   }
 
   navigateToLogin(): void {
