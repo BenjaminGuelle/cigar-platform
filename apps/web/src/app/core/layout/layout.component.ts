@@ -1,5 +1,6 @@
 import { Component, inject, Signal, signal, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterOutlet } from '@angular/router';
 import { AuthService } from '../services';
 import type { UserWithAuth } from '@cigar-platform/types';
 import {
@@ -23,6 +24,7 @@ import {
   standalone: true,
   imports: [
     CommonModule,
+    RouterOutlet,
     SidebarComponent,
     SidebarNavItemComponent,
     SidebarActionComponent,

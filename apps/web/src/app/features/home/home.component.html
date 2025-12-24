@@ -1,8 +1,153 @@
-<app-layout>
-  <div class="mx-auto max-w-5xl">
-    <div class="rounded-xl border border-smoke-700 bg-smoke-800 p-8 text-center shadow-xl shadow-smoke-950/50 md:p-12">
-      <h2 class="mb-4 text-2xl font-bold text-smoke-50 md:text-4xl">Bienvenue sur Cigar & Club</h2>
-      <p class="text-lg text-smoke-300 md:text-xl">Votre application de gestion de club de cigares</p>
+<div class="min-h-screen">
+  <ui-mobile-header [user]="currentUser()" />
+
+  <ui-sidebar #sidebar class="hidden md:block" [subSidebarActive]="adminMenuActive()">
+    <ui-sidebar-nav-item
+      icon="home"
+      label="Accueil"
+      route="/dashboard"
+      [exact]="true"
+      [isExpanded]="sidebar.isExpanded()"
+    />
+    <ui-sidebar-nav-item
+      icon="search"
+      label="Explorer"
+      route="/explorer"
+      [isExpanded]="sidebar.isExpanded()"
+    />
+    <ui-sidebar-nav-item
+      icon="flame"
+      label="Mes Dégustations"
+      route="/degustations"
+      [isExpanded]="sidebar.isExpanded()"
+    />
+    <ui-sidebar-nav-item
+      icon="calendar"
+      label="Événements"
+      route="/evenements"
+      [isExpanded]="sidebar.isExpanded()"
+    />
+    <ui-sidebar-nav-item
+      icon="users"
+      label="Clubs"
+      route="/clubs"
+      [isExpanded]="sidebar.isExpanded()"
+    />
+
+    <div class="my-3 h-px bg-smoke-700"></div>
+
+    <ui-sidebar-nav-item
+      icon="bell"
+      label="Notifications"
+      route="/notifications"
+      [badge]="3"
+      [isExpanded]="sidebar.isExpanded()"
+    />
+    <ui-sidebar-nav-item
+      icon="settings"
+      label="Paramètres"
+      route="/settings"
+      [isExpanded]="sidebar.isExpanded()"
+    />
+
+    <!-- Admin menu that opens sub-sidebar -->
+    <ui-sidebar-action
+      icon="settings"
+      label="Administration"
+      [isExpanded]="sidebar.isExpanded()"
+      (clicked)="openAdminMenu()"
+    />
+
+    <div slot="footer">
+      @if (currentUser(); as user) {
+        <div class="space-y-1">
+          <ui-sidebar-action
+            icon="log-out"
+            label="Déconnexion"
+            variant="destructive"
+            [isExpanded]="sidebar.isExpanded()"
+            (clicked)="onSignOut()"
+          />
+
+          <ui-sidebar-profile
+            [user]="user"
+            [isExpanded]="sidebar.isExpanded()"
+          />
+        </div>
+      }
     </div>
-  </div>
-</app-layout>
+  </ui-sidebar>
+
+  <!-- Sub-sidebar for admin menu -->
+  <ui-sub-sidebar
+    class="hidden md:block"
+    [isActive]="adminMenuActive()"
+    [title]="'Administration'"
+    (close)="closeAdminMenu()"
+  >
+    <ui-sidebar-nav-item
+      icon="home"
+      label="Dashboard"
+      route="/admin/dashboard"
+      [isExpanded]="true"
+    />
+    <ui-sidebar-nav-item
+      icon="users"
+      label="Utilisateurs"
+      route="/admin/users"
+      [isExpanded]="true"
+    />
+    <ui-sidebar-nav-item
+      icon="settings"
+      label="Configuration"
+      route="/admin/config"
+      [isExpanded]="true"
+    />
+    <ui-sidebar-nav-item
+      icon="star"
+      label="Statistiques"
+      route="/admin/stats"
+      [isExpanded]="true"
+    />
+    <ui-sidebar-nav-item
+      icon="alert-circle"
+      label="Sécurité"
+      route="/admin/security"
+      [isExpanded]="true"
+    />
+  </ui-sub-sidebar>
+
+  <main class="min-h-screen overflow-auto px-4 pt-15 pb-24 md:pl-22 md:pr-8 md:pt-8 md:pb-8">
+    <router-outlet />
+  </main>
+
+  <ui-bottom-tab-bar>
+    <ui-bottom-tab-item
+      icon="home"
+      label="Accueil"
+      route="/dashboard"
+      [exact]="true"
+    />
+    <ui-bottom-tab-item
+      icon="search"
+      label="Clubs"
+      route="/clubs"
+    />
+    <ui-bottom-tab-item
+      icon="flame"
+      label="Dégustations"
+      route="/degustations"
+    />
+    <ui-bottom-tab-item
+      icon="bell"
+      label="Notifs"
+      route="/notifications"
+      [badge]="3"
+    />
+    <ui-bottom-tab-item
+      icon="settings"
+      label="Profil"
+      route="/settings"
+    />
+  </ui-bottom-tab-bar>
+</div>

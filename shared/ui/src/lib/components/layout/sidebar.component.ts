@@ -11,7 +11,7 @@ import { LogoComponent } from '../logo/logo.component';
     <aside class="fixed left-0 top-0 z-40 flex flex-col h-screen bg-smoke-700 border-r border-smoke-700 transition-all duration-500 ease-in-out"
            [class]="sidebarClasses()"
     >
-      <div class="relative flex pl-6 items-center border-b border-smoke-700 overflow-hidden px-3 py-2.5 transition-all duration-500 ease-in-out">
+      <div class="relative flex pl-6 items-center border-b border-smoke-700 overflow-hidden px-3 py-4 transition-all duration-500 ease-in-out">
         <div class="flex w-11 shrink-0 items-center justify-center">
           <ui-logo variant="compact" />
         </div>

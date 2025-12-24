@@ -5,7 +5,7 @@
     <ui-sidebar-nav-item
       icon="home"
       label="Accueil"
-      route="/"
+      route="/dashboard"
       [exact]="true"
       [isExpanded]="sidebar.isExpanded()"
     />
@@ -123,14 +123,14 @@
   </ui-sub-sidebar>
 
   <main class="min-h-screen overflow-auto px-4 pt-15 pb-24 md:pl-22 md:pr-8 md:pt-8 md:pb-8">
-    <ng-content />
+    <router-outlet />
   </main>
 
   <ui-bottom-tab-bar>
     <ui-bottom-tab-item
       icon="home"
       label="Accueil"
-      route="/"
+      route="/dashboard"
       [exact]="true"
     />
     <ui-bottom-tab-item
@@ -138,11 +138,11 @@
       label="Clubs"
       route="/clubs"
     />
-      <ui-bottom-tab-item
-              icon="flame"
-              label="Dégustations"
-              route="/degustations"
-      />
+    <ui-bottom-tab-item
+      icon="flame"
+      label="Dégustations"
+      route="/degustations"
+    />
     <ui-bottom-tab-item
       icon="bell"
       label="Notifs"

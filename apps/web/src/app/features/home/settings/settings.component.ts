@@ -10,8 +10,7 @@ import {
 import { Router } from '@angular/router';
 import { tap, catchError, take, finalize } from 'rxjs/operators';
 import { EMPTY, from } from 'rxjs';
-import { LayoutComponent } from '../../core';
-import { AuthService, FormService } from '../../core/services';
+import { AuthService, FormService } from '../../../core/services';
 import { AuthenticationService } from '@cigar-platform/types/lib/authentication/authentication.service';
 import { UsersService } from '@cigar-platform/types/lib/users/users.service';
 import { ButtonComponent, InputComponent, AvatarComponent } from '@cigar-platform/shared/ui';
@@ -22,7 +21,6 @@ import { ButtonComponent, InputComponent, AvatarComponent } from '@cigar-platfor
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    LayoutComponent,
     ButtonComponent,
     InputComponent,
     AvatarComponent,

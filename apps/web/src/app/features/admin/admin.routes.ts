@@ -1,39 +1,39 @@
 import { Route } from '@angular/router';
-import { adminGuard } from '../../core/guards';
 
-export const adminRoutes: Route[] = [
+/**
+ * Admin Routes (Children only) - All Stars Architecture 🌟
+ * Routes admin (sans wrapper layout)
+ * Le layout HomeComponent est défini dans app.routes.ts
+ * La sub-sidebar admin est gérée automatiquement via la route
+ */
+export const adminChildRoutes: Route[] = [
   {
     path: '',
-    pathMatch: 'full',
     redirectTo: 'dashboard',
+    pathMatch: 'full',
   },
   {
     path: 'dashboard',
-    canActivate: [adminGuard],
     loadComponent: () =>
       import('./dashboard/dashboard.component').then((m) => m.DashboardComponent),
   },
   {
     path: 'users',
-    canActivate: [adminGuard],
     loadComponent: () =>
       import('./users/users.component').then((m) => m.UsersComponent),
   },
   {
     path: 'config',
-    canActivate: [adminGuard],
     loadComponent: () =>
       import('./config/config.component').then((m) => m.ConfigComponent),
   },
   {
     path: 'stats',
-    canActivate: [adminGuard],
     loadComponent: () =>
       import('./stats/stats.component').then((m) => m.StatsComponent),
   },
   {
     path: 'security',
-    canActivate: [adminGuard],
     loadComponent: () =>
       import('./security/security.component').then((m) => m.SecurityComponent),
   },

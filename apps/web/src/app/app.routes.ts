@@ -1,39 +1,31 @@
 import { Route } from '@angular/router';
-import { authGuard, adminGuard } from './core/guards';
+import { authGuard } from './core/guards';
 
+/**
+ * App Routes - All Stars Architecture 🌟 (Single Layout Instance)
+ *
+ * Architecture:
+ * - Auth routes: Public
+ * - Home routes: Une seule instance de HomeComponent contenant app + admin
+ *
+ * Avantages:
+ * - Une seule instance de HomeComponent = animations smooth entre routes
+ * - State préservé pendant navigation app <-> admin
+ * - Sub-sidebar reste en vie pendant les transitions
+ */
 export const appRoutes: Route[] = [
-  // Auth routes (login, register, etc.)
+  // Auth routes (public)
   {
     path: 'auth',
     loadChildren: () =>
       import('./features/auth/auth.routes').then((m) => m.authRoutes),
   },
 
-  // Admin routes (protected by adminGuard)
-  {
-    path: 'admin',
-    canActivate: [authGuard, adminGuard],
-    loadChildren: () =>
-      import('./features/admin/admin.routes').then((m) => m.adminRoutes),
-  },
-
-  // Main app routes (protected by authGuard)
+  // Home routes (protected: authGuard) - Layout + Features (app + admin)
   {
     path: '',
     canActivate: [authGuard],
     loadChildren: () =>
       import('./features/home/home.routes').then((m) => m.homeRoutes),
-  },
-  {
-    path: 'settings',
-    canActivate: [authGuard],
-    loadChildren: () =>
-      import('./features/settings/settings.routes').then((m) => m.settingsRoutes),
-  },
-
-  // Fallback
-  {
-    path: '**',
-    redirectTo: '',
   },
 ];
