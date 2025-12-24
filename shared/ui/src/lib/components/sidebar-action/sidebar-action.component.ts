@@ -45,7 +45,7 @@ export type SidebarActionVariant = 'default' | 'destructive';
 
       <!-- Label (collapses with sidebar) -->
       <span
-        class="text-sm font-medium transition-all duration-500 ease-in-out overflow-hidden whitespace-nowrap"
+        class="label transition-all duration-500 ease-in-out overflow-hidden whitespace-nowrap"
         [class.opacity-100]="isExpanded()"
         [class.max-w-[200px]]="isExpanded()"
         [class.opacity-0]="!isExpanded()"

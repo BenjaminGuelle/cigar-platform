@@ -20,7 +20,7 @@ import { AvatarComponent } from '../avatar';
         [class.max-w-0]="!isExpanded()"
         [class.pointer-events-none]="!isExpanded()"
       >
-        <p class="truncate text-sm font-semibold text-smoke-50">
+        <p class="label truncate text-smoke-50">
           {{ user().displayName || 'User' }}
         </p>
       </div>

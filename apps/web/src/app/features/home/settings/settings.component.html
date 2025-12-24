@@ -1,33 +1,36 @@
-<div class="mx-auto max-w-6xl px-6 py-16">
+<div class="mx-auto max-w-6xl space-y-12 px-6 py-16">
     <!-- Page Header -->
     <ui-page-header
       title="Paramètres"
       description="Gérez votre profil et vos préférences"
     />
 
-    <!-- Avatar messages -->
-    @if (avatarMessage(); as message) {
-      <div
-        class="rounded-lg border p-4 text-sm"
-        [class]="message.type === 'success'
-          ? 'border-green-500/50 bg-green-500/10 text-green-400'
-          : 'border-error-500/50 bg-error-500/10 text-error-400'"
-      >
-        {{ message.text }}
-      </div>
-    }
+    <!-- Messages wrapped to preserve space-y -->
+<!--    @if (avatarMessage() || profileSuccess() || userStore.updateProfile.error()) {-->
+<!--      <div class="space-y-4">-->
+<!--        @if (avatarMessage(); as message) {-->
+<!--          <div-->
+<!--            class="rounded-lg border p-4 text-sm"-->
+<!--            [class]="message.type === 'success'-->
+<!--              ? 'border-green-500/50 bg-green-500/10 text-green-400'-->
+<!--              : 'border-error-500/50 bg-error-500/10 text-error-400'"-->
+<!--          >-->
+<!--            {{ message.text }}-->
+<!--          </div>-->
+<!--        }-->
 
-    <!-- Profile update messages -->
-    @if (profileSuccess()) {
-      <div class="rounded-lg border border-green-500/50 bg-green-500/10 p-4 text-sm text-green-400">
-        {{ profileSuccess() }}
-      </div>
-    }
-    @if (userStore.updateProfile.error(); as error) {
-      <div class="rounded-lg border border-error-500/50 bg-error-500/10 p-4 text-sm text-error-400">
-        {{ error.message }}
-      </div>
-    }
+<!--        @if (profileSuccess()) {-->
+<!--          <div class="rounded-lg border border-green-500/50 bg-green-500/10 p-4 text-sm text-green-400">-->
+<!--            {{ profileSuccess() }}-->
+<!--          </div>-->
+<!--        }-->
+<!--        @if (userStore.updateProfile.error(); as error) {-->
+<!--          <div class="rounded-lg border border-error-500/50 bg-error-500/10 p-4 text-sm text-error-400">-->
+<!--            {{ error.message }}-->
+<!--          </div>-->
+<!--        }-->
+<!--      </div>-->
+<!--    }-->
 
     <!-- Profil Section -->
     <ui-page-section title="Profil">
@@ -54,7 +57,7 @@
           />
           <label
             for="avatar-upload"
-            class="cursor-pointer text-sm text-gold-500 transition-colors hover:text-gold-400"
+            class="body-sm cursor-pointer text-gold-500 transition-colors hover:text-gold-400"
           >
             @if (uploadAvatarMutation.loading()) {
               Chargement...
@@ -62,7 +65,7 @@
               Changer la photo
             }
           </label>
-          <p class="text-xs text-smoke-400">JPG, PNG, WebP (max 5MB)</p>
+          <p class="caption">JPG, PNG, WebP (max 5MB)</p>
         </div>
 
         <!-- Form -->
@@ -81,9 +84,10 @@
             <ui-button
               type="submit"
               variant="ghost"
+              size="sm"
+              class="text-gold-500 hover:text-gold-400 md:h-10 md:px-4 md:text-base"
               [loading]="userStore.updateProfile.loading()"
               [disabled]="profileForm.invalid || userStore.updateProfile.loading()"
-              class="text-gold-500 hover:text-gold-400"
             >
               Enregistrer
             </ui-button>
@@ -98,16 +102,16 @@
         <!-- Email -->
         <div class="flex items-center justify-between border-b border-smoke-800 pb-6">
           <div class="flex-1">
-            <p class="text-sm text-smoke-400">Email</p>
+            <p class="label">Email</p>
             <p class="mt-1 text-smoke-50">{{ currentUser()?.email }}</p>
             @if (isOAuthUser()) {
-              <p class="mt-1 text-xs text-smoke-400">
+              <p class="caption mt-1">
                 Connecté via {{ providerLabel() }}
               </p>
             }
           </div>
           <span
-            class="rounded-full px-3 py-1 text-xs font-medium"
+            class="caption rounded-full px-3 py-1 font-medium"
             [class]="
               isOAuthUser()
                 ? 'bg-blue-500/10 text-blue-400'
@@ -123,10 +127,11 @@
           <ui-button
             type="button"
             variant="ghost"
+            size="sm"
+            class="text-error-500 hover:text-error-400 md:h-10 md:px-4 md:text-base"
             [loading]="logoutLoading()"
             [disabled]="logoutLoading()"
             (click)="onLogout()"
-            class="text-error-500 hover:text-error-400"
           >
             Se déconnecter
           </ui-button>
@@ -136,9 +141,9 @@
 
     <!-- À propos Section -->
     <ui-page-section title="À propos" [bordered]="false">
-      <div class="space-y-2 text-sm text-smoke-300">
-        <p>Cigar & Club - Application de gestion de clubs de dégustation</p>
-        <p class="text-xs text-smoke-400">Version 1.0.0</p>
+      <div class="space-y-2">
+        <p class="body">Cigar & Club - Application de gestion de clubs de dégustation</p>
+        <p class="caption">Version 1.0.0</p>
       </div>
     </ui-page-section>
   </div>

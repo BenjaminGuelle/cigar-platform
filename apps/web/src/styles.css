@@ -149,3 +149,55 @@ body {
   --color-border-subtle: var(--color-smoke-800);
   --color-border-focus: var(--color-gold-500);
 }
+
+/* ============================================ */
+/* TYPOGRAPHY - Shortcuts for consistency */
+/* ============================================ */
+@layer components {
+  /* Display & Headers */
+  .heading-display {
+    @apply font-display text-4xl md:text-6xl text-gold-500;
+  }
+
+  .heading-1 {
+    @apply text-3xl md:text-5xl font-bold text-smoke-50;
+  }
+
+  .heading-2 {
+    @apply text-2xl md:text-3xl font-semibold text-smoke-50;
+  }
+
+  .heading-3 {
+    @apply text-xl md:text-2xl font-semibold text-smoke-100;
+  }
+
+  .heading-section {
+    @apply text-2xl font-semibold text-smoke-50;
+  }
+
+  /* Body Text */
+  .body-lg {
+    @apply text-lg leading-relaxed text-smoke-200;
+  }
+
+  .body {
+    @apply text-base leading-normal text-smoke-300;
+  }
+
+  .body-sm {
+    @apply text-sm leading-normal text-smoke-400;
+  }
+
+  /* Helpers */
+  .caption {
+    @apply text-xs text-smoke-400;
+  }
+
+  .label {
+    @apply text-sm font-medium text-smoke-300;
+  }
+
+  .muted {
+    @apply text-smoke-400;
+  }
+}

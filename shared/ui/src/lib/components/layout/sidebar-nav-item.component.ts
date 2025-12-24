@@ -60,7 +60,7 @@ export class SidebarNavItemComponent {
 
   readonly labelClasses: Signal<string> = computed<string>(() => {
     return clsx(
-      'text-sm font-medium transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]',
+      'label transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]',
       'overflow-hidden whitespace-nowrap',
       this.isExpanded()
         ? 'opacity-100 max-w-[200px]'

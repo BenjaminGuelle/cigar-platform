@@ -30,13 +30,18 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <header class="mb-16 border-b border-smoke-700/40 pb-8">
+    <header class="border-b border-smoke-700/40 pb-8">
       <h1 [class]="titleClasses()">{{ title() }}</h1>
       @if (description()) {
-        <p class="mt-3 text-smoke-300">{{ description() }}</p>
+        <p class="body mt-3">{{ description() }}</p>
       }
     </header>
   `,
+  styles: [`
+    :host {
+      display: block;
+    }
+  `],
 })
 export class PageHeaderComponent {
   /**
@@ -65,25 +70,19 @@ export class PageHeaderComponent {
    * Computed title classes
    */
   readonly titleClasses = computed(() => {
-    const font = this.useDisplayFont() ? 'font-display text-gold-500' : 'font-semibold text-smoke-50';
-    const sizeClass = this.getSizeClass();
+    if (this.useDisplayFont()) {
+      return 'heading-display';
+    }
 
-    return `${font} ${sizeClass}`.trim();
-  });
-
-  /**
-   * Get size-specific classes
-   */
-  private getSizeClass(): string {
     switch (this.size()) {
       case 'lg':
-        return 'text-4xl';
+        return 'heading-2';
       case 'xl':
-        return 'text-5xl';
+        return 'heading-1';
       case '2xl':
-        return 'text-6xl';
+        return 'heading-display';
       default:
-        return 'text-5xl';
+        return 'heading-1';
     }
-  }
+  });
 }

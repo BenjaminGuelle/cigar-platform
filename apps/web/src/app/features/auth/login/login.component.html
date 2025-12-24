@@ -1,9 +1,9 @@
 <div class="w-full rounded-xl bg-smoke-800 p-10 shadow-2xl shadow-smoke-950/50 backdrop-blur-sm border border-smoke-700">
-    <h1 class="mb-2 text-center text-3xl font-bold text-smoke-50">Connexion</h1>
-    <p class="mb-6 text-center text-sm text-smoke-300">Bienvenue sur Cigar & Club</p>
+    <h1 class="heading-2 mb-2 text-center">Connexion</h1>
+    <p class="body-sm mb-6 text-center">Bienvenue sur Cigar & Club</p>
 
     @if (error(); as errorMessage) {
-        <div class="mb-6 rounded-lg border border-error-500/30 bg-error-950/30 p-3 text-sm text-error-400">
+        <div class="mb-6 rounded-lg border border-error-500/30 bg-error-950/30 p-3 body-sm text-error-400">
             {{ errorMessage }}
         </div>
     }
@@ -21,7 +21,7 @@
 
     <div class="mb-6 flex items-center gap-3">
         <div class="h-px flex-1 bg-smoke-700"></div>
-        <span class="text-sm text-smoke-400">ou continuer avec email</span>
+        <span class="caption">ou continuer avec email</span>
         <div class="h-px flex-1 bg-smoke-700"></div>
     </div>
 
@@ -66,7 +66,7 @@
     </form>
 
     <div class="mt-6 text-center">
-        <p class="text-sm text-smoke-300">
+        <p class="body-sm">
             Pas encore de compte ?
             <ui-button variant="link" size="sm" (clicked)="navigateToRegister()">
                 S'inscrire

@@ -27,45 +27,26 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <section [class]="sectionClasses()">
-      <!-- Section Header -->
+    <section [class]="this.bordered() ? 'border-b border-smoke-500 pb-10' : ''">
       <div class="mb-8 flex items-baseline gap-4">
-        <h2 class="text-2xl font-semibold text-smoke-50">{{ title() }}</h2>
+        <h2 class="heading-section">{{ title() }}</h2>
         @if (showDivider()) {
           <div class="h-px flex-1 bg-gradient-to-r from-smoke-700 to-transparent"></div>
         }
       </div>
 
-      <!-- Section Content -->
       <ng-content />
     </section>
   `,
+  styles: [`
+    :host {
+      display: block;
+    }
+  `],
 })
 export class PageSectionComponent {
-  /**
-   * Section title
-   */
   title = input.required<string>();
-
-  /**
-   * Show horizontal divider after title
-   * @default true
-   */
   showDivider = input<boolean>(true);
-
-  /**
-   * Add bottom border separator between sections
-   * @default true
-   */
   bordered = input<boolean>(true);
 
-  /**
-   * Computed section classes
-   */
-  readonly sectionClasses = computed(() => {
-    const base = 'py-12 first:pt-0';
-    const border = this.bordered() ? 'border-b border-smoke-500' : '';
-
-    return `${base} ${border}`.trim();
-  });
 }

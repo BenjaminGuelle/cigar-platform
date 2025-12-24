@@ -2,7 +2,7 @@
   @if (label()) {
     <label
       [for]="inputId()"
-      class="mb-2 block text-sm font-semibold text-smoke-200"
+      class="label mb-2 block"
     >
       {{ label() }}
       @if (required()) {
@@ -45,7 +45,7 @@
   @if (showError()) {
     <div
       [id]="errorId()"
-      class="mt-1.5 text-xs text-error-400"
+      class="caption mt-1.5 text-error-400"
       role="alert"
     >
       {{ errorMessage() }}
@@ -55,7 +55,7 @@
   @if (hint() && !showError()) {
     <div
       [id]="hintId()"
-      class="mt-1.5 text-xs text-smoke-400"
+      class="caption mt-1.5"
     >
       {{ hint() }}
     </div>
