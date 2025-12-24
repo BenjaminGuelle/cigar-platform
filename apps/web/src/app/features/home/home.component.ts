@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { AuthService } from '../../core/services';
-import type { UserWithAuth } from '@cigar-platform/types';
+import { injectUserStore, UserStore } from '../../core/stores';
+import type { UserDto } from '@cigar-platform/types';
 import {
   SidebarComponent,
   SidebarNavItemComponent,
@@ -45,17 +46,15 @@ export class HomeComponent {
   #authService = inject(AuthService);
   #router = inject(Router);
 
-  readonly currentUser: Signal<UserWithAuth | null> = this.#authService.currentUser;
+  readonly userStore: UserStore = injectUserStore();
+  readonly currentUser: Signal<UserDto | null> = this.userStore.currentUser.data;
 
-  // Sub-sidebar state management
   readonly adminMenuActive: WritableSignal<boolean> = signal<boolean>(false);
 
   constructor() {
-    // Smart auto-close: Close sub-sidebar when navigating away from admin routes
     this.#router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
-        // If navigating to a non-admin route, close the admin sub-sidebar
         if (!event.urlAfterRedirects.startsWith('/admin')) {
           this.adminMenuActive.set(false);
         }

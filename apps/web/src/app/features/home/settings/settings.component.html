@@ -4,14 +4,27 @@
       <p class="mt-2 text-sm text-smoke-200">Gérez votre profil et vos préférences</p>
     </div>
 
-    @if (success()) {
-      <div class="rounded-lg border border-green-500/50 bg-green-500/10 p-4 text-sm text-green-400">
-        {{ success() }}
+    <!-- Avatar messages -->
+    @if (avatarMessage(); as message) {
+      <div
+        class="rounded-lg border p-4 text-sm"
+        [class]="message.type === 'success'
+          ? 'border-green-500/50 bg-green-500/10 text-green-400'
+          : 'border-error-500/50 bg-error-500/10 text-error-400'"
+      >
+        {{ message.text }}
       </div>
     }
-    @if (error()) {
+
+    <!-- Profile update messages -->
+    @if (profileSuccess()) {
+      <div class="rounded-lg border border-green-500/50 bg-green-500/10 p-4 text-sm text-green-400">
+        {{ profileSuccess() }}
+      </div>
+    }
+    @if (userStore.updateProfile.error(); as error) {
       <div class="rounded-lg border border-error-500/50 bg-error-500/10 p-4 text-sm text-error-400">
-        {{ error() }}
+        {{ error.message }}
       </div>
     }
 
@@ -70,8 +83,8 @@
           <ui-button
             type="submit"
             variant="primary"
-            [loading]="profileUpdateLoading()"
-            [disabled]="profileForm.invalid || profileUpdateLoading()"
+            [loading]="userStore.updateProfile.loading()"
+            [disabled]="profileForm.invalid || userStore.updateProfile.loading()"
           >
             Enregistrer
           </ui-button>

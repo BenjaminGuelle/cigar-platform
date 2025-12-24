@@ -59,7 +59,11 @@
     />
 
     <div slot="footer">
-      @if (currentUser(); as user) {
+      @if (userStore.currentUser.loading()) {
+        <div class="px-3 py-2 text-xs text-smoke-400">Chargement...</div>
+      } @else if (userStore.currentUser.error(); as error) {
+        <div class="px-3 py-2 text-xs text-error-400">Erreur: {{ error.message }}</div>
+      } @else if (currentUser(); as user) {
         <div class="space-y-1">
           <ui-sidebar-action
             icon="log-out"

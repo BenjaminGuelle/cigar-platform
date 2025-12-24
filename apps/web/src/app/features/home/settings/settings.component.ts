@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, WritableSignal, Signal } from '@angular/core';
+import { Component, inject, signal, computed, WritableSignal, Signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
@@ -11,9 +11,10 @@ import { Router } from '@angular/router';
 import { tap, catchError, take, finalize } from 'rxjs/operators';
 import { EMPTY, from } from 'rxjs';
 import { AuthService, FormService } from '../../../core/services';
-import { AuthenticationService } from '@cigar-platform/types/lib/authentication/authentication.service';
+import { injectUserStore, UserStore } from '../../../core/stores';
 import { UsersService } from '@cigar-platform/types/lib/users/users.service';
 import { ButtonComponent, InputComponent, AvatarComponent } from '@cigar-platform/shared/ui';
+import { UserDto } from '@cigar-platform/types';
 
 @Component({
   selector: 'app-settings',
@@ -29,27 +30,27 @@ import { ButtonComponent, InputComponent, AvatarComponent } from '@cigar-platfor
 })
 export class SettingsComponent {
   #authService = inject(AuthService);
-  #authenticationService = inject(AuthenticationService);
   #usersService = inject(UsersService);
   #formService = inject(FormService);
   #fb = inject(FormBuilder);
   #router = inject(Router);
 
-  readonly currentUser = this.#authService.currentUser;
+  readonly userStore: UserStore = injectUserStore();
+  readonly currentUser: Signal<UserDto | null> = this.userStore.currentUser.data;
 
-  #profileUpdateLoading: WritableSignal<boolean> = signal<boolean>(false);
   #avatarUploadLoading: WritableSignal<boolean> = signal<boolean>(false);
-  #logoutLoading: WritableSignal<boolean> = signal<boolean>(false);
-  #errorSignal: WritableSignal<string | null> = signal<string | null>(null);
-  #successSignal: WritableSignal<string | null> = signal<string | null>(null);
+  #avatarMessage: WritableSignal<{ type: 'success' | 'error'; text: string } | null> = signal(null);
   #selectedAvatarPreview: WritableSignal<string | null> = signal<string | null>(null);
 
-  readonly profileUpdateLoading = this.#profileUpdateLoading.asReadonly();
   readonly avatarUploadLoading = this.#avatarUploadLoading.asReadonly();
-  readonly logoutLoading = this.#logoutLoading.asReadonly();
-  readonly error = this.#errorSignal.asReadonly();
-  readonly success = this.#successSignal.asReadonly();
+  readonly avatarMessage = this.#avatarMessage.asReadonly();
   readonly selectedAvatarPreview = this.#selectedAvatarPreview.asReadonly();
+
+  #logoutLoading: WritableSignal<boolean> = signal<boolean>(false);
+  readonly logoutLoading = this.#logoutLoading.asReadonly();
+
+  #profileSuccess: WritableSignal<string | null> = signal<string | null>(null);
+  readonly profileSuccess = this.#profileSuccess.asReadonly();
 
   readonly isOAuthUser: Signal<boolean> = computed<boolean>(() => {
     const provider = this.currentUser()?.authProvider;
@@ -77,13 +78,14 @@ export class SettingsComponent {
   #selectedAvatarFile: File | null = null;
 
   constructor() {
-    // Initialize form with current user data
-    const user = this.currentUser();
-    if (user) {
-      this.profileForm.patchValue({
-        displayName: user.displayName,
-      });
-    }
+    effect(() => {
+      const user: UserDto | null = this.currentUser();
+      if (user) {
+        this.profileForm.patchValue({
+          displayName: user.displayName,
+        });
+      }
+    });
   }
 
   onAvatarFileSelected(event: Event): void {
@@ -94,54 +96,57 @@ export class SettingsComponent {
 
     const file = input.files[0];
 
-    // Validate file type
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-      this.#errorSignal.set('Type de fichier invalide. Seuls JPEG, PNG et WebP sont autorisés.');
+      this.#avatarMessage.set({
+        type: 'error',
+        text: 'Type de fichier invalide. Seuls JPEG, PNG et WebP sont autorisés.',
+      });
       return;
     }
 
-    // Validate file size (5MB max)
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-      this.#errorSignal.set('Fichier trop volumineux. Taille maximale : 5MB.');
+      this.#avatarMessage.set({
+        type: 'error',
+        text: 'Fichier trop volumineux. Taille maximale : 5MB.',
+      });
       return;
     }
 
     this.#selectedAvatarFile = file;
 
-    // Generate preview
     const reader = new FileReader();
     reader.onload = (e: ProgressEvent<FileReader>) => {
       this.#selectedAvatarPreview.set(e.target?.result as string);
     };
     reader.readAsDataURL(file);
 
-    // Auto-upload
     this.uploadAvatar();
   }
 
   uploadAvatar(): void {
     if (!this.#selectedAvatarFile) {
-      this.#errorSignal.set('Aucun fichier sélectionné');
+      this.#avatarMessage.set({ type: 'error', text: 'Aucun fichier sélectionné' });
       return;
     }
 
     this.#avatarUploadLoading.set(true);
-    this.#errorSignal.set(null);
-    this.#successSignal.set(null);
+    this.#avatarMessage.set(null);
 
     from(this.#usersService.usersControllerUploadAvatar({ avatar: this.#selectedAvatarFile })).pipe(
       take(1),
-      tap((result) => {
-        this.#successSignal.set('Avatar mis à jour avec succès');
+      tap(() => {
+        this.#avatarMessage.set({ type: 'success', text: 'Avatar mis à jour avec succès' });
         this.#selectedAvatarPreview.set(null);
         this.#selectedAvatarFile = null;
-        // Reload user profile to get updated avatar
-        this.#reloadUserProfile();
+        this.userStore.currentUser.refetch();
       }),
       catchError((err) => {
-        this.#errorSignal.set(err.error?.error?.message || 'Échec de l\'upload de l\'avatar');
+        this.#avatarMessage.set({
+          type: 'error',
+          text: err.error?.error?.message || 'Échec de l\'upload de l\'avatar',
+        });
         console.error('Avatar upload error:', err);
         return EMPTY;
       }),
@@ -149,32 +154,23 @@ export class SettingsComponent {
     ).subscribe();
   }
 
-  onUpdateProfile(): void {
+  async onUpdateProfile(): Promise<void> {
     this.#formService.triggerValidation(this.profileForm);
 
     if (this.profileForm.invalid) {
       return;
     }
 
-    this.#profileUpdateLoading.set(true);
-    this.#errorSignal.set(null);
-    this.#successSignal.set(null);
+    this.#profileSuccess.set(null);
+    this.userStore.updateProfile.reset();
 
     const { displayName } = this.profileForm.getRawValue();
 
-    from(this.#authenticationService.authControllerUpdateProfile({ displayName })).pipe(
-      take(1),
-      tap((user) => {
-        this.#successSignal.set('Profil mis à jour avec succès');
-        this.#reloadUserProfile();
-      }),
-      catchError((err) => {
-        this.#errorSignal.set(err.error?.error?.message || 'Échec de la mise à jour du profil');
-        console.error('Profile update error:', err);
-        return EMPTY;
-      }),
-      finalize(() => this.#profileUpdateLoading.set(false))
-    ).subscribe();
+    const result: UserDto | null = await this.userStore.updateProfile.mutate({ displayName });
+
+    if (result) {
+      this.#profileSuccess.set('Profil mis à jour avec succès');
+    }
   }
 
   onLogout(): void {
@@ -182,15 +178,5 @@ export class SettingsComponent {
       this.#logoutLoading.set(true);
       this.#authService.signOut().pipe(take(1)).subscribe();
     }
-  }
-
-  #reloadUserProfile(): void {
-    from(this.#authenticationService.authControllerGetProfile()).pipe(
-      take(1),
-      catchError((err) => {
-        console.error('Failed to reload profile:', err);
-        return EMPTY;
-      })
-    ).subscribe();
   }
 }

@@ -1,0 +1,124 @@
+import { Injectable } from '@angular/core';
+import type { QueryStoreBase } from '../base/query-store.base';
+
+/**
+ * Query Cache Entry
+ * Holds a query instance and its reference count
+ */
+interface CacheEntry<T> {
+  instance: QueryStoreBase<T>;
+  refs: number;
+}
+
+/**
+ * Query Cache Service
+ * Global singleton that manages query instances and their cache
+ *
+ * Features:
+ * - Shared queries between components (same queryKey = same instance)
+ * - Reference counting for garbage collection
+ * - Query invalidation by key
+ *
+ * @example
+ * const cache = inject(QueryCacheService);
+ * const query = cache.getOrCreate('user-123', () => new UserQuery());
+ */
+@Injectable({ providedIn: 'root' })
+export class QueryCacheService {
+  #cache = new Map<string, CacheEntry<any>>();
+
+  /**
+   * Get or create a query instance
+   * If query exists in cache, returns existing instance and increments ref count
+   * Otherwise creates new instance
+   */
+  getOrCreate<T>(
+    key: string,
+    factory: () => QueryStoreBase<T>
+  ): QueryStoreBase<T> {
+    if (!this.#cache.has(key)) {
+      this.#cache.set(key, {
+        instance: factory(),
+        refs: 0,
+      });
+    }
+
+    const entry = this.#cache.get(key)!;
+    entry.refs++;
+    return entry.instance as QueryStoreBase<T>;
+  }
+
+  /**
+   * Decrement reference count
+   * When refs reach 0, query can be garbage collected
+   */
+  decrementRef(key: string): void {
+    const entry = this.#cache.get(key);
+    if (!entry) return;
+
+    entry.refs--;
+
+    // Optional: Garbage collect after timeout
+    if (entry.refs === 0) {
+      // Keep in cache for 30s in case it's needed again
+      setTimeout(() => {
+        const current = this.#cache.get(key);
+        if (current && current.refs === 0) {
+          this.#cache.delete(key);
+        }
+      }, 30_000);
+    }
+  }
+
+  /**
+   * Invalidate query by key
+   * Marks the query as stale, forcing a refetch on next access
+   */
+  invalidateQuery(queryKey: unknown[]): void {
+    const key = this.#serializeKey(queryKey);
+    const entry = this.#cache.get(key);
+    if (entry) {
+      entry.instance.invalidate();
+    }
+  }
+
+  /**
+   * Invalidate all queries matching a partial key
+   * Useful for invalidating all queries of a type
+   *
+   * @example
+   * invalidateQueriesMatching(['clubs']) // Invalidates all club queries
+   */
+  invalidateQueriesMatching(partialKey: unknown[]): void {
+    const prefix = this.#serializeKey(partialKey);
+
+    for (const [key, entry] of this.#cache.entries()) {
+      if (key.startsWith(prefix)) {
+        entry.instance.invalidate();
+      }
+    }
+  }
+
+  /**
+   * Clear all queries
+   * Removes all cached queries
+   */
+  clear(): void {
+    this.#cache.clear();
+  }
+
+  /**
+   * Get cache size (for debugging)
+   */
+  size(): number {
+    return this.#cache.size;
+  }
+
+  /**
+   * Serialize query key to string
+   * @private
+   */
+  #serializeKey(key: unknown[]): string {
+    return JSON.stringify(key);
+  }
+}
