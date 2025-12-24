@@ -6,7 +6,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { AuthService, FormService } from '../../../core/services';
+import { AuthService, FormService, ToastService } from '../../../core/services';
 import { injectAuthStore, AuthStore } from '../../../core/stores';
 import { ButtonComponent, InputComponent } from '@cigar-platform/shared/ui';
 
@@ -27,15 +27,12 @@ export class ResetPasswordComponent implements OnInit {
   #router = inject(Router);
   #fb = inject(FormBuilder);
   #formService = inject(FormService);
+  #toastService = inject(ToastService);
 
   readonly authStore: AuthStore = injectAuthStore();
 
-  #errorSignal: WritableSignal<string | null> = signal<string | null>(null);
-  #successSignal: WritableSignal<string | null> = signal<string | null>(null);
   #hasValidSessionSignal: WritableSignal<boolean> = signal<boolean>(true);
 
-  readonly error = this.#errorSignal.asReadonly();
-  readonly success = this.#successSignal.asReadonly();
   readonly hasValidSession = this.#hasValidSessionSignal.asReadonly();
 
   // Typed reactive form (Angular 14+)
@@ -47,7 +44,7 @@ export class ResetPasswordComponent implements OnInit {
   ngOnInit(): void {
     // Check if user is authenticated (has valid session from email link)
     if (!this.#authService.session()) {
-      this.#errorSignal.set('Lien de réinitialisation invalide ou expiré');
+      this.#toastService.error('Lien de réinitialisation invalide ou expiré');
       this.#hasValidSessionSignal.set(false);
     }
   }
@@ -63,19 +60,16 @@ export class ResetPasswordComponent implements OnInit {
     const { password, confirmPassword } = this.resetPasswordForm.getRawValue();
 
     if (password !== confirmPassword) {
-      this.#errorSignal.set('Les mots de passe ne correspondent pas');
+      this.#toastService.error('Les mots de passe ne correspondent pas');
       return;
     }
-
-    this.#errorSignal.set(null);
-    this.#successSignal.set(null);
 
     const result = await this.authStore.updatePassword.mutate({ password });
 
     if (result?.error) {
-      this.#errorSignal.set(result.error.message || 'Erreur lors de la mise à jour du mot de passe');
+      this.#toastService.error(result.error.message || 'Erreur lors de la mise à jour du mot de passe');
     } else {
-      this.#successSignal.set('Mot de passe mis à jour avec succès. Redirection...');
+      this.#toastService.success('Mot de passe mis à jour avec succès. Redirection...');
       setTimeout(() => {
         this.#router.navigate(['/']);
       }, 2000);

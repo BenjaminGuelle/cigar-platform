@@ -201,3 +201,69 @@ body {
     @apply text-smoke-400;
   }
 }
+
+/* ============================================ */
+/* TOAST NOTIFICATIONS - Smoke & Gold Theme */
+/* ============================================ */
+@layer components {
+  /* Toast container */
+  :root {
+    --toast-bg: theme('colors.smoke.800');
+    --toast-border: theme('colors.smoke.700');
+    --toast-text: theme('colors.smoke.50');
+    --toast-success: theme('colors.success.500');
+    --toast-error: theme('colors.error.500');
+    --toast-warning: theme('colors.warning.500');
+    --toast-info: theme('colors.info.500');
+  }
+
+  /* Override Sonner default styles */
+  [data-sonner-toaster] {
+    --normal-bg: var(--toast-bg);
+    --normal-border: var(--toast-border);
+    --normal-text: var(--toast-text);
+    --success-bg: theme('colors.success.900');
+    --success-border: theme('colors.success.500');
+    --success-text: theme('colors.success.400');
+    --error-bg: theme('colors.error.900');
+    --error-border: theme('colors.error.500');
+    --error-text: theme('colors.error.400');
+  }
+
+  [data-sonner-toast] {
+    @apply bg-smoke-800 border border-smoke-700 text-smoke-50 shadow-2xl shadow-smoke-950/50 backdrop-blur-sm;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  [data-sonner-toast][data-type='success'] {
+    @apply bg-success-900/30 border-success-500/30 text-success-400;
+  }
+
+  [data-sonner-toast][data-type='error'] {
+    @apply bg-error-900/30 border-error-500/30 text-error-400;
+  }
+
+  [data-sonner-toast][data-type='warning'] {
+    @apply bg-warning-900/30 border-warning-500/30 text-warning-400;
+  }
+
+  [data-sonner-toast][data-type='info'] {
+    @apply bg-info-900/30 border-info-500/30 text-info-400;
+  }
+
+  [data-sonner-toast] [data-title] {
+    @apply text-sm leading-normal text-smoke-400 font-medium;
+  }
+
+  [data-sonner-toast] [data-description] {
+    @apply text-xs text-smoke-400;
+  }
+
+  [data-sonner-toast] [data-button] {
+    @apply bg-smoke-700 hover:bg-smoke-600 text-smoke-50 border-smoke-600;
+  }
+
+  [data-sonner-toast] [data-close-button] {
+    @apply bg-smoke-700 hover:bg-smoke-600 border-smoke-600;
+  }
+}

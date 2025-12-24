@@ -1,4 +1,4 @@
-import { Component, inject, signal, WritableSignal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   FormBuilder,
@@ -6,7 +6,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { FormService } from '../../../core/services';
+import { FormService, ToastService } from '../../../core/services';
 import { injectAuthStore, AuthStore } from '../../../core/stores';
 import { ButtonComponent, InputComponent } from '@cigar-platform/shared/ui';
 
@@ -26,12 +26,9 @@ export class RegisterComponent {
   #router = inject(Router);
   #fb = inject(FormBuilder);
   #formService = inject(FormService);
+  #toastService = inject(ToastService);
 
   readonly authStore: AuthStore = injectAuthStore();
-
-  #errorSignal: WritableSignal<string | null> = signal<string | null>(null);
-
-  readonly error = this.#errorSignal.asReadonly();
 
   // Typed reactive form (Angular 14+)
   registerForm = this.#fb.nonNullable.group({
@@ -52,27 +49,23 @@ export class RegisterComponent {
     const { displayName, email, password, confirmPassword } = this.registerForm.getRawValue();
 
     if (password !== confirmPassword) {
-      this.#errorSignal.set('Les mots de passe ne correspondent pas');
+      this.#toastService.error('Les mots de passe ne correspondent pas');
       return;
     }
-
-    this.#errorSignal.set(null);
 
     const result = await this.authStore.signUp.mutate({ email, password, displayName });
 
     if (result?.error) {
-      this.#errorSignal.set(result.error.message || 'Erreur lors de l\'inscription');
+      this.#toastService.error(result.error.message || 'Erreur lors de l\'inscription');
     }
     // Navigation is handled automatically by authStore.signUp.onSuccess
   }
 
   async onGoogleSignIn(): Promise<void> {
-    this.#errorSignal.set(null);
-
     const result = await this.authStore.signInWithGoogle.mutate();
 
     if (result?.error) {
-      this.#errorSignal.set(result.error.message || 'Échec de la connexion Google');
+      this.#toastService.error(result.error.message || 'Échec de la connexion Google');
     }
     // Note: Google OAuth will redirect, so we don't handle success here
   }

@@ -9,7 +9,7 @@ import {
 } from '@angular/forms';
 import { Router } from '@angular/router';
 import { take } from 'rxjs/operators';
-import { AuthService, FormService } from '../../../core/services';
+import { AuthService, FormService, ToastService } from '../../../core/services';
 import { injectUserStore, UserStore } from '../../../core/stores';
 import { injectMutation, Mutation } from '../../../core/query';
 import { UsersService } from '@cigar-platform/types/lib/users/users.service';
@@ -40,6 +40,7 @@ export class SettingsComponent {
   #authService = inject(AuthService);
   #usersService = inject(UsersService);
   #formService = inject(FormService);
+  #toastService = inject(ToastService);
   #fb = inject(FormBuilder);
   #router = inject(Router);
 
@@ -47,10 +48,8 @@ export class SettingsComponent {
   readonly currentUser: Signal<UserDto | null> = this.userStore.currentUser.data;
 
   // Avatar upload state
-  #avatarMessage: WritableSignal<{ type: 'success' | 'error'; text: string } | null> = signal(null);
   #selectedAvatarPreview: WritableSignal<string | null> = signal<string | null>(null);
 
-  readonly avatarMessage = this.#avatarMessage.asReadonly();
   readonly selectedAvatarPreview = this.#selectedAvatarPreview.asReadonly();
 
   // Avatar upload mutation
@@ -58,25 +57,21 @@ export class SettingsComponent {
     mutationFn: (variables: { avatar: File }) =>
       this.#usersService.usersControllerUploadAvatar(variables),
     onSuccess: () => {
-      this.#avatarMessage.set({ type: 'success', text: 'Avatar mis à jour avec succès' });
+      this.#toastService.success('Avatar mis à jour avec succès');
       this.#selectedAvatarPreview.set(null);
       this.#selectedAvatarFile = null;
       // Refetch user to get updated avatar
       this.userStore.currentUser.refetch();
     },
     onError: (error: Error) => {
-      this.#avatarMessage.set({
-        type: 'error',
-        text: (error as any).error?.error?.message || 'Échec de l\'upload de l\'avatar',
-      });
+      this.#toastService.error(
+        (error as any).error?.error?.message || 'Échec de l\'upload de l\'avatar'
+      );
     },
   });
 
   #logoutLoading: WritableSignal<boolean> = signal<boolean>(false);
   readonly logoutLoading = this.#logoutLoading.asReadonly();
-
-  #profileSuccess: WritableSignal<string | null> = signal<string | null>(null);
-  readonly profileSuccess = this.#profileSuccess.asReadonly();
 
   readonly isOAuthUser: Signal<boolean> = computed<boolean>(() => {
     const provider = this.currentUser()?.authProvider;
@@ -124,19 +119,13 @@ export class SettingsComponent {
 
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-      this.#avatarMessage.set({
-        type: 'error',
-        text: 'Type de fichier invalide. Seuls JPEG, PNG et WebP sont autorisés.',
-      });
+      this.#toastService.error('Type de fichier invalide. Seuls JPEG, PNG et WebP sont autorisés.');
       return;
     }
 
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-      this.#avatarMessage.set({
-        type: 'error',
-        text: 'Fichier trop volumineux. Taille maximale : 5MB.',
-      });
+      this.#toastService.error('Fichier trop volumineux. Taille maximale : 5MB.');
       return;
     }
 
@@ -153,11 +142,9 @@ export class SettingsComponent {
 
   async uploadAvatar(): Promise<void> {
     if (!this.#selectedAvatarFile) {
-      this.#avatarMessage.set({ type: 'error', text: 'Aucun fichier sélectionné' });
+      this.#toastService.error('Aucun fichier sélectionné');
       return;
     }
-
-    this.#avatarMessage.set(null);
 
     // Use mutation instead of manual subscribe
     await this.uploadAvatarMutation.mutate({ avatar: this.#selectedAvatarFile });
@@ -170,7 +157,6 @@ export class SettingsComponent {
       return;
     }
 
-    this.#profileSuccess.set(null);
     this.userStore.updateProfile.reset();
 
     const { displayName } = this.profileForm.getRawValue();
@@ -178,7 +164,7 @@ export class SettingsComponent {
     const result: UserDto | null = await this.userStore.updateProfile.mutate({ displayName });
 
     if (result) {
-      this.#profileSuccess.set('Profil mis à jour avec succès');
+      this.#toastService.success('Profil mis à jour avec succès');
     }
   }
 

@@ -1,4 +1,4 @@
-import { Component, inject, signal, WritableSignal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   FormBuilder,
@@ -6,7 +6,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { FormService } from '../../../core/services';
+import { FormService, ToastService } from '../../../core/services';
 import { injectAuthStore, AuthStore } from '../../../core/stores';
 import { ButtonComponent, InputComponent } from '@cigar-platform/shared/ui';
 
@@ -26,14 +26,9 @@ export class ForgotPasswordComponent {
   #router = inject(Router);
   #fb = inject(FormBuilder);
   #formService = inject(FormService);
+  #toastService = inject(ToastService);
 
   readonly authStore: AuthStore = injectAuthStore();
-
-  #errorSignal: WritableSignal<string | null> = signal<string | null>(null);
-  #successSignal: WritableSignal<string | null> = signal<string | null>(null);
-
-  readonly error = this.#errorSignal.asReadonly();
-  readonly success = this.#successSignal.asReadonly();
 
   // Typed reactive form (Angular 14+)
   forgotPasswordForm = this.#fb.nonNullable.group({
@@ -48,17 +43,14 @@ export class ForgotPasswordComponent {
       return;
     }
 
-    this.#errorSignal.set(null);
-    this.#successSignal.set(null);
-
     const { email } = this.forgotPasswordForm.getRawValue();
 
     const result = await this.authStore.resetPassword.mutate({ email });
 
     if (result?.error) {
-      this.#errorSignal.set(result.error.message || 'Erreur lors de l\'envoi du lien');
+      this.#toastService.error(result.error.message || 'Erreur lors de l\'envoi du lien');
     } else {
-      this.#successSignal.set('Un lien de réinitialisation a été envoyé à votre email');
+      this.#toastService.success('Un lien de réinitialisation a été envoyé à votre email');
     }
   }
 
