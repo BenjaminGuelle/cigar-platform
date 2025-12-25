@@ -1,39 +1,66 @@
-import { Component, input, Signal } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
 import { User } from '@cigar-platform/types';
 import { AvatarComponent } from '../avatar';
+import { FabMenuComponent, type FabMenuItem } from '../fab-menu';
 
 /**
  * Mobile Header Component
- * Displays at the top of mobile screens with clickable avatar
+ * Displays at the top of mobile screens with clickable context avatar
+ * Shows user avatar in solo context, club avatar in club context
  * Hidden on desktop (≥768px)
  */
 @Component({
   selector: 'ui-mobile-header',
   standalone: true,
-  imports: [CommonModule, RouterModule, AvatarComponent],
+  imports: [CommonModule, AvatarComponent, FabMenuComponent],
   template: `
     <header class="fixed left-0 right-0 top-0 z-40 border-b border-smoke-800 backdrop-blur-xl md:hidden">
       <div class="flex items-center justify-between px-4 py-3">
-        <a
-          routerLink="/settings"
-          class="flex items-center transition-transform duration-200 active:scale-95"
+        <!-- Context Avatar (clickable to open context switcher) -->
+        <button
+          type="button"
+          (click)="contextClick.emit()"
+          class="flex items-center transition-transform duration-200 active:scale-95 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 focus:ring-offset-smoke-900 rounded-full"
         >
-          <ui-avatar [user]="user()" size="md" />
-        </a>
+          @if (contextType() === 'solo') {
+            <ui-avatar [user]="user()" size="md" />
+          } @else if (contextType() === 'club' && club()) {
+            <ui-avatar [club]="club()" size="md" />
+          }
+        </button>
 
         <!-- Page Title (optional, projected content) -->
         <div class="flex-1 text-center">
           <ng-content />
         </div>
 
-        <!-- Right side placeholder for balance/symmetry -->
-        <div class="w-9"></div>
+        <!-- FAB Menu (contextual quick actions) -->
+        <ui-fab-menu
+          variant="inline"
+          [isOpen]="fabMenuOpen()"
+          [items]="fabMenuItems()"
+          (toggle)="fabMenuToggle.emit()"
+          (close)="fabMenuClose.emit()"
+          (itemClicked)="fabMenuItemClicked.emit($event)"
+        />
       </div>
     </header>
   `,
 })
 export class MobileHeaderComponent {
+  // Context information
+  readonly contextType = input<'solo' | 'club'>('solo');
   readonly user = input<User | null>(null);
+  readonly club = input<any | null>(null); // TODO: Replace with ClubDto
+
+  // FAB menu
+  readonly fabMenuOpen = input<boolean>(false);
+  readonly fabMenuItems = input<FabMenuItem[]>([]);
+
+  // Events
+  readonly contextClick = output<void>();
+  readonly fabMenuToggle = output<void>();
+  readonly fabMenuClose = output<void>();
+  readonly fabMenuItemClicked = output<string>();
 }

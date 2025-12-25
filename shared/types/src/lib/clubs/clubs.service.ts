@@ -96,7 +96,7 @@ export class ClubsService {
       this.http,
       );
     }
-  }
+  };
 
 export type ClubControllerCreateClientResult = NonNullable<ClubResponseDto>
 export type ClubControllerFindAllClientResult = NonNullable<void>

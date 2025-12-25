@@ -7,12 +7,20 @@ export type AvatarSize = 'sm' | 'md' | 'lg';
 
 /**
  * Avatar Component
- * Displays user avatar with intelligent fallback hierarchy:
+ * Displays user or club avatar with intelligent fallback hierarchy:
+ *
+ * For User:
  * 1. avatarUrl (image) if available
  * 2. Initials (2 letters max) from displayName
  * 3. First letter of displayName
  * 4. First letter of email
  * 5. Fallback 'U'
+ *
+ * For Club:
+ * 1. imageUrl if available
+ * 2. Initials (2 letters max) from name
+ * 3. First letter of name
+ * 4. Fallback 'C'
  */
 @Component({
   selector: 'ui-avatar',
@@ -22,7 +30,7 @@ export type AvatarSize = 'sm' | 'md' | 'lg';
       @if (hasAvatar()) {
           <img
                   [src]="avatarUrl()"
-                  [alt]="user()?.displayName || 'User'"
+                  [alt]="altText()"
                   [class]="avatarClasses()"
                   decoding="async"
                   (error)="onImageError()"
@@ -36,32 +44,63 @@ export type AvatarSize = 'sm' | 'md' | 'lg';
 })
 export class AvatarComponent {
   readonly user = input<User | null>(null);
+  readonly club = input<any | null>(null); // TODO: Replace with ClubDto
   readonly size = input<AvatarSize>('md');
 
   #imageError: WritableSignal<boolean> = signal<boolean>(false);
 
   /**
-   * Check if user has a valid avatarUrl and image hasn't errored
+   * Check if user or club has a valid avatar/imageUrl and image hasn't errored
    */
   readonly hasAvatar: Signal<boolean> = computed<boolean>(() => {
-    return !!this.user()?.avatarUrl && !this.#imageError();
+    const url = this.club()?.imageUrl ?? this.user()?.avatarUrl;
+    return !!url && !this.#imageError();
   });
 
   /**
-   * Get avatarUrl from user
+   * Get avatarUrl from user or imageUrl from club
    */
   readonly avatarUrl: Signal<string | null> = computed<string | null>(() => {
-    return (this.user()?.avatarUrl as any as string) ?? null;
+    return (this.club()?.imageUrl ?? this.user()?.avatarUrl) ?? null;
   });
 
   /**
-   * Calculate user initials with intelligent logic:
+   * Get alt text for avatar
+   */
+  readonly altText: Signal<string> = computed<string>(() => {
+    if (this.club()) {
+      return this.club()?.name ?? 'Club';
+    }
+    return this.user()?.displayName ?? 'User';
+  });
+
+  /**
+   * Calculate user or club initials with intelligent logic:
+   *
+   * For Club:
+   * - "Havana Club" → "HC" (2 letters)
+   * - "Aficionados" → "A" (1 letter)
+   * - Fallback → "C"
+   *
+   * For User:
    * - "John Doe" → "JD" (2 letters)
    * - "John" → "J" (1 letter)
    * - Email "john@example.com" → "J"
    * - Fallback → "U"
    */
   readonly initials: Signal<string> = computed<string>(() => {
+    const club = this.club();
+    if (club) {
+      if (club.name) {
+        const words = club.name.trim().split(/\s+/);
+        if (words.length >= 2) {
+          return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
+        }
+        return words[0].charAt(0).toUpperCase();
+      }
+      return 'C';
+    }
+
     const user = this.user();
     if (!user) return 'U';
 

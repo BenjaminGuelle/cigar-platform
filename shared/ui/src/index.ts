@@ -1,9 +1,12 @@
 // Components
+export * from './lib/components/action-button';
 export * from './lib/components/avatar';
 export * from './lib/components/button';
+export * from './lib/components/fab-menu';
 export * from './lib/components/input';
 export * from './lib/components/layout';
 export * from './lib/components/logo';
+export * from './lib/components/modal';
 export * from './lib/components/page-header';
 export * from './lib/components/page-section';
 export * from './lib/components/sidebar-action';

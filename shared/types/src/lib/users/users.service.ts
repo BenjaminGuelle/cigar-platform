@@ -22,6 +22,11 @@ import type {
 
 import { customInstance } from '../../../../../apps/web/src/app/core/api/custom-instance';
 
+
+
+
+
+
 @Injectable({ providedIn: 'root' })
 export class UsersService {
   private readonly http = inject(HttpClient);
@@ -57,7 +62,7 @@ if(usersControllerUploadAvatarBody.avatar !== undefined) {
       this.http,
       );
     }
-  }
+  };
 
 export type UsersControllerUpdateProfileClientResult = NonNullable<void>
 export type UsersControllerUploadAvatarClientResult = NonNullable<UsersControllerUploadAvatar200>

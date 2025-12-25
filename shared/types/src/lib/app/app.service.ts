@@ -28,6 +28,6 @@ export class AppService {
       this.http,
       );
     }
-  }
+  };
 
 export type AppControllerGetDataClientResult = NonNullable<void>

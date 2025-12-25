@@ -42,6 +42,8 @@ export type IconName =
   | 'x'
   | 'flame'
   | 'bell'
+  | 'lock'
+  | 'globe'
   // Feedback
   | 'spinner'
   | 'check'

@@ -98,7 +98,7 @@ export class AuthenticationService {
       this.http,
       );
     }
-  }
+  };
 
 export type AuthControllerSignUpClientResult = NonNullable<AuthResponseDto>
 export type AuthControllerSignInClientResult = NonNullable<AuthResponseDto>

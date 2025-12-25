@@ -5,33 +5,6 @@
       description="Gérez votre profil et vos préférences"
     />
 
-    <!-- Messages wrapped to preserve space-y -->
-<!--    @if (avatarMessage() || profileSuccess() || userStore.updateProfile.error()) {-->
-<!--      <div class="space-y-4">-->
-<!--        @if (avatarMessage(); as message) {-->
-<!--          <div-->
-<!--            class="rounded-lg border p-4 text-sm"-->
-<!--            [class]="message.type === 'success'-->
-<!--              ? 'border-green-500/50 bg-green-500/10 text-green-400'-->
-<!--              : 'border-error-500/50 bg-error-500/10 text-error-400'"-->
-<!--          >-->
-<!--            {{ message.text }}-->
-<!--          </div>-->
-<!--        }-->
-
-<!--        @if (profileSuccess()) {-->
-<!--          <div class="rounded-lg border border-green-500/50 bg-green-500/10 p-4 text-sm text-green-400">-->
-<!--            {{ profileSuccess() }}-->
-<!--          </div>-->
-<!--        }-->
-<!--        @if (userStore.updateProfile.error(); as error) {-->
-<!--          <div class="rounded-lg border border-error-500/50 bg-error-500/10 p-4 text-sm text-error-400">-->
-<!--            {{ error.message }}-->
-<!--          </div>-->
-<!--        }-->
-<!--      </div>-->
-<!--    }-->
-
     <!-- Profil Section -->
     <ui-page-section title="Profil">
       <!-- Grid 2 colonnes: Avatar à gauche, Form à droite -->

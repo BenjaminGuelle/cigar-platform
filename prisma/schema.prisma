@@ -14,15 +14,18 @@ datasource db {
 // ENUMS
 // ============================================
 
+// Global platform roles
 enum Role {
-  ADMIN      // Project admin (full control)
-  MODERATOR  // Project moderator
-  USER       // Standard user (default)
+  SUPER_ADMIN  // Platform super admin (full control, accès /admin)
+  MODERATOR    // Platform moderator (modération contenu global)
+  USER         // Standard user (default)
 }
 
+// Club-specific roles
 enum ClubRole {
-  admin
-  member
+  owner   // Club owner (créateur, droits maximum)
+  admin   // Club admin (peut gérer membres, events)
+  member  // Club member (peut voir et participer)
 }
 
 // ============================================

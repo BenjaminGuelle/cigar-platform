@@ -1,129 +1,78 @@
 <div class="min-h-screen">
-  <ui-mobile-header [user]="currentUser()" />
+  <!-- Mobile Header (< 768px) -->
+  <ui-mobile-header
+    [contextType]="context().type"
+    [user]="currentUser()"
+    [club]="context().club"
+    [fabMenuOpen]="fabMenuOpen()"
+    [fabMenuItems]="fabMenuItems()"
+    (contextClick)="onContextClick()"
+    (fabMenuToggle)="onFabMenuToggle()"
+    (fabMenuClose)="onFabMenuClose()"
+    (fabMenuItemClicked)="onFabMenuItemClick($event)"
+  />
 
-  <ui-sidebar #sidebar class="hidden md:block" [subSidebarActive]="adminMenuActive()">
-    <ui-sidebar-nav-item
-      icon="home"
+  <!-- Desktop Context Sidebar (≥ 768px) - Left avatar stack -->
+  <ui-context-sidebar
+    [user]="currentUser()"
+    [clubs]="userClubs()"
+    [activeContextType]="context().type"
+    [activeClubId]="context().clubId"
+    (contextSelected)="onContextSelected($event)"
+    (createJoinClub)="onCreateJoinClub()"
+  />
+
+  <!-- Desktop Top Tabs (≥ 768px) - Horizontal navigation -->
+  <ui-desktop-top-tabs>
+    <ui-desktop-top-tab-item
       label="Accueil"
       route="/dashboard"
+      icon="home"
       [exact]="true"
-      [isExpanded]="sidebar.isExpanded()"
     />
-    <ui-sidebar-nav-item
-      icon="search"
-      label="Explorer"
-      route="/explorer"
-      [isExpanded]="sidebar.isExpanded()"
-    />
-    <ui-sidebar-nav-item
-      icon="flame"
-      label="Mes Dégustations"
-      route="/degustations"
-      [isExpanded]="sidebar.isExpanded()"
-    />
-    <ui-sidebar-nav-item
-      icon="calendar"
-      label="Événements"
-      route="/evenements"
-      [isExpanded]="sidebar.isExpanded()"
-    />
-    <ui-sidebar-nav-item
-      icon="users"
+    <ui-desktop-top-tab-item
       label="Clubs"
       route="/clubs"
-      [isExpanded]="sidebar.isExpanded()"
+      icon="users"
     />
-
-    <div class="my-3 h-px bg-smoke-700"></div>
-
-    <ui-sidebar-nav-item
-      icon="bell"
+    <ui-desktop-top-tab-item
+      label="Dégustations"
+      route="/degustations"
+      icon="flame"
+    />
+    <ui-desktop-top-tab-item
+      label="Événements"
+      route="/evenements"
+      icon="calendar"
+    />
+    <ui-desktop-top-tab-item
       label="Notifications"
       route="/notifications"
+      icon="bell"
       [badge]="3"
-      [isExpanded]="sidebar.isExpanded()"
     />
-    <ui-sidebar-nav-item
-      icon="settings"
+    <ui-desktop-top-tab-item
       label="Paramètres"
       route="/settings"
-      [isExpanded]="sidebar.isExpanded()"
-    />
-
-    <!-- Admin menu that opens sub-sidebar -->
-    <ui-sidebar-action
       icon="settings"
-      label="Administration"
-      [isExpanded]="sidebar.isExpanded()"
-      (clicked)="openAdminMenu()"
     />
+  </ui-desktop-top-tabs>
 
-    <div slot="footer">
-      @if (userStore.currentUser.loading()) {
-        <div class="px-3 py-2 text-xs text-smoke-400">Chargement...</div>
-      } @else if (userStore.currentUser.error(); as error) {
-        <div class="px-3 py-2 text-xs text-error-400">Erreur: {{ error.message }}</div>
-      } @else if (currentUser(); as user) {
-        <div class="space-y-1">
-          <ui-sidebar-action
-            icon="log-out"
-            label="Déconnexion"
-            variant="destructive"
-            [isExpanded]="sidebar.isExpanded()"
-            (clicked)="onSignOut()"
-          />
-
-          <ui-sidebar-profile
-            [user]="user"
-            [isExpanded]="sidebar.isExpanded()"
-          />
-        </div>
-      }
-    </div>
-  </ui-sidebar>
-
-  <!-- Sub-sidebar for admin menu -->
-  <ui-sub-sidebar
-    class="hidden md:block"
-    [isActive]="adminMenuActive()"
-    [title]="'Administration'"
-    (close)="closeAdminMenu()"
-  >
-    <ui-sidebar-nav-item
-      icon="home"
-      label="Dashboard"
-      route="/admin/dashboard"
-      [isExpanded]="true"
-    />
-    <ui-sidebar-nav-item
-      icon="users"
-      label="Utilisateurs"
-      route="/admin/users"
-      [isExpanded]="true"
-    />
-    <ui-sidebar-nav-item
-      icon="settings"
-      label="Configuration"
-      route="/admin/config"
-      [isExpanded]="true"
-    />
-    <ui-sidebar-nav-item
-      icon="star"
-      label="Statistiques"
-      route="/admin/stats"
-      [isExpanded]="true"
-    />
-    <ui-sidebar-nav-item
-      icon="alert-circle"
-      label="Sécurité"
-      route="/admin/security"
-      [isExpanded]="true"
-    />
-  </ui-sub-sidebar>
-
-  <main class="min-h-screen overflow-auto px-4 pt-15 pb-24 md:pl-22 md:pr-8 md:pt-8 md:pb-8">
+  <!-- Main Content Area -->
+  <main class="min-h-screen overflow-auto px-4 pt-15 pb-24 md:pl-18 md:pr-8 md:pt-20 md:pb-8">
     <router-outlet />
   </main>
+
+  <!-- Context Switcher (Mobile Bottom Sheet) -->
+  <ui-context-switcher
+    [isOpen]="contextSwitcherOpen()"
+    [user]="currentUser()"
+    [clubs]="userClubs()"
+    [activeContext]="{ type: context().type, clubId: context().clubId }"
+    (close)="onContextSwitcherClose()"
+    (contextSelected)="onContextSelected($event)"
+    (createJoinClub)="onCreateJoinClub()"
+  />
 
   <ui-bottom-tab-bar>
     <ui-bottom-tab-item
@@ -154,4 +103,30 @@
       route="/settings"
     />
   </ui-bottom-tab-bar>
+
+  <!-- Desktop FAB Menu - Quick Actions (≥ 768px) -->
+  <ui-fab-menu
+    class="hidden md:block"
+    [isOpen]="fabMenuOpen()"
+    [items]="fabMenuItems()"
+    (toggle)="onFabMenuToggle()"
+    (close)="onFabMenuClose()"
+    (itemClicked)="onFabMenuItemClick($event)"
+  />
+
+  <!-- Create/Join Club Modal -->
+  <app-create-join-club-modal
+    [isOpen]="createJoinClubModalOpen()"
+    (close)="onCreateJoinClubModalClose()"
+    (clubCreated)="onClubCreated()"
+    (clubJoined)="onClubJoined()"
+  />
+
+  <!-- Create Event Modal -->
+  <app-create-content-modal
+    [isOpen]="createContentModalOpen()"
+    [contextClubName]="context().club?.name || null"
+    (close)="onCreateContentModalClose()"
+    (eventCreated)="onEventCreated()"
+  />
 </div>

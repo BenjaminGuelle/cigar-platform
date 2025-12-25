@@ -17,17 +17,12 @@ export interface SignUpDto {
   displayName: string;
 }
 
-/**
- * @nullable
- */
-export type UserDtoAvatarUrl = { [key: string]: unknown } | null;
-
 export type UserDtoRole = typeof UserDtoRole[keyof typeof UserDtoRole];
 
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const UserDtoRole = {
-  ADMIN: 'ADMIN',
+  SUPER_ADMIN: 'SUPER_ADMIN',
   MODERATOR: 'MODERATOR',
   USER: 'USER',
 } as const;
@@ -49,8 +44,7 @@ export interface UserDto {
   id: string;
   email: string;
   displayName: string;
-  /** @nullable */
-  avatarUrl: UserDtoAvatarUrl;
+  avatarUrl?: string;
   role: UserDtoRole;
   createdAt: string;
   /** Authentication provider (from Supabase metadata) */
@@ -142,6 +136,7 @@ order?: ClubControllerFindAllOrder;
 export type ClubControllerFindAllSortBy = typeof ClubControllerFindAllSortBy[keyof typeof ClubControllerFindAllSortBy];
 
 
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ClubControllerFindAllSortBy = {
   name: 'name',
   createdAt: 'createdAt',
@@ -150,6 +145,7 @@ export const ClubControllerFindAllSortBy = {
 export type ClubControllerFindAllOrder = typeof ClubControllerFindAllOrder[keyof typeof ClubControllerFindAllOrder];
 
 
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ClubControllerFindAllOrder = {
   asc: 'asc',
   desc: 'desc',

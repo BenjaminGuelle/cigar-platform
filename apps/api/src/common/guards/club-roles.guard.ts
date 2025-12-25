@@ -16,7 +16,8 @@ export class ClubRolesGuard implements CanActivate {
       return false;
     }
 
-    if (user.role === Role.ADMIN || user.role === Role.MODERATOR) {
+    // Platform admins and moderators have access to all clubs
+    if (user.role === Role.SUPER_ADMIN || user.role === Role.MODERATOR) {
       return true;
     }
 
@@ -29,6 +30,7 @@ export class ClubRolesGuard implements CanActivate {
       },
     });
 
-    return clubMember?.role === ClubRole.admin;
+    // Club owners and admins can manage the club
+    return clubMember?.role === ClubRole.owner || clubMember?.role === ClubRole.admin;
   }
 }
