@@ -1,8 +1,7 @@
 import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { Router } from '@angular/router';
 import { ClubsService } from '@cigar-platform/types/lib/clubs/clubs.service';
-import type { ClubResponseDto } from '@cigar-platform/types';
-import { ClubRole as PrismaClubRole } from '@cigar-platform/prisma-client';
+import type { ClubResponseDto, UpdateMemberRoleDtoRole } from '@cigar-platform/types';
 
 /**
  * Context Types
@@ -12,7 +11,7 @@ export type ContextType = 'solo' | 'club';
 /**
  * Club Role (when in club context)
  */
-export type ClubRole = PrismaClubRole;
+export type ClubRole = UpdateMemberRoleDtoRole;
 
 /**
  * App Context State
@@ -343,7 +342,7 @@ export class ContextStore {
       if (club) {
         // TODO: Get user's role in the club from members endpoint
         // For now, default to member
-        this.switchToClub(club, PrismaClubRole.member);
+        this.switchToClub(club, 'member');
       } else {
         console.warn('[ContextStore] Club not found, falling back to solo');
         this.switchToSolo();
