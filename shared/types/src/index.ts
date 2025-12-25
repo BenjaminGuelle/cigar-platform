@@ -18,6 +18,10 @@
 // Orval-generated types and enums (from Swagger)
 export * from './lib/generated-api.schemas';
 
+// Orval-generated services
+// NOTE: Services are NOT exported from barrel file to avoid API build errors
+// Import services directly: import { ClubsService } from '@cigar-platform/types/lib/clubs/clubs.service';
+
 // Backward compatibility aliases (old names → Orval generated names)
 export type { UserDto as User } from './lib/generated-api.schemas';
 export type { SignUpDto as SignUpRequest } from './lib/generated-api.schemas';

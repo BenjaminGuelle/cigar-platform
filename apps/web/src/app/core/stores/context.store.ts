@@ -1,7 +1,6 @@
 import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
-import { ClubsService } from '@cigar-platform/types';
+import { ClubsService } from '@cigar-platform/types/lib/clubs/clubs.service';
 import type { ClubResponseDto } from '@cigar-platform/types';
 import { ClubRole as PrismaClubRole } from '@cigar-platform/prisma-client';
 
@@ -207,13 +206,11 @@ export class ContextStore {
 
     try {
       // For now, fetch all clubs (will be filtered by backend to user's clubs later)
-      const response: any = await firstValueFrom(
-        this.#clubsService.clubControllerFindAll({ limit: 100 })
-      );
+      const response: any = await this.#clubsService.clubControllerFindAll({ limit: 100 });
 
-      if (response?.data?.data) {
-        this.#userClubs.set(response.data.data);
-        console.log('[ContextStore] Loaded user clubs:', response.data.data.length);
+      if (response?.data) {
+        this.#userClubs.set(response.data);
+        console.log('[ContextStore] Loaded user clubs:', response.data.length);
       } else {
         this.#userClubs.set([]);
       }
@@ -341,14 +338,12 @@ export class ContextStore {
   async #restoreClubContext(clubId: string): Promise<void> {
     try {
       // Fetch club data from API
-      const club: any = await firstValueFrom(
-        this.#clubsService.clubControllerFindOne(clubId)
-      );
+      const club = await this.#clubsService.clubControllerFindOne(clubId);
 
-      if (club?.data) {
+      if (club) {
         // TODO: Get user's role in the club from members endpoint
         // For now, default to member
-        this.switchToClub(club.data, PrismaClubRole.member);
+        this.switchToClub(club, PrismaClubRole.member);
       } else {
         console.warn('[ContextStore] Club not found, falling back to solo');
         this.switchToSolo();
