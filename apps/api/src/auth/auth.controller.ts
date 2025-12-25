@@ -110,6 +110,8 @@ export class AuthController {
   /**
    * Update current user profile
    * PATCH /api/auth/profile
+   *
+   * Auto-creates user in DB if doesn't exist (for OAuth users with custom claims)
    */
   @Patch('profile')
   @UseGuards(JwtAuthGuard)
@@ -122,11 +124,11 @@ export class AuthController {
     type: UserDto,
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'User not found' })
   async updateProfile(
     @CurrentUser() user: any,
     @Body() dto: UpdateProfileDto
   ): Promise<UserDto> {
-    return this.authService.updateProfile(user.id, dto);
+    // Pass full dbUser to ensure user exists in DB (upsert)
+    return this.authService.updateProfile(user.dbUser, dto);
   }
 }

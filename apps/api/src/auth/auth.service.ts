@@ -130,17 +130,25 @@ export class AuthService {
   }
 
   /**
-   * Update user profile
+   * Update user profile (upsert to handle virtual dbUser from JwtAuthGuard)
    */
   async updateProfile(
-    userId: string,
+    dbUser: any,
     dto: UpdateProfileDto
   ): Promise<UserDto> {
-    const user = await this.prismaService.user.update({
-      where: { id: userId },
-      data: {
+    // Upsert: create user if doesn't exist (OAuth with custom claims case)
+    const user = await this.prismaService.user.upsert({
+      where: { id: dbUser.id },
+      update: {
         ...(dto.displayName && { displayName: dto.displayName }),
         ...(dto.avatarUrl !== undefined && { avatarUrl: dto.avatarUrl }),
+      },
+      create: {
+        id: dbUser.id,
+        email: dbUser.email,
+        displayName: dto.displayName || dbUser.displayName,
+        avatarUrl: dto.avatarUrl !== undefined ? dto.avatarUrl : dbUser.avatarUrl,
+        role: dbUser.role || 'user',
       },
     });
 
