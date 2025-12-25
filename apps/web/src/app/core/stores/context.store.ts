@@ -1,5 +1,9 @@
 import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { ClubsService } from '@cigar-platform/types';
+import type { ClubResponseDto } from '@cigar-platform/types';
+import { ClubRole as PrismaClubRole } from '@cigar-platform/prisma-client';
 
 /**
  * Context Types
@@ -9,7 +13,7 @@ export type ContextType = 'solo' | 'club';
 /**
  * Club Role (when in club context)
  */
-export type ClubRole = 'member' | 'admin' | 'owner';
+export type ClubRole = PrismaClubRole;
 
 /**
  * App Context State
@@ -17,7 +21,7 @@ export type ClubRole = 'member' | 'admin' | 'owner';
 export interface AppContext {
   type: ContextType;
   clubId: string | null;
-  club: any | null; // TODO: Replace with ClubDto when available
+  club: ClubResponseDto | null;
   clubRole: ClubRole | null; // User's role in the active club (not platform role)
 }
 
@@ -61,6 +65,7 @@ export interface AppContext {
 })
 export class ContextStore {
   #router = inject(Router);
+  #clubsService = inject(ClubsService);
 
   /**
    * Active context state
@@ -81,7 +86,7 @@ export class ContextStore {
    * Available clubs for current user
    * Loaded on app init
    */
-  #userClubs = signal<any[]>([]); // TODO: Replace with ClubDto[]
+  #userClubs = signal<ClubResponseDto[]>([]);
 
   /**
    * Read-only user clubs
@@ -181,7 +186,7 @@ export class ContextStore {
   /**
    * Switch to club context
    */
-  switchToClub(club: any, role: ClubRole): void {
+  switchToClub(club: ClubResponseDto, role: ClubRole): void {
     this.#context.set({
       type: 'club',
       clubId: club.id,
@@ -195,34 +200,23 @@ export class ContextStore {
   /**
    * Load user's clubs
    * Called on app init
+   * TODO: Add backend endpoint GET /me/clubs for better performance
    */
   async loadUserClubs(): Promise<void> {
     this.#loadingClubs.set(true);
 
     try {
-      // TODO: Call API to fetch user's clubs
-      // const clubs = await this.clubsService.getUserClubs();
-      // this.#userClubs.set(clubs);
+      // For now, fetch all clubs (will be filtered by backend to user's clubs later)
+      const response: any = await firstValueFrom(
+        this.#clubsService.clubControllerFindAll({ limit: 100 })
+      );
 
-      // Mock data for now
-      const mockClubs = [
-        {
-          id: 'club-1',
-          name: 'Havana Club',
-          avatarUrl: null,
-          memberCount: 45,
-        },
-        {
-          id: 'club-2',
-          name: 'Les Aficionados',
-          avatarUrl: null,
-          memberCount: 23,
-        },
-      ];
-
-      this.#userClubs.set(mockClubs);
-
-      console.log('[ContextStore] Loaded user clubs:', mockClubs.length);
+      if (response?.data?.data) {
+        this.#userClubs.set(response.data.data);
+        console.log('[ContextStore] Loaded user clubs:', response.data.data.length);
+      } else {
+        this.#userClubs.set([]);
+      }
     } catch (error) {
       console.error('[ContextStore] Failed to load user clubs:', error);
       this.#userClubs.set([]);
@@ -266,7 +260,7 @@ export class ContextStore {
    * Add a club to user's clubs
    * Called after joining or creating a club
    */
-  addUserClub(club: any): void {
+  addUserClub(club: ClubResponseDto): void {
     const current = this.#userClubs();
     if (current.find((c) => c.id === club.id)) {
       console.log('[ContextStore] Club already in user clubs');
@@ -292,6 +286,17 @@ export class ContextStore {
     }
 
     console.log('[ContextStore] Removed club from user clubs:', clubId);
+  }
+
+  /**
+   * Refresh current context
+   * Reloads club data if in club context
+   */
+  async refresh(): Promise<void> {
+    const ctx = this.context();
+    if (ctx.type === 'club' && ctx.clubId) {
+      await this.#restoreClubContext(ctx.clubId);
+    }
   }
 
   // ==================== Private Methods ====================
@@ -335,20 +340,17 @@ export class ContextStore {
    */
   async #restoreClubContext(clubId: string): Promise<void> {
     try {
-      // TODO: Fetch club data from API
-      // const club = await this.clubsService.getClubById(clubId);
-      // const userRole = await this.clubsService.getUserRoleInClub(clubId);
-      // this.switchToClub(club, userRole);
+      // Fetch club data from API
+      const club: any = await firstValueFrom(
+        this.#clubsService.clubControllerFindOne(clubId)
+      );
 
-      // For now, check if club is in userClubs
-      const clubs = this.#userClubs();
-      const club = clubs.find((c) => c.id === clubId);
-
-      if (club) {
-        this.switchToClub(club, 'member'); // TODO: Get actual role
+      if (club?.data) {
+        // TODO: Get user's role in the club from members endpoint
+        // For now, default to member
+        this.switchToClub(club.data, PrismaClubRole.member);
       } else {
-        // Club not found, fallback to solo
-        console.warn('[ContextStore] Club not found in user clubs, falling back to solo');
+        console.warn('[ContextStore] Club not found, falling back to solo');
         this.switchToSolo();
       }
     } catch (error) {

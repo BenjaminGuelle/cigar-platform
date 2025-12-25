@@ -19,13 +19,26 @@ import type {
 } from '@orval/core';
 
 import type {
+  BanMemberDto,
   ClubControllerFindAllParams,
+  ClubControllerGetJoinRequestsParams,
+  ClubControllerGetMembersParams,
   ClubResponseDto,
   CreateClubDto,
-  UpdateClubDto
+  CreateJoinRequestDto,
+  JoinByCodeDto,
+  TransferOwnershipDto,
+  UpdateClubDto,
+  UpdateJoinRequestDto,
+  UpdateMemberRoleDto
 } from '../generated-api.schemas';
 
 import { customInstance } from '../../../../../apps/web/src/app/core/api/custom-instance';
+
+
+
+
+
 
 @Injectable({ providedIn: 'root' })
 export class ClubsService {
@@ -96,6 +109,165 @@ export class ClubsService {
       this.http,
       );
     }
+  /**
+ * @summary Get club members
+ */
+ clubControllerGetMembers<TData = void>(
+    id: string,
+    params: DeepNonNullable<ClubControllerGetMembersParams>,
+ ) {
+      return customInstance<TData>(
+      {url: `/api/clubs/${id}/members`, method: 'GET',
+        params
+    },
+      this.http,
+      );
+    }
+  /**
+ * @summary Update member role
+ */
+ clubControllerUpdateMemberRole<TData = void>(
+    id: string,
+    userId: string,
+    updateMemberRoleDto: UpdateMemberRoleDto,
+ ) {
+      return customInstance<TData>(
+      {url: `/api/clubs/${id}/members/${userId}/role`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: updateMemberRoleDto
+    },
+      this.http,
+      );
+    }
+  /**
+ * @summary Transfer club ownership
+ */
+ clubControllerTransferOwnership<TData = void>(
+    id: string,
+    transferOwnershipDto: TransferOwnershipDto,
+ ) {
+      return customInstance<TData>(
+      {url: `/api/clubs/${id}/transfer-ownership`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: transferOwnershipDto
+    },
+      this.http,
+      );
+    }
+  /**
+ * @summary Remove a member from club
+ */
+ clubControllerRemoveMember<TData = void>(
+    id: string,
+    userId: string,
+ ) {
+      return customInstance<TData>(
+      {url: `/api/clubs/${id}/members/${userId}`, method: 'DELETE'
+    },
+      this.http,
+      );
+    }
+  /**
+ * @summary Ban a member from club
+ */
+ clubControllerBanMember<TData = void>(
+    id: string,
+    userId: string,
+    banMemberDto: BanMemberDto,
+ ) {
+      return customInstance<TData>(
+      {url: `/api/clubs/${id}/members/${userId}/ban`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: banMemberDto
+    },
+      this.http,
+      );
+    }
+  /**
+ * @summary Unban a member from club
+ */
+ clubControllerUnbanMember<TData = void>(
+    id: string,
+    userId: string,
+ ) {
+      return customInstance<TData>(
+      {url: `/api/clubs/${id}/members/${userId}/ban`, method: 'DELETE'
+    },
+      this.http,
+      );
+    }
+  /**
+ * @summary Join a club or create join request
+ */
+ clubControllerJoinClub<TData = void>(
+    id: string,
+    createJoinRequestDto: CreateJoinRequestDto,
+ ) {
+      return customInstance<TData>(
+      {url: `/api/clubs/${id}/join`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: createJoinRequestDto
+    },
+      this.http,
+      );
+    }
+  /**
+ * @summary Join a club using invite code
+ */
+ clubControllerJoinByCode<TData = void>(
+    joinByCodeDto: JoinByCodeDto,
+ ) {
+      return customInstance<TData>(
+      {url: `/api/clubs/join-by-code`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: joinByCodeDto
+    },
+      this.http,
+      );
+    }
+  /**
+ * @summary Get club join requests
+ */
+ clubControllerGetJoinRequests<TData = void>(
+    id: string,
+    params: DeepNonNullable<ClubControllerGetJoinRequestsParams>,
+ ) {
+      return customInstance<TData>(
+      {url: `/api/clubs/${id}/join-requests`, method: 'GET',
+        params
+    },
+      this.http,
+      );
+    }
+  /**
+ * @summary Approve or reject join request
+ */
+ clubControllerUpdateJoinRequest<TData = void>(
+    id: unknown,
+    requestId: string,
+    updateJoinRequestDto: UpdateJoinRequestDto,
+ ) {
+      return customInstance<TData>(
+      {url: `/api/clubs/${id}/join-requests/${requestId}`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: updateJoinRequestDto
+    },
+      this.http,
+      );
+    }
+  /**
+ * @summary Cancel join request
+ */
+ clubControllerCancelJoinRequest<TData = void>(
+    id: unknown,
+    requestId: string,
+ ) {
+      return customInstance<TData>(
+      {url: `/api/clubs/${id}/join-requests/${requestId}`, method: 'DELETE'
+    },
+      this.http,
+      );
+    }
   };
 
 export type ClubControllerCreateClientResult = NonNullable<ClubResponseDto>
@@ -103,3 +275,14 @@ export type ClubControllerFindAllClientResult = NonNullable<void>
 export type ClubControllerFindOneClientResult = NonNullable<ClubResponseDto>
 export type ClubControllerUpdateClientResult = NonNullable<ClubResponseDto>
 export type ClubControllerRemoveClientResult = NonNullable<void>
+export type ClubControllerGetMembersClientResult = NonNullable<void>
+export type ClubControllerUpdateMemberRoleClientResult = NonNullable<void>
+export type ClubControllerTransferOwnershipClientResult = NonNullable<void>
+export type ClubControllerRemoveMemberClientResult = NonNullable<void>
+export type ClubControllerBanMemberClientResult = NonNullable<void>
+export type ClubControllerUnbanMemberClientResult = NonNullable<void>
+export type ClubControllerJoinClubClientResult = NonNullable<void>
+export type ClubControllerJoinByCodeClientResult = NonNullable<void>
+export type ClubControllerGetJoinRequestsClientResult = NonNullable<void>
+export type ClubControllerUpdateJoinRequestClientResult = NonNullable<void>
+export type ClubControllerCancelJoinRequestClientResult = NonNullable<void>

@@ -76,6 +76,18 @@ export interface UpdateProfileDto {
   avatarUrl?: string;
 }
 
+/**
+ * Club visibility
+ */
+export type CreateClubDtoVisibility = typeof CreateClubDtoVisibility[keyof typeof CreateClubDtoVisibility];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CreateClubDtoVisibility = {
+  PUBLIC: 'PUBLIC',
+  PRIVATE: 'PRIVATE',
+} as const;
+
 export interface CreateClubDto {
   /**
    * Club name
@@ -88,24 +100,164 @@ export interface CreateClubDto {
    * @maxLength 1000
    */
   description?: string;
-  /** Club image URL */
+  /** Club avatar image URL */
   imageUrl?: string;
+  /** Club cover image URL */
+  coverUrl?: string;
+  /** Club visibility */
+  visibility?: CreateClubDtoVisibility;
+  /** Auto-approve join requests */
+  autoApproveMembers?: boolean;
+  /** Allow members to invite others */
+  allowMemberInvites?: boolean;
+  /** Maximum number of members (null = unlimited) */
+  maxMembers?: number;
+  /** Show in public directory (even if PRIVATE) */
+  isPublicDirectory?: boolean;
 }
 
 export type ClubResponseDtoDescription = { [key: string]: unknown };
 
 export type ClubResponseDtoImageUrl = { [key: string]: unknown };
 
+export type ClubResponseDtoCoverUrl = { [key: string]: unknown };
+
+export type ClubResponseDtoVisibility = typeof ClubResponseDtoVisibility[keyof typeof ClubResponseDtoVisibility];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ClubResponseDtoVisibility = {
+  PUBLIC: 'PUBLIC',
+  PRIVATE: 'PRIVATE',
+} as const;
+
+/**
+ * Only returned for club owners/admins
+ */
+export type ClubResponseDtoInviteCode = { [key: string]: unknown };
+
+export type ClubResponseDtoMaxMembers = { [key: string]: unknown };
+
 export interface ClubResponseDto {
   id: string;
   name: string;
   description?: ClubResponseDtoDescription;
   imageUrl?: ClubResponseDtoImageUrl;
+  coverUrl?: ClubResponseDtoCoverUrl;
+  visibility: ClubResponseDtoVisibility;
+  /** Only returned for club owners/admins */
+  inviteCode?: ClubResponseDtoInviteCode;
+  isPublicDirectory: boolean;
+  autoApproveMembers: boolean;
+  allowMemberInvites: boolean;
+  maxMembers?: ClubResponseDtoMaxMembers;
+  isArchived: boolean;
   createdBy: string;
   createdAt: string;
+  updatedAt: string;
 }
 
-export interface UpdateClubDto { [key: string]: unknown }
+/**
+ * Club visibility
+ */
+export type UpdateClubDtoVisibility = typeof UpdateClubDtoVisibility[keyof typeof UpdateClubDtoVisibility];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UpdateClubDtoVisibility = {
+  PUBLIC: 'PUBLIC',
+  PRIVATE: 'PRIVATE',
+} as const;
+
+export interface UpdateClubDto {
+  /**
+   * Club name
+   * @minLength 3
+   * @maxLength 100
+   */
+  name?: string;
+  /**
+   * Club description
+   * @maxLength 1000
+   */
+  description?: string;
+  /** Club avatar image URL */
+  imageUrl?: string;
+  /** Club cover image URL */
+  coverUrl?: string;
+  /** Club visibility */
+  visibility?: UpdateClubDtoVisibility;
+  /** Auto-approve join requests */
+  autoApproveMembers?: boolean;
+  /** Allow members to invite others */
+  allowMemberInvites?: boolean;
+  /** Maximum number of members (null = unlimited) */
+  maxMembers?: number;
+  /** Show in public directory (even if PRIVATE) */
+  isPublicDirectory?: boolean;
+}
+
+/**
+ * New role for the member
+ */
+export type UpdateMemberRoleDtoRole = typeof UpdateMemberRoleDtoRole[keyof typeof UpdateMemberRoleDtoRole];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UpdateMemberRoleDtoRole = {
+  owner: 'owner',
+  admin: 'admin',
+  member: 'member',
+} as const;
+
+export interface UpdateMemberRoleDto {
+  /** New role for the member */
+  role: UpdateMemberRoleDtoRole;
+}
+
+export interface TransferOwnershipDto {
+  /** User ID of the new owner */
+  newOwnerId: string;
+}
+
+export interface BanMemberDto {
+  /**
+   * Reason for banning the member
+   * @maxLength 500
+   */
+  reason?: string;
+}
+
+export interface CreateJoinRequestDto {
+  /**
+   * Optional message to club owner/admin
+   * @maxLength 500
+   */
+  message?: string;
+}
+
+export interface JoinByCodeDto {
+  /** Club invitation code */
+  code?: string;
+}
+
+/**
+ * Join request status
+ */
+export type UpdateJoinRequestDtoStatus = typeof UpdateJoinRequestDtoStatus[keyof typeof UpdateJoinRequestDtoStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UpdateJoinRequestDtoStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+} as const;
+
+export interface UpdateJoinRequestDto {
+  /** Join request status */
+  status?: UpdateJoinRequestDtoStatus;
+}
 
 export type ClubControllerFindAllParams = {
 /**
@@ -150,6 +302,17 @@ export const ClubControllerFindAllOrder = {
   asc: 'asc',
   desc: 'desc',
 } as const;
+
+export type ClubControllerGetMembersParams = {
+page: number;
+limit: number;
+};
+
+export type ClubControllerGetJoinRequestsParams = {
+page: number;
+limit: number;
+status: string;
+};
 
 export type UsersControllerUploadAvatarBody = {
   /** Image file (JPEG, PNG, WebP, max 5MB) */
