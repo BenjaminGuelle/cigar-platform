@@ -1,6 +1,6 @@
 import { IsString, IsOptional, MaxLength, IsEnum } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { JoinRequestStatus } from '@prisma/client';
+import { JoinRequestStatus } from '@cigar-platform/prisma-client';
 
 export class CreateJoinRequestDto {
   @IsString()

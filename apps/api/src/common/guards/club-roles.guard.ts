@@ -1,16 +1,26 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../app/prisma.service';
 import { Role, ClubRole } from '@cigar-platform/prisma-client';
 import { ClubMember } from '../../../../../generated/prisma';
+import { CLUB_ROLES_KEY } from '../decorators/club-roles.decorator';
 
 @Injectable()
 export class ClubRolesGuard implements CanActivate {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly reflector: Reflector
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    const requiredRoles = this.reflector.getAllAndOverride<ClubRole[]>(CLUB_ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
     const request: any = context.switchToHttp().getRequest();
     const user: any = request.user?.dbUser;
-    const clubId: string = request.params.id;
+    const clubId: string = request.params.id || request.params.clubId || request.body?.clubId;
 
     if (!user || !clubId) {
       return false;
@@ -30,7 +40,16 @@ export class ClubRolesGuard implements CanActivate {
       },
     });
 
-    // Club owners and admins can manage the club
-    return clubMember?.role === ClubRole.owner || clubMember?.role === ClubRole.admin;
+    if (!clubMember) {
+      return false;
+    }
+
+    // If no specific roles required, just check membership
+    if (!requiredRoles || requiredRoles.length === 0) {
+      return true;
+    }
+
+    // Check if user has any of the required roles
+    return requiredRoles.includes(clubMember.role);
   }
 }

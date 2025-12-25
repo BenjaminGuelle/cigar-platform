@@ -1,6 +1,6 @@
 import { IsString, IsOptional, MaxLength, IsEnum, IsUUID } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ClubRole } from '@prisma/client';
+import { ClubRole } from '@cigar-platform/prisma-client';
 
 export class BanMemberDto {
   @IsString()

@@ -11,7 +11,7 @@ import {
   Min,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ClubVisibility } from '@prisma/client';
+import { ClubVisibility } from '@cigar-platform/prisma-client';
 
 export class CreateClubDto {
   @IsString()

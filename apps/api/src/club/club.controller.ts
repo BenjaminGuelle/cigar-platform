@@ -19,22 +19,36 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { ClubService } from './club.service';
+import { ClubMemberService } from './club-member.service';
+import { ClubJoinRequestService } from './club-join-request.service';
 import {
   CreateClubDto,
   UpdateClubDto,
   ClubResponseDto,
   FilterClubDto,
+  CreateJoinRequestDto,
+  UpdateJoinRequestDto,
+  JoinByCodeDto,
+  UpdateMemberRoleDto,
+  TransferOwnershipDto,
+  BanMemberDto,
 } from './dto';
+import { ClubRole } from '@cigar-platform/prisma-client';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ClubRolesGuard } from '../common/guards/club-roles.guard';
+import { ClubRoles } from '../common/decorators';
 
 @ApiTags('clubs')
 @Controller('clubs')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class ClubController {
-  constructor(private readonly clubService: ClubService) {}
+  constructor(
+    private readonly clubService: ClubService,
+    private readonly clubMemberService: ClubMemberService,
+    private readonly clubJoinRequestService: ClubJoinRequestService
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new club' })
@@ -159,5 +173,186 @@ export class ClubController {
   })
   async remove(@Param('id') id: string): Promise<void> {
     return this.clubService.remove(id);
+  }
+
+  // ==================== MEMBER MANAGEMENT ====================
+
+  @Get(':id/members')
+  @UseGuards(ClubRolesGuard)
+  @ApiOperation({ summary: 'Get club members' })
+  @ApiParam({ name: 'id', description: 'Club UUID' })
+  @ApiResponse({ status: 200, description: 'Members retrieved successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Must be a club member' })
+  @ApiResponse({ status: 404, description: 'Club not found' })
+  async getMembers(
+    @Param('id') clubId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('role') role?: ClubRole
+  ) {
+    return this.clubMemberService.getMembers(clubId, { page, limit, role });
+  }
+
+  @Patch(':id/members/:userId/role')
+  @UseGuards(ClubRolesGuard)
+  @ClubRoles(ClubRole.owner, ClubRole.admin)
+  @ApiOperation({ summary: 'Update member role' })
+  @ApiParam({ name: 'id', description: 'Club UUID' })
+  @ApiParam({ name: 'userId', description: 'User UUID' })
+  @ApiResponse({ status: 200, description: 'Role updated successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Only owners and admins' })
+  @ApiResponse({ status: 404, description: 'Member not found' })
+  async updateMemberRole(
+    @Param('id') clubId: string,
+    @Param('userId') userId: string,
+    @Body() updateDto: UpdateMemberRoleDto
+  ) {
+    return this.clubMemberService.updateMemberRole(clubId, userId, updateDto);
+  }
+
+  @Post(':id/transfer-ownership')
+  @UseGuards(ClubRolesGuard)
+  @ClubRoles(ClubRole.owner)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Transfer club ownership' })
+  @ApiParam({ name: 'id', description: 'Club UUID' })
+  @ApiResponse({ status: 204, description: 'Ownership transferred successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Only owner' })
+  @ApiResponse({ status: 404, description: 'New owner not found' })
+  async transferOwnership(
+    @Param('id') clubId: string,
+    @CurrentUser('id') currentOwnerId: string,
+    @Body() transferDto: TransferOwnershipDto
+  ) {
+    return this.clubMemberService.transferOwnership(clubId, currentOwnerId, transferDto);
+  }
+
+  @Delete(':id/members/:userId')
+  @UseGuards(ClubRolesGuard)
+  @ClubRoles(ClubRole.owner, ClubRole.admin)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Remove a member from club' })
+  @ApiParam({ name: 'id', description: 'Club UUID' })
+  @ApiParam({ name: 'userId', description: 'User UUID' })
+  @ApiResponse({ status: 204, description: 'Member removed successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Only owners and admins' })
+  @ApiResponse({ status: 404, description: 'Member not found' })
+  async removeMember(
+    @Param('id') clubId: string,
+    @Param('userId') userId: string
+  ) {
+    return this.clubMemberService.removeMember(clubId, userId);
+  }
+
+  @Post(':id/members/:userId/ban')
+  @UseGuards(ClubRolesGuard)
+  @ClubRoles(ClubRole.owner, ClubRole.admin)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Ban a member from club' })
+  @ApiParam({ name: 'id', description: 'Club UUID' })
+  @ApiParam({ name: 'userId', description: 'User UUID' })
+  @ApiResponse({ status: 204, description: 'Member banned successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Only owners and admins' })
+  @ApiResponse({ status: 404, description: 'Member not found' })
+  async banMember(
+    @Param('id') clubId: string,
+    @Param('userId') userId: string,
+    @CurrentUser('id') bannedBy: string,
+    @Body() banDto: BanMemberDto
+  ) {
+    return this.clubMemberService.banMember(clubId, userId, bannedBy, banDto);
+  }
+
+  @Delete(':id/members/:userId/ban')
+  @UseGuards(ClubRolesGuard)
+  @ClubRoles(ClubRole.owner, ClubRole.admin)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Unban a member from club' })
+  @ApiParam({ name: 'id', description: 'Club UUID' })
+  @ApiParam({ name: 'userId', description: 'User UUID' })
+  @ApiResponse({ status: 204, description: 'Member unbanned successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Only owners and admins' })
+  @ApiResponse({ status: 404, description: 'Ban not found' })
+  async unbanMember(
+    @Param('id') clubId: string,
+    @Param('userId') userId: string
+  ) {
+    return this.clubMemberService.unbanMember(clubId, userId);
+  }
+
+  // ==================== JOIN REQUESTS ====================
+
+  @Post(':id/join')
+  @ApiOperation({ summary: 'Join a club or create join request' })
+  @ApiParam({ name: 'id', description: 'Club UUID' })
+  @ApiResponse({ status: 201, description: 'Joined or request created' })
+  @ApiResponse({ status: 403, description: 'Forbidden - User is banned or already member' })
+  @ApiResponse({ status: 404, description: 'Club not found' })
+  async joinClub(
+    @Param('id') clubId: string,
+    @CurrentUser('id') userId: string,
+    @Body() createDto: CreateJoinRequestDto
+  ) {
+    return this.clubJoinRequestService.createJoinRequest(clubId, userId, createDto);
+  }
+
+  @Post('join-by-code')
+  @ApiOperation({ summary: 'Join a club using invite code' })
+  @ApiResponse({ status: 201, description: 'Joined successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid invite code' })
+  @ApiResponse({ status: 403, description: 'Forbidden - User is banned or already member' })
+  async joinByCode(
+    @CurrentUser('id') userId: string,
+    @Body() joinDto: JoinByCodeDto
+  ) {
+    return this.clubJoinRequestService.joinByCode(joinDto, userId);
+  }
+
+  @Get(':id/join-requests')
+  @UseGuards(ClubRolesGuard)
+  @ClubRoles(ClubRole.owner, ClubRole.admin)
+  @ApiOperation({ summary: 'Get club join requests' })
+  @ApiParam({ name: 'id', description: 'Club UUID' })
+  @ApiResponse({ status: 200, description: 'Join requests retrieved successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Only owners and admins' })
+  async getJoinRequests(
+    @Param('id') clubId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('status') status?: string
+  ) {
+    return this.clubJoinRequestService.getJoinRequests(clubId, { page, limit, status: status as any });
+  }
+
+  @Patch(':id/join-requests/:requestId')
+  @UseGuards(ClubRolesGuard)
+  @ClubRoles(ClubRole.owner, ClubRole.admin)
+  @ApiOperation({ summary: 'Approve or reject join request' })
+  @ApiParam({ name: 'id', description: 'Club UUID' })
+  @ApiParam({ name: 'requestId', description: 'Join Request UUID' })
+  @ApiResponse({ status: 200, description: 'Join request processed' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Only owners and admins' })
+  @ApiResponse({ status: 404, description: 'Join request not found' })
+  async updateJoinRequest(
+    @Param('requestId') requestId: string,
+    @CurrentUser('id') reviewedBy: string,
+    @Body() updateDto: UpdateJoinRequestDto
+  ) {
+    return this.clubJoinRequestService.updateJoinRequest(requestId, reviewedBy, updateDto);
+  }
+
+  @Delete(':id/join-requests/:requestId')
+  @ApiOperation({ summary: 'Cancel join request' })
+  @ApiParam({ name: 'id', description: 'Club UUID' })
+  @ApiParam({ name: 'requestId', description: 'Join Request UUID' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiResponse({ status: 204, description: 'Join request cancelled' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Can only cancel own requests' })
+  @ApiResponse({ status: 404, description: 'Join request not found' })
+  async cancelJoinRequest(
+    @Param('requestId') requestId: string,
+    @CurrentUser('id') userId: string
+  ) {
+    return this.clubJoinRequestService.cancelJoinRequest(requestId, userId);
   }
 }

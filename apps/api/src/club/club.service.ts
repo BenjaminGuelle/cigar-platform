@@ -50,29 +50,42 @@ export class ClubService {
     try {
       // Use transaction to create club and club member atomically
       const club = await this.prisma.$transaction(async (tx) => {
+        // Generate invite code if visibility is PRIVATE
+        const inviteCode =
+          createClubDto.visibility === 'PRIVATE'
+            ? this.generateInviteCode()
+            : null;
+
         // Create the club
         const newClub = await tx.club.create({
           data: {
             name: createClubDto.name,
             description: createClubDto.description ?? null,
             imageUrl: createClubDto.imageUrl ?? null,
+            coverUrl: createClubDto.coverUrl ?? null,
+            visibility: createClubDto.visibility ?? 'PUBLIC',
+            inviteCode,
+            isPublicDirectory: createClubDto.isPublicDirectory ?? true,
+            autoApproveMembers: createClubDto.autoApproveMembers ?? true,
+            allowMemberInvites: createClubDto.allowMemberInvites ?? false,
+            maxMembers: createClubDto.maxMembers ?? null,
             createdBy: userId,
           },
         });
 
-        // Automatically add creator as club admin
+        // Automatically add creator as club owner
         await tx.clubMember.create({
           data: {
             clubId: newClub.id,
             userId: userId,
-            role: ClubRole.admin,
+            role: ClubRole.owner,
           },
         });
 
         return newClub;
       });
 
-      this.logger.log(`Club created: ${club.id} by user ${userId} (auto-assigned as admin)`);
+      this.logger.log(`Club created: ${club.id} by user ${userId} (auto-assigned as owner)`);
       return this.mapToResponse(club);
     } catch (error) {
       if (
@@ -83,6 +96,19 @@ export class ClubService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Generate unique invite code for private clubs
+   * Format: CLUBNAME-XXXX (e.g., COHIBA-LOVERS-A7X9)
+   */
+  private generateInviteCode(): string {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude similar chars (I, O, 0, 1)
+    let code = '';
+    for (let i = 0; i < 8; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
   }
 
   async findAll(
@@ -118,8 +144,17 @@ export class ClubService {
           name: true,
           description: true,
           imageUrl: true,
+          coverUrl: true,
+          visibility: true,
+          inviteCode: true,
+          isPublicDirectory: true,
+          autoApproveMembers: true,
+          allowMemberInvites: true,
+          maxMembers: true,
+          isArchived: true,
           createdBy: true,
           createdAt: true,
+          updatedAt: true,
         },
       }),
       this.prisma.club.count({ where }),
@@ -146,8 +181,17 @@ export class ClubService {
         name: true,
         description: true,
         imageUrl: true,
+        coverUrl: true,
+        visibility: true,
+        inviteCode: true,
+        isPublicDirectory: true,
+        autoApproveMembers: true,
+        allowMemberInvites: true,
+        maxMembers: true,
+        isArchived: true,
         createdBy: true,
         createdAt: true,
+        updatedAt: true,
       },
     });
 
@@ -197,6 +241,12 @@ export class ClubService {
           name: updateClubDto.name,
           description: updateClubDto.description,
           imageUrl: updateClubDto.imageUrl,
+          coverUrl: updateClubDto.coverUrl,
+          visibility: updateClubDto.visibility,
+          isPublicDirectory: updateClubDto.isPublicDirectory,
+          autoApproveMembers: updateClubDto.autoApproveMembers,
+          allowMemberInvites: updateClubDto.allowMemberInvites,
+          maxMembers: updateClubDto.maxMembers,
         },
       });
 
@@ -237,8 +287,17 @@ export class ClubService {
       name: club.name,
       description: club.description,
       imageUrl: club.imageUrl,
+      coverUrl: club.coverUrl,
+      visibility: club.visibility,
+      inviteCode: club.inviteCode,
+      isPublicDirectory: club.isPublicDirectory,
+      autoApproveMembers: club.autoApproveMembers,
+      allowMemberInvites: club.allowMemberInvites,
+      maxMembers: club.maxMembers,
+      isArchived: club.isArchived,
       createdBy: club.createdBy,
       createdAt: club.createdAt,
+      updatedAt: club.updatedAt,
     };
   }
 }
