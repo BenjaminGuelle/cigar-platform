@@ -28,6 +28,19 @@ enum ClubRole {
   member  // Club member (peut voir et participer)
 }
 
+// Club visibility
+enum ClubVisibility {
+  PUBLIC   // Visible dans /explore, rejoignable selon autoApprove
+  PRIVATE  // Invitation/demande uniquement
+}
+
+// Join request status
+enum JoinRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 // ============================================
 // MODELS
 // ============================================
@@ -41,11 +54,14 @@ model User {
   createdAt   DateTime @default(now())
 
   // Relations
-  clubMemberships ClubMember[]
-  createdClubs    Club[]       @relation("CreatedClubs")
-  evaluations     Evaluation[]
-  createdCigars   Cigar[]      @relation("CreatedCigars")
-  createdEvents   Event[]      @relation("CreatedEvents")
+  clubMemberships  ClubMember[]
+  createdClubs     Club[]            @relation("CreatedClubs")
+  evaluations      Evaluation[]
+  createdCigars    Cigar[]           @relation("CreatedCigars")
+  createdEvents    Event[]           @relation("CreatedEvents")
+  clubJoinRequests ClubJoinRequest[]
+  bannedFromClubs  ClubBan[]         @relation("BannedFromClubs")
+  bannedMembers    ClubBan[]         @relation("BannedMembers")
 
   @@map("users")
 }
@@ -55,13 +71,32 @@ model Club {
   name        String
   description String?
   imageUrl    String?
-  createdBy   String   @db.Uuid
-  createdAt   DateTime @default(now())
+  coverUrl    String?
+
+  // Visibilité et accès
+  visibility        ClubVisibility @default(PUBLIC)
+  inviteCode        String?        @unique
+  isPublicDirectory Boolean        @default(true)
+
+  // Settings de jointure
+  autoApproveMembers Boolean @default(true)
+  allowMemberInvites Boolean @default(false)
+  maxMembers         Int?
+
+  // Status
+  isArchived Boolean @default(false)
+
+  // Metadata
+  createdBy String   @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  creator User         @relation("CreatedClubs", fields: [createdBy], references: [id], onDelete: Cascade)
-  members ClubMember[]
-  events  Event[]
+  creator       User              @relation("CreatedClubs", fields: [createdBy], references: [id], onDelete: Cascade)
+  members       ClubMember[]
+  events        Event[]
+  joinRequests  ClubJoinRequest[]
+  bannedMembers ClubBan[]
 
   @@map("clubs")
 }
@@ -81,6 +116,44 @@ model ClubMember {
   @@index([userId])
   @@index([clubId])
   @@map("club_members")
+}
+
+model ClubJoinRequest {
+  id        String            @id @default(uuid()) @db.Uuid
+  clubId    String            @db.Uuid
+  userId    String            @db.Uuid
+  status    JoinRequestStatus @default(PENDING)
+  message   String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  // Relations
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([clubId, userId])
+  @@index([clubId])
+  @@index([userId])
+  @@map("club_join_requests")
+}
+
+model ClubBan {
+  id        String   @id @default(uuid()) @db.Uuid
+  clubId    String   @db.Uuid
+  userId    String   @db.Uuid
+  bannedBy  String   @db.Uuid
+  reason    String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  club         Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  user         User @relation("BannedFromClubs", fields: [userId], references: [id], onDelete: Cascade)
+  bannedByUser User @relation("BannedMembers", fields: [bannedBy], references: [id], onDelete: Cascade)
+
+  @@unique([clubId, userId])
+  @@index([clubId])
+  @@index([userId])
+  @@map("club_bans")
 }
 
 model Event {
