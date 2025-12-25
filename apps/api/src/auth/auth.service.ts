@@ -162,6 +162,27 @@ export class AuthService {
   }
 
   /**
+   * Build UserDto from user data (public for use in controllers)
+   * Accepts both Prisma User and virtual dbUser from JwtAuthGuard
+   */
+  buildUserDto(user: any, authProvider?: string): UserDto {
+    const userDto: UserDto = {
+      id: user.id,
+      email: user.email,
+      displayName: user.displayName,
+      avatarUrl: user.avatarUrl,
+      role: user.role as unknown as UserDto['role'],
+      createdAt: user.createdAt instanceof Date ? user.createdAt : new Date(user.createdAt),
+    };
+
+    if (authProvider) {
+      userDto.authProvider = authProvider as 'google' | 'apple' | 'email';
+    }
+
+    return userDto;
+  }
+
+  /**
    * Build authentication response with user and session data
    */
   private buildAuthResponse(user: User, session: Session): AuthResponseDto {

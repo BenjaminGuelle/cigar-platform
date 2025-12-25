@@ -89,6 +89,8 @@ export class AuthController {
   /**
    * Get current user profile
    * GET /api/auth/profile
+   *
+   * Uses dbUser from JwtAuthGuard (no additional DB query needed)
    */
   @Get('profile')
   @UseGuards(JwtAuthGuard)
@@ -100,9 +102,9 @@ export class AuthController {
     type: UserDto,
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'User not found' })
   async getProfile(@CurrentUser() user: any): Promise<UserDto> {
-    return this.authService.getProfile(user.id, user.authProvider);
+    // Use dbUser directly from JwtAuthGuard (already contains all user data)
+    return this.authService.buildUserDto(user.dbUser, user.authProvider);
   }
 
   /**
