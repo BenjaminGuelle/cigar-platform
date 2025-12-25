@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { Session } from '@supabase/supabase-js';
-import { User } from '@cigar-platform/prisma-client';
+import { User, Role } from '@cigar-platform/prisma-client';
 import { SupabaseService } from './supabase.service';
 import { PrismaService } from '../app/prisma.service';
 import {
@@ -148,7 +148,7 @@ export class AuthService {
         email: dbUser.email,
         displayName: dto.displayName || dbUser.displayName,
         avatarUrl: dto.avatarUrl !== undefined ? dto.avatarUrl : dbUser.avatarUrl,
-        role: dbUser.role || 'USER', // Prisma Role enum: USER, MODERATOR, SUPER_ADMIN
+        role: Role.USER, // Default role for OAuth users (platform role != club role)
       },
     });
 
