@@ -148,7 +148,7 @@ export class AuthService {
         email: dbUser.email,
         displayName: dto.displayName || dbUser.displayName,
         avatarUrl: dto.avatarUrl !== undefined ? dto.avatarUrl : dbUser.avatarUrl,
-        role: dbUser.role || 'user',
+        role: dbUser.role || 'USER', // Prisma Role enum: USER, MODERATOR, SUPER_ADMIN
       },
     });
 
