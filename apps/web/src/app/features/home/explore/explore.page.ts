@@ -9,8 +9,8 @@ import {
   PageHeaderComponent,
   PageSectionComponent,
   InputComponent,
-  ButtonComponent,
   IconDirective,
+  ClubCardComponent,
 } from '@cigar-platform/shared/ui';
 
 /**
@@ -41,8 +41,8 @@ type ExploreFilter = 'clubs' | 'users' | 'cigars' | 'events';
     PageHeaderComponent,
     PageSectionComponent,
     InputComponent,
-    ButtonComponent,
     IconDirective,
+    ClubCardComponent,
   ],
   templateUrl: './explore.page.html',
   styleUrls: ['./explore.page.css'],
@@ -169,8 +169,7 @@ export class ExplorePage {
   /**
    * Join/Request access to club
    */
-  joinClub(event: Event, clubId: string): void {
-    event.stopPropagation(); // Prevent navigation to club profile
+  joinClub(clubId: string): void {
     // TODO: Open join/request modal
     console.log('[ExplorePage] Join club:', clubId);
   }

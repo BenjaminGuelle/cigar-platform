@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ModalComponent, InputComponent, ButtonComponent, IconDirective } from '@cigar-platform/shared/ui';
 import { ClubsService } from '@cigar-platform/types/lib/clubs/clubs.service';
-import { ContextStore } from '../../../core/stores/context.store';
+import { ContextStore, type ClubWithRole } from '../../../core/stores/context.store';
 import { FormService, ToastService } from '../../../core/services';
 import clsx from 'clsx';
 
@@ -188,7 +188,7 @@ export class CreateJoinClubModalComponent {
         await this.#contextStore.loadUserClubs();
 
         // Find the club we just joined with its role
-        const joinedClub: any = this.#contextStore.userClubs().find((c: any) => c.id === data.club.id);
+        const joinedClub = this.#contextStore.userClubs().find((c) => c.id === data.club.id);
         const role = joinedClub?.myRole || 'member';
 
         // Switch to new club context with actual role

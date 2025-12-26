@@ -21,7 +21,7 @@ import {
   PageHeaderComponent,
   PageSectionComponent,
   ButtonComponent,
-  AvatarComponent,
+  MemberCardComponent,
 } from '@cigar-platform/shared/ui';
 
 /**
@@ -52,7 +52,7 @@ import {
     PageHeaderComponent,
     PageSectionComponent,
     ButtonComponent,
-    AvatarComponent,
+    MemberCardComponent,
   ],
   templateUrl: './members.page.html',
 })
@@ -120,7 +120,7 @@ export class MembersPage {
    * Manage member (update role, remove, ban)
    * Only accessible to club admins
    */
-  onManageMember(member: ClubMember): void {
+  onManageMember(member: ClubMember | any): void {
     // TODO: Open manage member modal
     console.log('[MembersPage] Manage member:', member);
   }
@@ -130,17 +130,5 @@ export class MembersPage {
    */
   goToExplore(): void {
     this.#router.navigate(['/explore']);
-  }
-
-  /**
-   * Format date for display
-   */
-  formatDate(date: string | Date): string {
-    const d = typeof date === 'string' ? new Date(date) : date;
-    return d.toLocaleDateString('fr-FR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
   }
 }

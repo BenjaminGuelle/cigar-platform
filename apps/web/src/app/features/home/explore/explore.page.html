@@ -84,58 +84,12 @@
       @if (!loading() && filteredClubs().length > 0) {
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           @for (club of filteredClubs(); track club.id) {
-            <div
-              (click)="navigateToClub(club.id)"
-              class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-shadow cursor-pointer border border-gray-200 dark:border-gray-700 overflow-hidden"
-            >
-              <div class="p-6">
-                <!-- Club Header -->
-                <div class="flex items-start justify-between mb-4">
-                  <div class="flex-1">
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                      {{ club.name }}
-                    </h3>
-                    @if (club.description) {
-                      <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                        {{ club.description }}
-                      </p>
-                    }
-                  </div>
-
-                  <!-- Visibility Badge -->
-                  <span
-                    [class.bg-green-100]="club.visibility === 'PUBLIC'"
-                    [class.text-green-800]="club.visibility === 'PUBLIC'"
-                    [class.dark:bg-green-900]="club.visibility === 'PUBLIC'"
-                    [class.dark:text-green-200]="club.visibility === 'PUBLIC'"
-                    [class.bg-orange-100]="club.visibility === 'PRIVATE'"
-                    [class.text-orange-800]="club.visibility === 'PRIVATE'"
-                    [class.dark:bg-orange-900]="club.visibility === 'PRIVATE'"
-                    [class.dark:text-orange-200]="club.visibility === 'PRIVATE'"
-                    class="px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap"
-                  >
-                    {{ club.visibility === 'PUBLIC' ? 'Public' : 'Privé' }}
-                  </span>
-                </div>
-
-                <!-- Club Stats -->
-                <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
-                  <div class="flex items-center gap-1">
-                    <i name="users" class="w-4 h-4"></i>
-                    <span>{{ getMemberCount(club) }} membres</span>
-                  </div>
-                </div>
-
-                <!-- Join Button -->
-                <ui-button
-                  (click)="joinClub($event, club.id)"
-                  variant="primary"
-                  class="w-full"
-                >
-                  {{ club.visibility === 'PUBLIC' ? 'Rejoindre' : "Demander l'accès" }}
-                </ui-button>
-              </div>
-            </div>
+            <ui-club-card
+              [club]="club"
+              [memberCount]="getMemberCount(club)"
+              (cardClick)="navigateToClub($event)"
+              (joinClick)="joinClub($event)"
+            />
           }
         </div>
       }

@@ -10,6 +10,10 @@ import {
   PageHeaderComponent,
   PageSectionComponent,
   ButtonComponent,
+  InputComponent,
+  CheckboxComponent,
+  SelectComponent,
+  type SelectOption,
 } from '@cigar-platform/shared/ui';
 
 /**
@@ -41,6 +45,9 @@ import {
     PageHeaderComponent,
     PageSectionComponent,
     ButtonComponent,
+    InputComponent,
+    CheckboxComponent,
+    SelectComponent,
   ],
   templateUrl: './club-settings.page.html',
 })
@@ -61,6 +68,12 @@ export class ClubSettingsPage {
   isOwner = computed(() => {
     return this.contextStore.context().clubRole === 'owner';
   });
+
+  // Select options
+  readonly visibilityOptions: SelectOption[] = [
+    { value: 'PUBLIC', label: 'Public - Visible dans la recherche' },
+    { value: 'PRIVATE', label: 'Privé - Sur invitation uniquement' },
+  ];
 
   // Form
   clubForm: FormGroup<{

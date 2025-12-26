@@ -1,6 +1,20 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { catchError, throwError } from 'rxjs';
 
+/**
+ * Custom HTTP Error class that preserves status code
+ */
+export class HttpError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly url: string | null = null
+  ) {
+    super(message);
+    this.name = 'HttpError';
+  }
+}
+
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
@@ -18,13 +32,16 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         }
       }
 
-      console.error('[HTTP Error]', {
-        status: error.status,
-        message: errorMessage,
-        url: error.url,
-      });
+      // Don't log 401 errors (expected during app init before authentication)
+      if (error.status !== 401) {
+        console.error('[HTTP Error]', {
+          status: error.status,
+          message: errorMessage,
+          url: error.url,
+        });
+      }
 
-      return throwError(() => new Error(errorMessage));
+      return throwError(() => new HttpError(errorMessage, error.status, error.url));
     })
   );
 };

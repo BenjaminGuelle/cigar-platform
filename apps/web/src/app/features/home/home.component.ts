@@ -86,8 +86,17 @@ export class HomeComponent {
   });
 
   constructor() {
-    // Load user's clubs on component init
-    this.#contextStore.loadUserClubs();
+    // Senior Dev Pattern: Load clubs + hydrate context after authentication
+    // APP_INITIALIZER only restored clubId from localStorage (optimistic state)
+    // Now we load real data and hydrate the "pending" club context
+    this.#contextStore.loadUserClubs().then(() => {
+      const context = this.#contextStore.context();
+
+      // If we have a club context but no club data, hydrate it
+      if (context.type === 'club' && context.clubId && !context.club) {
+        this.#contextStore.hydrateClubContext(context.clubId);
+      }
+    });
   }
 
   onSignOut(): void {

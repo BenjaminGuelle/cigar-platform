@@ -1,69 +1,71 @@
-<div class="mx-auto max-w-6xl space-y-12 px-6 py-16">
+<div class="mx-auto max-w-4xl space-y-8 px-6 py-8">
   <!-- Guard: Must be club admin -->
   @if (!contextStore.canManageClub()) {
-    <div class="text-center py-12">
-      <svg
-        class="mx-auto h-12 w-12 text-gray-400"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-        />
-      </svg>
-      <h3 class="mt-2 text-lg font-medium text-gray-900 dark:text-white">
+    <div class="flex flex-col items-center justify-center py-16 text-center">
+      <div class="rounded-full bg-smoke-800/50 p-4 mb-4">
+        <svg
+          class="h-12 w-12 text-smoke-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+          />
+        </svg>
+      </div>
+      <h3 class="text-lg font-semibold text-smoke-100 mb-2">
         Accès restreint
       </h3>
-      <p class="mt-1 text-sm text-gray-500">
+      <p class="text-sm text-smoke-400 max-w-sm">
         Seuls les administrateurs peuvent accéder aux paramètres du club
       </p>
     </div>
   } @else if (loading()) {
     <!-- Loading State -->
-    <div class="flex justify-center items-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+    <div class="flex justify-center items-center py-16">
+      <div class="animate-spin rounded-full h-12 w-12 border-2 border-gold-500 border-t-transparent"></div>
     </div>
   } @else {
     <!-- Settings Form -->
-    <div>
+    <div class="space-y-8">
       <ui-page-header
         title="Paramètres du club"
         [description]="'Gérez les paramètres de ' + (club()?.name || 'votre club')"
       />
 
-      <form [formGroup]="clubForm" (ngSubmit)="onUpdateClub()">
+      <form [formGroup]="clubForm" (ngSubmit)="onUpdateClub()" class="space-y-8">
         <!-- Club Information Section -->
         <ui-page-section title="Informations du club">
           <div class="space-y-6">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Nom du club
-              </label>
-              <input
-                type="text"
-                formControlName="name"
-                placeholder="Ex: Les Aficionados du Cigare"
-                class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              />
-              @if (clubForm.get('name')?.invalid && clubForm.get('name')?.touched) {
-                <p class="mt-1 text-sm text-red-600">Le nom est requis (min 3 caractères)</p>
-              }
-            </div>
+            <ui-input
+              inputId="club-name"
+              type="text"
+              label="Nom du club"
+              placeholder="Ex: Les Aficionados du Cigare"
+              [control]="clubForm.controls.name"
+              [required]="true"
+              autocomplete="off"
+            />
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-sm font-medium text-smoke-100 mb-2">
                 Description
               </label>
               <textarea
                 formControlName="description"
                 rows="4"
-                class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                class="w-full px-4 py-3 rounded-lg border-2 border-smoke-700 bg-smoke-850 text-smoke-100 placeholder-smoke-500 focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 focus:outline-none transition-all duration-200 resize-none"
                 placeholder="Décrivez votre club..."
               ></textarea>
+              @if (clubForm.controls.description.invalid && clubForm.controls.description.touched) {
+                <p class="mt-1.5 text-sm text-error-500">
+                  Maximum 500 caractères
+                </p>
+              }
             </div>
           </div>
         </ui-page-section>
@@ -72,99 +74,72 @@
         <ui-page-section title="Confidentialité & Accès">
           <div class="space-y-6">
             <!-- Visibility -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Visibilité du club
-              </label>
-              <select
-                formControlName="visibility"
-                class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                <option value="PUBLIC">Public - Visible dans la recherche</option>
-                <option value="PRIVATE">Privé - Sur invitation uniquement</option>
-              </select>
-              <p class="mt-2 text-sm text-gray-500">
-                Les clubs publics sont visibles dans /explore. Les clubs privés ne sont accessibles que par invitation.
-              </p>
-            </div>
+            <ui-select
+              selectId="visibility"
+              label="Visibilité du club"
+              hint="Les clubs publics sont visibles dans /explore. Les clubs privés ne sont accessibles que par invitation."
+              [control]="clubForm.controls.visibility"
+              [options]="visibilityOptions"
+              [required]="true"
+            />
 
-            <!-- Public Directory -->
-            @if (clubForm.get('visibility')?.value === 'PUBLIC') {
-              <div class="flex items-center justify-between">
-                <div>
-                  <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Répertoire public
-                  </label>
-                  <p class="text-sm text-gray-500">
-                    Afficher ce club dans le répertoire public
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  formControlName="isPublicDirectory"
-                  class="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                />
-              </div>
+            <!-- Public Directory (only for PUBLIC clubs) -->
+            @if (clubForm.controls.visibility.value === 'PUBLIC') {
+              <ui-checkbox
+                checkboxId="public-directory"
+                label="Répertoire public"
+                description="Afficher ce club dans le répertoire public"
+                [control]="clubForm.controls.isPublicDirectory"
+              />
 
               <!-- Auto-approve members -->
-              <div class="flex items-center justify-between">
-                <div>
-                  <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Approbation automatique
-                  </label>
-                  <p class="text-sm text-gray-500">
-                    Accepter automatiquement les demandes d'adhésion
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  formControlName="autoApproveMembers"
-                  class="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                />
-              </div>
+              <ui-checkbox
+                checkboxId="auto-approve"
+                label="Approbation automatique"
+                description="Accepter automatiquement les demandes d'adhésion"
+                [control]="clubForm.controls.autoApproveMembers"
+              />
             }
 
             <!-- Allow member invites -->
-            <div class="flex items-center justify-between">
-              <div>
-                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Invitations par les membres
-                </label>
-                <p class="text-sm text-gray-500">
-                  Permettre aux membres d'inviter d'autres personnes
-                </p>
-              </div>
-              <input
-                type="checkbox"
-                formControlName="allowMemberInvites"
-                class="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-              />
-            </div>
+            <ui-checkbox
+              checkboxId="member-invites"
+              label="Invitations par les membres"
+              description="Permettre aux membres d'inviter d'autres personnes"
+              [control]="clubForm.controls.allowMemberInvites"
+            />
 
             <!-- Max members -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Nombre maximum de membres (optionnel)
-              </label>
-              <input
-                type="number"
-                formControlName="maxMembers"
-                min="1"
-                class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="Illimité"
-              />
-            </div>
+            <ui-input
+              inputId="max-members"
+              type="number"
+              label="Nombre maximum de membres (optionnel)"
+              placeholder="Illimité"
+              hint="Laisser vide pour un nombre illimité de membres"
+              [control]="clubForm.controls.maxMembers"
+              [minlength]="1"
+            />
           </div>
         </ui-page-section>
 
         <!-- Save Button -->
-        <div class="flex justify-end pt-6">
+        <div class="flex justify-end pt-4">
           <ui-button
             type="submit"
             variant="primary"
             [disabled]="clubForm.invalid || saving()"
           >
-            {{ saving() ? 'Enregistrement...' : 'Enregistrer les modifications' }}
+            @if (saving()) {
+              <span class="flex items-center gap-2">
+                <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Enregistrement...
+              </span>
+            } @else {
+              Enregistrer les modifications
+            }
           </ui-button>
         </div>
       </form>
@@ -172,20 +147,20 @@
       <!-- Danger Zone (Owner Only) -->
       @if (isOwner()) {
         <ui-page-section title="Zone de danger">
-          <div class="space-y-4">
-            <div class="flex items-center justify-between p-4 border border-red-200 dark:border-red-800 rounded-lg">
-              <div>
-                <h3 class="text-sm font-medium text-gray-900 dark:text-white">
+          <div class="rounded-lg border-2 border-error-500/30 bg-error-500/5 p-6">
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex-1">
+                <h3 class="text-base font-semibold text-smoke-100 mb-1">
                   Archiver le club
                 </h3>
-                <p class="text-sm text-gray-500">
-                  Le club ne sera plus accessible aux membres
+                <p class="text-sm text-smoke-400">
+                  Le club ne sera plus accessible aux membres. Cette action est réversible.
                 </p>
               </div>
               <button
                 type="button"
                 (click)="onArchiveClub()"
-                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors"
+                class="shrink-0 px-4 py-2 bg-error-600 hover:bg-error-700 text-white font-medium rounded-lg transition-colors focus:ring-2 focus:ring-error-500/50 focus:outline-none"
               >
                 Archiver
               </button>
