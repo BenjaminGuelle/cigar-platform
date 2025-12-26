@@ -9,9 +9,9 @@ import {
 } from '@angular/forms';
 import { Router } from '@angular/router';
 import { take } from 'rxjs/operators';
-import { AuthService, FormService, ToastService } from '../../../core/services';
-import { injectUserStore, UserStore } from '../../../core/stores';
-import { injectMutation, Mutation } from '../../../core/query';
+import { AuthService, FormService, ToastService } from '../../../../core/services';
+import { injectUserStore, UserStore } from '../../../../core/stores';
+import { injectMutation, Mutation } from '../../../../core/query';
 import { UsersService } from '@cigar-platform/types/lib/users/users.service';
 import {
   ButtonComponent,
@@ -22,8 +22,25 @@ import {
 } from '@cigar-platform/shared/ui';
 import { UserDto } from '@cigar-platform/types';
 
+/**
+ * User Settings Page
+ *
+ * Route: /settings (when context = solo)
+ * Accessible: Always (user's personal settings)
+ *
+ * Features:
+ * - Update display name
+ * - Upload avatar
+ * - View account info (email, auth provider)
+ * - Logout
+ *
+ * Architecture: ALL STARS ⭐
+ * - Template in separate .html file
+ * - Clean separation of concerns
+ * - Loaded by SettingsContextPage when context = solo
+ */
 @Component({
-  selector: 'app-settings',
+  selector: 'app-user-settings',
   standalone: true,
   imports: [
     CommonModule,
@@ -34,9 +51,9 @@ import { UserDto } from '@cigar-platform/types';
     PageHeaderComponent,
     PageSectionComponent,
   ],
-  templateUrl: './settings.component.html',
+  templateUrl: './user-settings.page.html',
 })
-export class SettingsComponent {
+export class UserSettingsPage {
   #authService = inject(AuthService);
   #usersService = inject(UsersService);
   #formService = inject(FormService);

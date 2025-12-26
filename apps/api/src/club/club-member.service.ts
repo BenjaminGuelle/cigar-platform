@@ -424,4 +424,20 @@ export class ClubMemberService {
 
     return !!ban;
   }
+
+  /**
+   * Get current user's membership in a club (returns role)
+   */
+  async findMyMembership(clubId: string, userId: string): Promise<ClubMember | null> {
+    const member = await this.prisma.clubMember.findUnique({
+      where: {
+        clubId_userId: {
+          clubId,
+          userId,
+        },
+      },
+    });
+
+    return member;
+  }
 }

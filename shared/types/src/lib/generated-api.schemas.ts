@@ -155,6 +155,8 @@ export interface ClubResponseDto {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  /** Total number of members in the club */
+  memberCount: number;
 }
 
 /**

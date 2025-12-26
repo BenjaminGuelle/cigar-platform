@@ -1,171 +1,38 @@
-import { Component, input, output, signal, WritableSignal } from '@angular/core';
+import { Component, input, output, signal, WritableSignal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormControl, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormGroup, FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ModalComponent, InputComponent, ButtonComponent, IconDirective } from '@cigar-platform/shared/ui';
+import { ClubsService } from '@cigar-platform/types/lib/clubs/clubs.service';
+import { ContextStore } from '../../../core/stores/context.store';
+import { FormService, ToastService } from '../../../core/services';
 import clsx from 'clsx';
 
 type ModalTab = 'create' | 'join';
 
 /**
  * Create/Join Club Modal
+ *
  * Modal with two tabs:
  * - Create: Form to create a new club
  * - Join: Form to join an existing club with invitation code
+ *
+ * ALL STARS Architecture ⭐
+ * - Template in separate .html file
+ * - Clean separation of concerns
  */
 @Component({
   selector: 'app-create-join-club-modal',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, ModalComponent, InputComponent, ButtonComponent, IconDirective],
-  template: `
-    <ui-modal
-      [isOpen]="isOpen()"
-      size="md"
-      position="right"
-      (close)="close.emit()"
-    >
-      <!-- Header -->
-      <div class="mb-6">
-        <h2 id="modal-title" class="text-2xl font-display text-smoke-50 mb-2">
-          {{ activeTab() === 'create' ? 'Créer un club' : 'Rejoindre un club' }}
-        </h2>
-        <p class="text-sm text-smoke-400">
-          {{ activeTab() === 'create'
-            ? 'Créez votre propre club privé pour partager vos dégustations'
-            : 'Rejoignez un club existant avec un code d\'invitation'
-          }}
-        </p>
-      </div>
-
-      <!-- Tabs -->
-      <div class="flex gap-2 mb-6">
-        <button
-          type="button"
-          (click)="setTab('create')"
-          [class]="getTabClasses('create')"
-        >
-          Créer
-        </button>
-        <button
-          type="button"
-          (click)="setTab('join')"
-          [class]="getTabClasses('join')"
-        >
-          Rejoindre
-        </button>
-      </div>
-
-      <!-- Create Club Form -->
-      @if (activeTab() === 'create') {
-        <form (ngSubmit)="onCreateClub()" class="space-y-4">
-          <ui-input
-            inputId="club-name"
-            type="text"
-            label="Nom du club"
-            placeholder="Ex: Les Aficionados de Paris"
-            [control]="nameControl"
-            [required]="true"
-            [maxlength]="50"
-            autocomplete="off"
-          />
-
-          <ui-input
-            inputId="club-description"
-            type="text"
-            label="Description (optionnel)"
-            placeholder="Ex: Club de passionnés de cigares cubains"
-            [control]="descriptionControl"
-            [maxlength]="200"
-            autocomplete="off"
-          />
-
-          <!-- Type Selection -->
-          <div class="space-y-2">
-            <label class="block text-sm font-medium text-smoke-200">
-              Type de club
-            </label>
-            <div class="flex gap-3">
-              <button
-                type="button"
-                (click)="setClubType('private')"
-                [class]="getTypeButtonClasses('private')"
-              >
-                <i name="lock" class="w-5 h-5"></i>
-                <div class="text-left">
-                  <div class="font-semibold">Privé</div>
-                  <div class="text-xs opacity-80">Sur invitation uniquement</div>
-                </div>
-              </button>
-              <button
-                type="button"
-                (click)="setClubType('public')"
-                [class]="getTypeButtonClasses('public')"
-              >
-                <i name="globe" class="w-5 h-5"></i>
-                <div class="text-left">
-                  <div class="font-semibold">Public</div>
-                  <div class="text-xs opacity-80">Ouvert à tous</div>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          <div class="flex justify-end gap-3 pt-4">
-            <ui-button
-              variant="ghost"
-              type="button"
-              (clicked)="close.emit()"
-            >
-              Annuler
-            </ui-button>
-            <ui-button
-              variant="primary"
-              type="submit"
-              [loading]="isCreating()"
-              [disabled]="isCreating() || !isCreateFormValid()"
-            >
-              Créer le club
-            </ui-button>
-          </div>
-        </form>
-      }
-
-      <!-- Join Club Form -->
-      @if (activeTab() === 'join') {
-        <form (ngSubmit)="onJoinClub()" class="space-y-4">
-          <ui-input
-            inputId="invitation-code"
-            type="text"
-            label="Code d'invitation"
-            placeholder="Ex: ABC-123-XYZ"
-            [control]="invitationCodeControl"
-            [required]="true"
-            autocomplete="off"
-            hint="Demandez un code d'invitation au créateur du club"
-          />
-
-          <div class="flex justify-end gap-3 pt-4">
-            <ui-button
-              variant="ghost"
-              type="button"
-              (clicked)="close.emit()"
-            >
-              Annuler
-            </ui-button>
-            <ui-button
-              variant="primary"
-              type="submit"
-              [loading]="isJoining()"
-              [disabled]="isJoining() || invitationCodeControl.invalid"
-            >
-              Rejoindre
-            </ui-button>
-          </div>
-        </form>
-      }
-    </ui-modal>
-  `,
+  templateUrl: './create-join-club-modal.component.html',
 })
 export class CreateJoinClubModalComponent {
+  #clubsService = inject(ClubsService);
+  #contextStore = inject(ContextStore);
+  #formService = inject(FormService);
+  #toastService = inject(ToastService);
+  #fb = inject(FormBuilder);
+
   readonly isOpen = input<boolean>(false);
   readonly close = output<void>();
   readonly clubCreated = output<void>();
@@ -176,12 +43,34 @@ export class CreateJoinClubModalComponent {
   readonly isCreating: WritableSignal<boolean> = signal<boolean>(false);
   readonly isJoining: WritableSignal<boolean> = signal<boolean>(false);
 
-  // Create Club Form
-  readonly nameControl = new FormControl('', [Validators.required, Validators.maxLength(50)]);
-  readonly descriptionControl = new FormControl('', [Validators.maxLength(200)]);
+  // Create Club Form Group (typed)
+  readonly createClubForm: FormGroup<{
+    name: FormControl<string>;
+    description: FormControl<string>;
+    isPublicDirectory: FormControl<boolean>;
+    autoApproveMembers: FormControl<boolean>;
+    allowMemberInvites: FormControl<boolean>;
+    maxMembers: FormControl<number | null>;
+  }> = this.#fb.nonNullable.group({
+    name: ['', [Validators.required, Validators.maxLength(100)]],
+    description: ['', [Validators.maxLength(500)]],
+    isPublicDirectory: [true],
+    autoApproveMembers: [false],
+    allowMemberInvites: [true],
+    maxMembers: this.#fb.control<number | null>(null),
+  });
 
-  // Join Club Form
-  readonly invitationCodeControl = new FormControl('', [Validators.required]);
+  // Join Club Form Group (typed)
+  readonly joinClubForm: FormGroup<{
+    invitationCode: FormControl<string>;
+  }> = this.#fb.nonNullable.group({
+    invitationCode: ['', [Validators.required]],
+  });
+
+  // Individual controls for template binding (compatibility)
+  get nameControl() { return this.createClubForm.controls.name; }
+  get descriptionControl() { return this.createClubForm.controls.description; }
+  get invitationCodeControl() { return this.joinClubForm.controls.invitationCode; }
 
   setTab(tab: ModalTab): void {
     this.activeTab.set(tab);
@@ -212,70 +101,116 @@ export class CreateJoinClubModalComponent {
   }
 
   isCreateFormValid(): boolean {
-    return this.nameControl.valid;
+    return this.createClubForm.valid;
   }
 
   async onCreateClub(): Promise<void> {
-    if (!this.isCreateFormValid()) {
+    console.log('[CreateJoinClubModal] onCreateClub called');
+
+    this.#formService.triggerValidation(this.createClubForm);
+
+    if (this.createClubForm.invalid) {
+      console.log('[CreateJoinClubModal] Form invalid, aborting');
       return;
     }
 
     this.isCreating.set(true);
+    console.log('[CreateJoinClubModal] isCreating set to true');
 
     try {
-      // TODO: Call API to create club
-      const clubData = {
-        name: this.nameControl.value!,
-        description: this.descriptionControl.value || null,
-        type: this.clubType(),
+      const { name, description, isPublicDirectory, autoApproveMembers, allowMemberInvites, maxMembers } =
+        this.createClubForm.getRawValue();
+
+      const visibility = (this.clubType() === 'public' ? 'PUBLIC' : 'PRIVATE') as 'PUBLIC' | 'PRIVATE';
+
+      const createClubDto = {
+        name,
+        description: description || undefined,
+        visibility,
+        // Settings (only for PUBLIC clubs, but backend handles defaults)
+        isPublicDirectory,
+        autoApproveMembers,
+        allowMemberInvites,
+        maxMembers: maxMembers || undefined,
       };
 
-      console.log('[CreateJoinClubModal] Creating club:', clubData);
+      console.log('[CreateJoinClubModal] DTO prepared:', createClubDto);
+      console.log('[CreateJoinClubModal] Calling API...');
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const club: any = await this.#clubsService.clubControllerCreate(createClubDto);
 
-      this.clubCreated.emit();
-      this.resetForms();
-      this.close.emit();
+      console.log('[CreateJoinClubModal] API response (club):', club);
+
+      if (club?.id) {
+        console.log('[CreateJoinClubModal] Success! Club created:', club);
+        this.#toastService.success('Club créé avec succès !');
+
+        // Reload user clubs from backend
+        await this.#contextStore.loadUserClubs();
+
+        // Switch to new club context (user is owner)
+        this.#contextStore.switchToClub(club, 'owner');
+
+        this.clubCreated.emit();
+        this.resetForms();
+        this.close.emit();
+      } else {
+        console.log('[CreateJoinClubModal] Invalid response:', club);
+        throw new Error('Invalid response from server');
+      }
     } catch (error) {
       console.error('[CreateJoinClubModal] Error creating club:', error);
-      // TODO: Show error toast
+      this.#toastService.error('Impossible de créer le club');
     } finally {
+      console.log('[CreateJoinClubModal] Finally block - setting isCreating to false');
       this.isCreating.set(false);
     }
   }
 
   async onJoinClub(): Promise<void> {
-    if (this.invitationCodeControl.invalid) {
+    this.#formService.triggerValidation(this.joinClubForm);
+
+    if (this.joinClubForm.invalid) {
       return;
     }
 
     this.isJoining.set(true);
 
     try {
-      // TODO: Call API to join club with invitation code
-      const code = this.invitationCodeControl.value!;
-      console.log('[CreateJoinClubModal] Joining club with code:', code);
+      const { invitationCode } = this.joinClubForm.getRawValue();
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const data: any = await this.#clubsService.clubControllerJoinByCode({ code: invitationCode });
 
-      this.clubJoined.emit();
-      this.resetForms();
-      this.close.emit();
+      if (data?.club) {
+        this.#toastService.success('Vous avez rejoint le club avec succès !');
+
+        // Reload user clubs to get actual role
+        await this.#contextStore.loadUserClubs();
+
+        // Find the club we just joined with its role
+        const joinedClub: any = this.#contextStore.userClubs().find((c: any) => c.id === data.club.id);
+        const role = joinedClub?.myRole || 'member';
+
+        // Switch to new club context with actual role
+        this.#contextStore.switchToClub(data.club, role);
+
+        this.clubJoined.emit();
+        this.resetForms();
+        this.close.emit();
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (error) {
       console.error('[CreateJoinClubModal] Error joining club:', error);
-      // TODO: Show error toast
+      this.#toastService.error('Code d\'invitation invalide ou club introuvable');
     } finally {
       this.isJoining.set(false);
     }
   }
 
   resetForms(): void {
-    this.nameControl.reset();
-    this.descriptionControl.reset();
-    this.invitationCodeControl.reset();
+    this.createClubForm.reset();
+    this.joinClubForm.reset();
     this.clubType.set('private');
     this.activeTab.set('create');
   }

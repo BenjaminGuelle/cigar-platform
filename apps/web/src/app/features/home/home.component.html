@@ -31,10 +31,18 @@
       [exact]="true"
     />
     <ui-desktop-top-tab-item
-      label="Clubs"
-      route="/clubs"
-      icon="users"
+      label="Explorer"
+      route="/explore"
+      icon="search"
     />
+    <!-- Membres tab (only visible in club context) -->
+    @if (context().type === 'club') {
+      <ui-desktop-top-tab-item
+        label="Membres"
+        route="/membres"
+        icon="users"
+      />
+    }
     <ui-desktop-top-tab-item
       label="Dégustations"
       route="/degustations"
@@ -81,11 +89,20 @@
       route="/dashboard"
       [exact]="true"
     />
-    <ui-bottom-tab-item
-      icon="search"
-      label="Clubs"
-      route="/clubs"
-    />
+    <!-- Context-driven tab: Explorer (solo) or Membres (club) -->
+    @if (context().type === 'club') {
+      <ui-bottom-tab-item
+        icon="users"
+        label="Membres"
+        route="/membres"
+      />
+    } @else {
+      <ui-bottom-tab-item
+        icon="search"
+        label="Explorer"
+        route="/explore"
+      />
+    }
     <ui-bottom-tab-item
       icon="flame"
       label="Dégustations"

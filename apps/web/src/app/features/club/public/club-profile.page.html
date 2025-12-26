@@ -1,0 +1,163 @@
+<div class="mx-auto max-w-6xl space-y-12 px-6 py-16">
+  @if (loading()) {
+    <!-- Loading State -->
+    <div class="flex justify-center items-center py-12">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+    </div>
+  } @else if (currentClub(); as club) {
+    <!-- Club Profile -->
+    <div>
+      <!-- Cover Image (if exists) -->
+      @if (club.coverUrl) {
+        <div class="w-full h-48 md:h-64 mb-8 rounded-xl overflow-hidden">
+          <img
+            [src]="club.coverUrl"
+            [alt]="club.name + ' cover'"
+            class="w-full h-full object-cover"
+          />
+        </div>
+      }
+
+      <!-- Club Header -->
+      <div class="flex items-start justify-between mb-8">
+        <div class="flex-1">
+          <div class="flex items-center gap-3 mb-2">
+            <h1 class="text-4xl font-bold text-gray-900 dark:text-white">
+              {{ club.name }}
+            </h1>
+            <!-- Visibility Badge -->
+            <span
+              [class.bg-green-100]="club.visibility === 'PUBLIC'"
+              [class.text-green-800]="club.visibility === 'PUBLIC'"
+              [class.dark:bg-green-900]="club.visibility === 'PUBLIC'"
+              [class.dark:text-green-200]="club.visibility === 'PUBLIC'"
+              [class.bg-orange-100]="club.visibility === 'PRIVATE'"
+              [class.text-orange-800]="club.visibility === 'PRIVATE'"
+              [class.dark:bg-orange-900]="club.visibility === 'PRIVATE'"
+              [class.dark:text-orange-200]="club.visibility === 'PRIVATE'"
+              class="px-3 py-1 rounded-full text-sm font-medium"
+            >
+              {{ club.visibility === 'PUBLIC' ? 'Public' : 'Privé' }}
+            </span>
+          </div>
+
+          @if (club.description) {
+            <p class="text-lg text-gray-600 dark:text-gray-400 mb-4">
+              {{ club.description }}
+            </p>
+          }
+
+          <!-- Stats -->
+          <div class="flex items-center gap-6 text-gray-500 dark:text-gray-400">
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+              </svg>
+              <span class="font-medium">{{ memberCount() }} membres</span>
+            </div>
+
+            @if (hasMaxMembers()) {
+              <div class="text-sm">
+                Places limitées : {{ memberCount() }} / {{ maxMembers() }}
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- CTA Button -->
+        <div class="ml-8">
+          <ui-button
+            (click)="onJoinClub()"
+            variant="primary"
+            size="lg"
+          >
+            {{ joinButtonLabel() }}
+          </ui-button>
+        </div>
+      </div>
+
+      <!-- About Section -->
+      <ui-page-section title="À propos">
+        <div class="space-y-4">
+          @if (club.description) {
+            <div>
+              <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                Description
+              </h3>
+              <p class="text-gray-900 dark:text-white">
+                {{ club.description }}
+              </p>
+            </div>
+          }
+
+          <div>
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+              Type de club
+            </h3>
+            <p class="text-gray-900 dark:text-white">
+              {{ clubTypeLabel() }}
+            </p>
+          </div>
+
+          @if (club.visibility === 'PUBLIC') {
+            <div>
+              <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                Admission
+              </h3>
+              <p class="text-gray-900 dark:text-white">
+                {{ admissionLabel() }}
+              </p>
+            </div>
+          }
+
+          <div>
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+              Créé le
+            </h3>
+            <p class="text-gray-900 dark:text-white">
+              {{ formatDate(club.createdAt) }}
+            </p>
+          </div>
+        </div>
+      </ui-page-section>
+
+      <!-- Recent Activity (Future) -->
+      <ui-page-section title="Activité récente">
+        <div class="text-center py-8 text-gray-500">
+          <p>Aucune activité publique pour le moment</p>
+        </div>
+      </ui-page-section>
+    </div>
+  } @else if (error()) {
+    <!-- Error State -->
+    <div class="text-center py-12">
+      <svg
+        class="mx-auto h-12 w-12 text-red-400"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+        />
+      </svg>
+      <h3 class="mt-2 text-lg font-medium text-gray-900 dark:text-white">
+        Club introuvable
+      </h3>
+      <p class="mt-1 text-sm text-gray-500">
+        Ce club n'existe pas ou a été supprimé
+      </p>
+      <div class="mt-6">
+        <ui-button
+          (click)="goBackToExplore()"
+          variant="secondary"
+        >
+          Retour à la découverte
+        </ui-button>
+      </div>
+    </div>
+  }
+</div>

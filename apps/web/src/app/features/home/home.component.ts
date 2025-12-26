@@ -85,6 +85,11 @@ export class HomeComponent {
     return items;
   });
 
+  constructor() {
+    // Load user's clubs on component init
+    this.#contextStore.loadUserClubs();
+  }
+
   onSignOut(): void {
     this.#authService.signOut().subscribe();
   }
@@ -101,8 +106,9 @@ export class HomeComponent {
     if (event.type === 'solo') {
       this.#contextStore.switchToSolo();
     } else if (event.type === 'club' && event.club) {
-      // TODO: Get user's actual role in the club
-      this.#contextStore.switchToClub(event.club, 'member');
+      // Use actual role from club data (included via /clubs/me endpoint)
+      const role = event.club.myRole || 'member';
+      this.#contextStore.switchToClub(event.club, role);
     }
   }
 

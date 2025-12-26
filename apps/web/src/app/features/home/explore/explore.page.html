@@ -1,0 +1,144 @@
+<div class="mx-auto max-w-6xl space-y-12 px-6 py-16">
+  <!-- Page Header -->
+  <ui-page-header
+    title="Découvrir"
+    description="Explorez des clubs, utilisateurs, cigares et événements"
+  />
+
+  <!-- Entity Type Tabs (Future: clubs | users | cigars | events) -->
+  <div class="border-b border-gray-200 dark:border-gray-700">
+    <div class="flex gap-4">
+      <button
+        (click)="setEntityFilter('clubs')"
+        [class.border-primary-600]="entityFilter() === 'clubs'"
+        [class.text-primary-600]="entityFilter() === 'clubs'"
+        [class.border-transparent]="entityFilter() !== 'clubs'"
+        [class.text-gray-500]="entityFilter() !== 'clubs'"
+        class="pb-3 px-1 border-b-2 font-medium transition-colors"
+      >
+        Clubs
+      </button>
+      <!-- Future tabs (disabled for MVP) -->
+      <button
+        disabled
+        class="pb-3 px-1 border-b-2 border-transparent text-gray-400 cursor-not-allowed"
+      >
+        Utilisateurs
+        <span class="ml-1 text-xs">(bientôt)</span>
+      </button>
+      <button
+        disabled
+        class="pb-3 px-1 border-b-2 border-transparent text-gray-400 cursor-not-allowed"
+      >
+        Cigares
+        <span class="ml-1 text-xs">(bientôt)</span>
+      </button>
+      <button
+        disabled
+        class="pb-3 px-1 border-b-2 border-transparent text-gray-400 cursor-not-allowed"
+      >
+        Événements
+        <span class="ml-1 text-xs">(bientôt)</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Clubs Content (MVP) -->
+  @if (entityFilter() === 'clubs') {
+    <ui-page-section title="Clubs">
+      <!-- Smart Search -->
+      <div class="mb-6">
+        <ui-input
+          inputId="search"
+          type="text"
+          [control]="searchControl"
+          label="Recherche intelligente"
+          placeholder="Nom, description, ou tapez 'public' / 'privé'..."
+        />
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          💡 Astuce : Recherchez par nom, description, ou tapez "public" ou "privé" pour filtrer
+        </p>
+      </div>
+
+      <!-- Loading State -->
+      @if (loading()) {
+        <div class="flex justify-center items-center py-12">
+          <i name="spinner" class="w-12 h-12 text-primary-600 animate-spin"></i>
+        </div>
+      }
+
+      <!-- Empty State -->
+      @if (!loading() && filteredClubs().length === 0) {
+        <div class="text-center py-12">
+          <i name="search" class="mx-auto h-12 w-12 text-gray-400"></i>
+          <h3 class="mt-4 text-sm font-medium text-gray-900 dark:text-white">
+            Aucun club trouvé
+          </h3>
+          <p class="mt-1 text-sm text-gray-500">
+            Essayez de modifier votre recherche
+          </p>
+        </div>
+      }
+
+      <!-- Club Cards Grid -->
+      @if (!loading() && filteredClubs().length > 0) {
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          @for (club of filteredClubs(); track club.id) {
+            <div
+              (click)="navigateToClub(club.id)"
+              class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-shadow cursor-pointer border border-gray-200 dark:border-gray-700 overflow-hidden"
+            >
+              <div class="p-6">
+                <!-- Club Header -->
+                <div class="flex items-start justify-between mb-4">
+                  <div class="flex-1">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                      {{ club.name }}
+                    </h3>
+                    @if (club.description) {
+                      <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                        {{ club.description }}
+                      </p>
+                    }
+                  </div>
+
+                  <!-- Visibility Badge -->
+                  <span
+                    [class.bg-green-100]="club.visibility === 'PUBLIC'"
+                    [class.text-green-800]="club.visibility === 'PUBLIC'"
+                    [class.dark:bg-green-900]="club.visibility === 'PUBLIC'"
+                    [class.dark:text-green-200]="club.visibility === 'PUBLIC'"
+                    [class.bg-orange-100]="club.visibility === 'PRIVATE'"
+                    [class.text-orange-800]="club.visibility === 'PRIVATE'"
+                    [class.dark:bg-orange-900]="club.visibility === 'PRIVATE'"
+                    [class.dark:text-orange-200]="club.visibility === 'PRIVATE'"
+                    class="px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap"
+                  >
+                    {{ club.visibility === 'PUBLIC' ? 'Public' : 'Privé' }}
+                  </span>
+                </div>
+
+                <!-- Club Stats -->
+                <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  <div class="flex items-center gap-1">
+                    <i name="users" class="w-4 h-4"></i>
+                    <span>{{ getMemberCount(club) }} membres</span>
+                  </div>
+                </div>
+
+                <!-- Join Button -->
+                <ui-button
+                  (click)="joinClub($event, club.id)"
+                  variant="primary"
+                  class="w-full"
+                >
+                  {{ club.visibility === 'PUBLIC' ? 'Rejoindre' : "Demander l'accès" }}
+                </ui-button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </ui-page-section>
+  }
+</div>

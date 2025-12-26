@@ -196,21 +196,22 @@ export class ContextStore {
   }
 
   /**
-   * Load user's clubs
-   * Called on app init
-   * TODO: Add backend endpoint GET /me/clubs for better performance
+   * Load user's clubs with their role
+   * ALL STARS: Single optimized query, includes role
    */
   async loadUserClubs(): Promise<void> {
     this.#loadingClubs.set(true);
 
     try {
-      // For now, fetch all clubs (will be filtered by backend to user's clubs later)
-      const response: any = await this.#clubsService.clubControllerFindAll({ limit: 100 });
+      // GET /clubs/me returns clubs with myRole included
+      const myClubs: any = await this.#clubsService.clubControllerFindMyClubs();
 
-      if (response?.data) {
-        this.#userClubs.set(response.data);
-        console.log('[ContextStore] Loaded user clubs:', response.data.length);
+      if (Array.isArray(myClubs)) {
+        // Store clubs (myRole is included in each club object)
+        this.#userClubs.set(myClubs);
+        console.log('[ContextStore] Loaded user clubs:', myClubs.length);
       } else {
+        console.warn('[ContextStore] Unexpected response format:', myClubs);
         this.#userClubs.set([]);
       }
     } catch (error) {
@@ -224,8 +225,9 @@ export class ContextStore {
   /**
    * Initialize context from localStorage
    * Called on app init
+   * CRITICAL: Must load user clubs FIRST to have roles available
    */
-  initializeContext(): void {
+  async initializeContext(): Promise<void> {
     const saved = this.#loadPersistedContext();
 
     if (!saved) {
@@ -241,9 +243,11 @@ export class ContextStore {
     }
 
     if (saved.type === 'club' && saved.clubId) {
-      // Need to restore club context
-      // We need to fetch the club data first
-      this.#restoreClubContext(saved.clubId);
+      // CRITICAL: Load user clubs FIRST to get roles
+      await this.loadUserClubs();
+
+      // Now restore club context with role from loaded clubs
+      await this.#restoreClubContext(saved.clubId);
       console.log('[ContextStore] Restoring club context from localStorage:', saved.clubId);
       return;
     }
@@ -332,20 +336,28 @@ export class ContextStore {
   }
 
   /**
-   * Restore club context by fetching club data
+   * Restore club context by finding club in loaded clubs (with role)
    */
   async #restoreClubContext(clubId: string): Promise<void> {
     try {
-      // Fetch club data from API
-      const club = await this.#clubsService.clubControllerFindOne(clubId);
+      // Find club in user's loaded clubs (which includes myRole)
+      const myClub: any = this.#userClubs().find((c: any) => c.id === clubId);
 
-      if (club) {
-        // TODO: Get user's role in the club from members endpoint
-        // For now, default to member
-        this.switchToClub(club, 'member');
+      if (myClub && myClub.myRole) {
+        // Club found in user's clubs with role
+        this.switchToClub(myClub, myClub.myRole);
+        console.log(`[ContextStore] Restored club context with role: ${myClub.myRole}`);
       } else {
-        console.warn('[ContextStore] Club not found, falling back to solo');
-        this.switchToSolo();
+        // Club not in user's clubs, fetch it and use default role
+        const club = await this.#clubsService.clubControllerFindOne(clubId);
+        if (club) {
+          // Fallback: use member role if not found in user's clubs
+          this.switchToClub(club, 'member');
+          console.warn('[ContextStore] Club restored but role unknown, defaulting to member');
+        } else {
+          console.warn('[ContextStore] Club not found, falling back to solo');
+          this.switchToSolo();
+        }
       }
     } catch (error) {
       console.error('[ContextStore] Failed to restore club context:', error);

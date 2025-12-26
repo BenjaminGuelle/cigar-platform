@@ -1,6 +1,6 @@
 import { Route } from '@angular/router';
 import { HomeComponent } from './home.component';
-import { adminGuard } from '../../core/guards';
+import { adminGuard, clubContextGuard } from '../../core/guards';
 
 /**
  * Home Routes - All Stars Architecture 🌟 (Single Layout Instance)
@@ -24,8 +24,8 @@ export const homeRoutes: Route[] = [
       },
       {
         path: 'settings',
-        loadChildren: () =>
-          import('./settings/settings.routes').then((m) => m.settingsRoutes),
+        loadComponent: () =>
+          import('./settings/settings-context.page').then((m) => m.SettingsContextPage),
       },
       // Admin routes (avec adminGuard supplémentaire)
       {
@@ -34,7 +34,26 @@ export const homeRoutes: Route[] = [
         loadChildren: () =>
           import('../admin/admin.routes').then((m) => m.adminChildRoutes),
       },
-      // TODO: Add more features here (clubs, degustations, evenements, notifications, etc.)
+      // Club routes
+      {
+        path: 'explore',
+        loadComponent: () =>
+          import('./explore/explore.page').then((m) => m.ExplorePage),
+      },
+      // Club public profile
+      {
+        path: 'club/:id',
+        loadComponent: () =>
+          import('../club/public/club-profile.page').then((m) => m.ClubProfilePage),
+      },
+      // Club internal pages (context-driven, requires club context)
+      {
+        path: 'membres',
+        canActivate: [clubContextGuard],
+        loadComponent: () =>
+          import('../club/internal/members.page').then((m) => m.MembersPage),
+      },
+      // TODO: Add more features here (degustations, evenements, notifications, etc.)
       // {
       //   path: 'clubs',
       //   loadChildren: () => import('./clubs/clubs.routes').then(m => m.clubsRoutes),

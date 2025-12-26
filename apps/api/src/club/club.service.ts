@@ -86,7 +86,7 @@ export class ClubService {
       });
 
       this.logger.log(`Club created: ${club.id} by user ${userId} (auto-assigned as owner)`);
-      return this.mapToResponse(club);
+      return this.mapToResponse(club, 1); // 1 member (the owner)
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -155,6 +155,11 @@ export class ClubService {
           createdBy: true,
           createdAt: true,
           updatedAt: true,
+          _count: {
+            select: {
+              members: true,
+            },
+          },
         },
       }),
       this.prisma.club.count({ where }),
@@ -163,7 +168,7 @@ export class ClubService {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: clubs.map((club) => this.mapToResponse(club)),
+      data: clubs.map((club) => this.mapToResponse(club, club._count.members)),
       pagination: {
         page,
         limit,
@@ -192,6 +197,11 @@ export class ClubService {
         createdBy: true,
         createdAt: true,
         updatedAt: true,
+        _count: {
+          select: {
+            members: true,
+          },
+        },
       },
     });
 
@@ -199,7 +209,7 @@ export class ClubService {
       throw new ClubNotFoundException(id);
     }
 
-    return this.mapToResponse(club);
+    return this.mapToResponse(club, club._count.members);
   }
 
   async update(
@@ -248,10 +258,32 @@ export class ClubService {
           allowMemberInvites: updateClubDto.allowMemberInvites,
           maxMembers: updateClubDto.maxMembers,
         },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          imageUrl: true,
+          coverUrl: true,
+          visibility: true,
+          inviteCode: true,
+          isPublicDirectory: true,
+          autoApproveMembers: true,
+          allowMemberInvites: true,
+          maxMembers: true,
+          isArchived: true,
+          createdBy: true,
+          createdAt: true,
+          updatedAt: true,
+          _count: {
+            select: {
+              members: true,
+            },
+          },
+        },
       });
 
       this.logger.log(`Club updated: ${club.id}`);
-      return this.mapToResponse(club);
+      return this.mapToResponse(club, club._count.members);
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -281,7 +313,36 @@ export class ClubService {
     }
   }
 
-  private mapToResponse(club: Club): ClubResponseDto {
+  /**
+   * Get user's clubs with their role in each club
+   * ALL STARS: Single query, includes role, optimized
+   */
+  async findMyClubs(userId: string): Promise<any[]> {
+    const memberships = await this.prisma.clubMember.findMany({
+      where: { userId },
+      include: {
+        club: {
+          include: {
+            _count: {
+              select: {
+                members: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        joinedAt: 'desc',
+      },
+    });
+
+    return memberships.map((membership) => ({
+      ...this.mapToResponse(membership.club, membership.club._count.members),
+      myRole: membership.role,
+    }));
+  }
+
+  private mapToResponse(club: Club, memberCount: number = 0): ClubResponseDto {
     return {
       id: club.id,
       name: club.name,
@@ -298,6 +359,7 @@ export class ClubService {
       createdBy: club.createdBy,
       createdAt: club.createdAt,
       updatedAt: club.updatedAt,
+      memberCount,
     };
   }
 }

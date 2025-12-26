@@ -96,6 +96,9 @@ export function injectUserStore(): UserStore {
     onSuccess: (updatedUser: UserDto) => {
       // Replace optimistic data with real server data + mark as fresh
       currentUser.setDataFresh(updatedUser);
+
+      // Sync with AuthService to update all components using AuthService.currentUser
+      authService.updateCurrentUser(updatedUser as any);
     },
 
     // Phase 3: API error - Rollback to previous state

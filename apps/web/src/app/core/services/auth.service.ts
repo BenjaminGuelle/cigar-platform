@@ -185,4 +185,11 @@ export class AuthService {
   getAccessToken(): string | null {
     return this.#sessionSignal()?.access_token ?? null;
   }
+
+  /**
+   * Update current user signal (for profile updates from UserStore)
+   */
+  updateCurrentUser(user: UserWithAuth): void {
+    this.#currentUserSignal.set(user);
+  }
 }

@@ -86,6 +86,20 @@ export class ClubController {
     return this.clubService.findAll(filter);
   }
 
+  @Get('me')
+  @ApiOperation({ summary: 'Get my clubs (with my role in each club)' })
+  @ApiResponse({
+    status: 200,
+    description: 'User clubs retrieved successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  async findMyClubs(@CurrentUser('id') userId: string) {
+    return this.clubService.findMyClubs(userId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a club by ID' })
   @ApiParam({
@@ -191,6 +205,18 @@ export class ClubController {
     @Query('role') role?: ClubRole
   ) {
     return this.clubMemberService.getMembers(clubId, { page, limit, role });
+  }
+
+  @Get(':id/members/me')
+  @ApiOperation({ summary: 'Get current user membership in club (returns role)' })
+  @ApiParam({ name: 'id', description: 'Club UUID' })
+  @ApiResponse({ status: 200, description: 'Membership retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Not a member of this club' })
+  async getMyMembership(
+    @Param('id') clubId: string,
+    @CurrentUser('id') userId: string
+  ) {
+    return this.clubMemberService.findMyMembership(clubId, userId);
   }
 
   @Patch(':id/members/:userId/role')

@@ -71,6 +71,18 @@ export class ClubsService {
       );
     }
   /**
+ * @summary Get my clubs (with my role in each club)
+ */
+ clubControllerFindMyClubs<TData = void>(
+    
+ ) {
+      return customInstance<TData>(
+      {url: `/api/clubs/me`, method: 'GET'
+    },
+      this.http,
+      );
+    }
+  /**
  * @summary Get a club by ID
  */
  clubControllerFindOne<TData = ClubResponseDto>(
@@ -119,6 +131,18 @@ export class ClubsService {
       return customInstance<TData>(
       {url: `/api/clubs/${id}/members`, method: 'GET',
         params
+    },
+      this.http,
+      );
+    }
+  /**
+ * @summary Get current user membership in club (returns role)
+ */
+ clubControllerGetMyMembership<TData = void>(
+    id: string,
+ ) {
+      return customInstance<TData>(
+      {url: `/api/clubs/${id}/members/me`, method: 'GET'
     },
       this.http,
       );
@@ -272,10 +296,12 @@ export class ClubsService {
 
 export type ClubControllerCreateClientResult = NonNullable<ClubResponseDto>
 export type ClubControllerFindAllClientResult = NonNullable<void>
+export type ClubControllerFindMyClubsClientResult = NonNullable<void>
 export type ClubControllerFindOneClientResult = NonNullable<ClubResponseDto>
 export type ClubControllerUpdateClientResult = NonNullable<ClubResponseDto>
 export type ClubControllerRemoveClientResult = NonNullable<void>
 export type ClubControllerGetMembersClientResult = NonNullable<void>
+export type ClubControllerGetMyMembershipClientResult = NonNullable<void>
 export type ClubControllerUpdateMemberRoleClientResult = NonNullable<void>
 export type ClubControllerTransferOwnershipClientResult = NonNullable<void>
 export type ClubControllerRemoveMemberClientResult = NonNullable<void>

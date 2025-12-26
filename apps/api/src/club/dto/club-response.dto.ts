@@ -1,6 +1,6 @@
 import { Expose } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ClubVisibility } from '@cigar-platform/prisma-client';
+import { ClubVisibility, ClubRole } from '@cigar-platform/prisma-client';
 
 export class ClubResponseDto {
   @Expose()
@@ -62,4 +62,23 @@ export class ClubResponseDto {
   @Expose()
   @ApiProperty({ example: '2024-12-20T10:00:00.000Z' })
   updatedAt: Date;
+
+  @Expose()
+  @ApiProperty({ example: 42, description: 'Total number of members in the club' })
+  memberCount: number;
+}
+
+/**
+ * My Club Response DTO
+ * Extends ClubResponseDto with user's role in the club
+ * Used by GET /clubs/me endpoint
+ */
+export class MyClubResponseDto extends ClubResponseDto {
+  @Expose()
+  @ApiProperty({
+    enum: ClubRole,
+    example: ClubRole.owner,
+    description: 'Current user\'s role in this club'
+  })
+  myRole: ClubRole;
 }
