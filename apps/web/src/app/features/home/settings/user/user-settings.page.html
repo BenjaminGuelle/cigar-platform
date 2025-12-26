@@ -1,4 +1,4 @@
-<div class="mx-auto max-w-6xl space-y-12 px-6 py-16">
+<div class="mx-auto max-w-4xl space-y-6 md:space-y-8 px-4 md:px-6 py-6 md:py-8">
     <!-- Page Header -->
     <ui-page-header
       title="Paramètres"
@@ -42,7 +42,7 @@
         </div>
 
         <!-- Form -->
-        <form [formGroup]="profileForm" (ngSubmit)="onUpdateProfile()" class="space-y-6">
+        <form [formGroup]="profileForm" (ngSubmit)="onUpdateProfile()" class="space-y-6 md:space-y-8">
           <ui-input
             inputId="displayName"
             type="text"
@@ -53,14 +53,24 @@
             autocomplete="name"
           />
 
-          <div class="flex justify-end">
+          <div class="flex justify-end gap-3">
+            @if (hasUnsavedChanges()) {
+              <ui-button
+                type="button"
+                variant="ghost"
+                size="md"
+                [disabled]="userStore.updateProfile.loading()"
+                (click)="onCancelChanges()"
+              >
+                Annuler
+              </ui-button>
+            }
             <ui-button
               type="submit"
-              variant="ghost"
-              size="sm"
-              class="text-gold-500 hover:text-gold-400 md:h-10 md:px-4 md:text-base"
+              variant="outline"
+              size="md"
               [loading]="userStore.updateProfile.loading()"
-              [disabled]="profileForm.invalid || userStore.updateProfile.loading()"
+              [disabled]="!hasUnsavedChanges() || profileForm.invalid || userStore.updateProfile.loading()"
             >
               Enregistrer
             </ui-button>
@@ -71,7 +81,7 @@
 
     <!-- Compte Section -->
     <ui-page-section title="Compte">
-      <div class="space-y-8">
+      <div class="space-y-6 md:space-y-8">
         <!-- Email -->
         <div class="flex items-center justify-between border-b border-smoke-800 pb-6">
           <div class="flex-1">
@@ -99,9 +109,8 @@
         <div class="flex justify-end pt-4">
           <ui-button
             type="button"
-            variant="ghost"
-            size="sm"
-            class="text-error-500 hover:text-error-400 md:h-10 md:px-4 md:text-base"
+            variant="destructive"
+            size="md"
             [loading]="logoutLoading()"
             [disabled]="logoutLoading()"
             (click)="onLogout()"

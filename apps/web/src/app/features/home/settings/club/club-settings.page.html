@@ -1,21 +1,13 @@
-<div class="mx-auto max-w-4xl space-y-8 px-6 py-8">
+<div class="mx-auto max-w-4xl space-y-6 md:space-y-8 px-4 md:px-6 py-6 md:py-8">
   <!-- Guard: Must be club admin -->
   @if (!contextStore.canManageClub()) {
     <div class="flex flex-col items-center justify-center py-16 text-center">
       <div class="rounded-full bg-smoke-800/50 p-4 mb-4">
-        <svg
-          class="h-12 w-12 text-smoke-400"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-          />
-        </svg>
+        <lucide-icon
+          [img]="LockKeyhole"
+          [size]="48"
+          class="text-smoke-400"
+        />
       </div>
       <h3 class="text-lg font-semibold text-smoke-100 mb-2">
         Accès restreint
@@ -40,7 +32,7 @@
       <form [formGroup]="clubForm" (ngSubmit)="onUpdateClub()" class="space-y-8">
         <!-- Club Information Section -->
         <ui-page-section title="Informations du club">
-          <div class="space-y-6">
+          <div class="space-y-6 md:space-y-8">
             <ui-input
               inputId="club-name"
               type="text"
@@ -72,7 +64,7 @@
 
         <!-- Privacy & Access Section -->
         <ui-page-section title="Confidentialité & Accès">
-          <div class="space-y-6">
+          <div class="space-y-6 md:space-y-8">
             <!-- Visibility -->
             <ui-select
               selectId="visibility"
@@ -122,24 +114,27 @@
           </div>
         </ui-page-section>
 
-        <!-- Save Button -->
-        <div class="flex justify-end pt-4">
+        <!-- Action Buttons -->
+        <div class="flex justify-end gap-3 pt-4">
+          @if (hasUnsavedChanges()) {
+            <ui-button
+              type="button"
+              variant="ghost"
+              size="md"
+              [disabled]="updateClubMutation.loading()"
+              (click)="onCancelChanges()"
+            >
+              Annuler
+            </ui-button>
+          }
           <ui-button
             type="submit"
-            variant="primary"
-            [disabled]="clubForm.invalid || saving()"
+            variant="outline"
+            size="md"
+            [loading]="updateClubMutation.loading()"
+            [disabled]="!hasUnsavedChanges() || clubForm.invalid || updateClubMutation.loading()"
           >
-            @if (saving()) {
-              <span class="flex items-center gap-2">
-                <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Enregistrement...
-              </span>
-            } @else {
-              Enregistrer les modifications
-            }
+            Enregistrer
           </ui-button>
         </div>
       </form>

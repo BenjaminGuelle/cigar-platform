@@ -8,11 +8,14 @@ import {
   Signal,
   WritableSignal,
   contentChildren,
+  ElementRef,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl, ValidationErrors } from '@angular/forms';
-import { merge, startWith, Subscription } from 'rxjs';
+import { merge, startWith, Subscription, fromEvent } from 'rxjs';
 import clsx from 'clsx';
+import { LucideAngularModule, ChevronDown } from 'lucide-angular';
 
 export type SelectSize = 'sm' | 'md' | 'lg';
 export type ErrorMessageFn = (error: ValidationErrors) => string;
@@ -29,18 +32,36 @@ const DEFAULT_ERROR_MESSAGES: ErrorMessages = {
 };
 
 const CLASSES = {
-  base: 'w-full rounded-lg border-2 transition-all duration-200 focus:outline-none bg-smoke-850 text-smoke-100 cursor-pointer',
-  size: {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2.5 text-base',
-    lg: 'px-5 py-3 text-lg',
+  button: {
+    base: 'w-full rounded-lg border-2 transition-all duration-200 focus:outline-none bg-transparent text-smoke-100 cursor-pointer flex items-center justify-between',
+    size: {
+      sm: 'px-3 py-1.5 text-sm',
+      md: 'px-4 py-2.5 text-base',
+      lg: 'px-5 py-3 text-lg',
+    },
+    state: {
+      error: 'border-error-500/50 focus:border-error-500 focus:ring-2 focus:ring-error-500/20 focus:ring-offset-2 focus:ring-offset-smoke-900',
+      valid: 'border-smoke-700 focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 focus:ring-offset-2 focus:ring-offset-smoke-900',
+      open: 'border-gold-500 ring-2 ring-gold-500/20 ring-offset-2 ring-offset-smoke-900',
+      disabled: 'bg-smoke-900 border-smoke-800 cursor-not-allowed opacity-50',
+    },
   },
-  state: {
-    error: 'border-error-500/50 focus:border-error-500 focus:ring-2 focus:ring-error-500/20',
-    valid: 'border-smoke-700 focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20',
-    disabled: 'bg-smoke-900 cursor-not-allowed opacity-50',
+  icon: {
+    base: 'text-gold-500 transition-transform duration-200',
+    open: 'rotate-180',
   },
-  icon: 'pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-smoke-400',
+  dropdown: {
+    base: 'absolute z-50 mt-2 w-full rounded-lg border-2 border-smoke-700 bg-smoke-850 shadow-xl max-h-60 overflow-auto',
+  },
+  option: {
+    base: 'px-4 py-2.5 cursor-pointer transition-colors duration-150',
+    state: {
+      normal: 'text-smoke-100 hover:bg-smoke-700 hover:text-gold-500',
+      selected: 'bg-gold-500/10 text-gold-500 hover:bg-gold-500/20',
+      highlighted: 'bg-smoke-700 text-gold-500',
+      disabled: 'text-smoke-600 cursor-not-allowed',
+    },
+  },
 };
 
 let selectIdCounter: number = 0;
@@ -63,7 +84,10 @@ let selectIdCounter: number = 0;
 @Component({
   selector: 'ui-select',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule],
+  host: {
+    class: 'block',
+  },
   template: `
     <div class="space-y-1.5">
       @if (label()) {
@@ -79,38 +103,42 @@ let selectIdCounter: number = 0;
       }
 
       <div class="relative">
-        <select
+        <!-- Custom Select Button -->
+        <button
+          type="button"
           [id]="selectId()"
-          [formControl]="control()"
-          [class]="selectClasses()"
+          [class]="buttonClasses()"
+          [disabled]="control().disabled"
           [attr.aria-describedby]="ariaDescribedBy()"
           [attr.aria-invalid]="showError()"
+          [attr.aria-expanded]="isOpen()"
+          (click)="toggle()"
+          (keydown)="handleKeyDown($event)"
         >
-          @if (placeholder()) {
-            <option value="" disabled [selected]="!control().value">
-              {{ placeholder() }}
-            </option>
-          }
-          @for (option of options(); track option.value) {
-            <option
-              [value]="option.value"
-              [disabled]="option.disabled || false"
-            >
-              {{ option.label }}
-            </option>
-          }
-        </select>
+          <span [class]="!control().value && placeholder() ? 'text-smoke-500' : ''">
+            {{ selectedLabel() }}
+          </span>
+          <lucide-icon
+            [img]="ChevronDown"
+            [size]="20"
+            [class]="iconClasses()"
+          />
+        </button>
 
-        <!-- Dropdown Icon -->
-        <div [class]="CLASSES.icon">
-          <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fill-rule="evenodd"
-              d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-              clip-rule="evenodd"
-            />
-          </svg>
-        </div>
+        <!-- Dropdown Menu -->
+        @if (isOpen()) {
+          <div [class]="CLASSES.dropdown.base">
+            @for (option of options(); track option.value; let i = $index) {
+              <div
+                [class]="optionClasses(option, i)"
+                (click)="selectOption(option)"
+                (mouseenter)="highlightOption(i)"
+              >
+                {{ option.label }}
+              </div>
+            }
+          </div>
+        }
       </div>
 
       @if (hint() && !showError()) {
@@ -128,6 +156,8 @@ let selectIdCounter: number = 0;
   `,
 })
 export class SelectComponent {
+  private readonly elementRef = inject(ElementRef);
+
   readonly selectId = input<string>(`select-${++selectIdCounter}`);
   readonly size = input<SelectSize>('md');
   readonly label = input<string>('');
@@ -142,8 +172,20 @@ export class SelectComponent {
   readonly #controlTouched: WritableSignal<boolean> = signal<boolean>(false);
   readonly #controlInvalid: WritableSignal<boolean> = signal<boolean>(false);
   readonly #controlErrors: WritableSignal<ValidationErrors | null> = signal<ValidationErrors | null>(null);
+  readonly #isOpen: WritableSignal<boolean> = signal<boolean>(false);
+  readonly #highlightedIndex: WritableSignal<number> = signal<number>(-1);
+  readonly #currentValue: WritableSignal<any> = signal<any>(null);
 
+  readonly ChevronDown = ChevronDown;
   readonly CLASSES = CLASSES;
+
+  readonly isOpen = this.#isOpen.asReadonly();
+
+  readonly selectedLabel: Signal<string> = computed<string>(() => {
+    const value = this.#currentValue();
+    const option = this.options().find((opt) => opt.value === value);
+    return option?.label ?? this.placeholder() ?? 'Sélectionner';
+  });
 
   readonly errorId: Signal<string> = computed<string>(() => `${this.selectId()}-error`);
   readonly hintId: Signal<string> = computed<string>(() => `${this.selectId()}-hint`);
@@ -185,22 +227,54 @@ export class SelectComponent {
     return '';
   });
 
-  readonly selectClasses: Signal<string> = computed<string>(() => {
+  readonly buttonClasses: Signal<string> = computed<string>(() => {
     const ctrl: FormControl = this.control();
+    const open = this.isOpen();
 
     return clsx(
-      CLASSES.base,
-      CLASSES.size[this.size()],
-      this.showError() ? CLASSES.state.error : CLASSES.state.valid,
-      ctrl?.disabled && CLASSES.state.disabled
+      CLASSES.button.base,
+      CLASSES.button.size[this.size()],
+      ctrl?.disabled && CLASSES.button.state.disabled,
+      !ctrl?.disabled && (
+        this.showError()
+          ? CLASSES.button.state.error
+          : open
+            ? CLASSES.button.state.open
+            : CLASSES.button.state.valid
+      )
     );
   });
 
+  readonly iconClasses: Signal<string> = computed<string>(() => {
+    return clsx(
+      CLASSES.icon.base,
+      this.isOpen() && CLASSES.icon.open
+    );
+  });
+
+  optionClasses(option: SelectOption, index: number): string {
+    const isSelected = this.control().value === option.value;
+    const isHighlighted = this.#highlightedIndex() === index;
+
+    return clsx(
+      CLASSES.option.base,
+      option.disabled
+        ? CLASSES.option.state.disabled
+        : isSelected
+          ? CLASSES.option.state.selected
+          : isHighlighted
+            ? CLASSES.option.state.highlighted
+            : CLASSES.option.state.normal
+    );
+  }
+
   constructor() {
+    // FormControl status/value changes effect
     effect((onCleanup) => {
       const ctrl: FormControl = this.control();
 
       this.#updateSignals(ctrl);
+      this.#currentValue.set(ctrl.value);
 
       const subscription: Subscription = merge(
         ctrl.statusChanges,
@@ -209,6 +283,7 @@ export class SelectComponent {
         .pipe(startWith(null))
         .subscribe(() => {
           this.#updateSignals(ctrl);
+          this.#currentValue.set(ctrl.value);
 
           if (ctrl.touched) {
             this.#forceShowError.set(false);
@@ -217,6 +292,30 @@ export class SelectComponent {
 
       onCleanup(() => {
         subscription.unsubscribe();
+      });
+    });
+
+    // Click outside to close dropdown effect
+    effect((onCleanup) => {
+      if (!this.isOpen()) {
+        return;
+      }
+
+      const handleClickOutside = (event: Event) => {
+        const target = event.target as Node;
+        if (!this.elementRef.nativeElement.contains(target)) {
+          this.close();
+        }
+      };
+
+      // Use setTimeout to avoid closing immediately after opening
+      const timeoutId = setTimeout(() => {
+        document.addEventListener('click', handleClickOutside);
+      }, 0);
+
+      onCleanup(() => {
+        clearTimeout(timeoutId);
+        document.removeEventListener('click', handleClickOutside);
       });
     });
   }
@@ -232,5 +331,148 @@ export class SelectComponent {
    */
   forceShowError(): void {
     this.#forceShowError.set(true);
+  }
+
+  toggle(): void {
+    if (this.control().disabled) {
+      return;
+    }
+
+    const willOpen = !this.#isOpen();
+    this.#isOpen.set(willOpen);
+
+    if (willOpen) {
+      // Find and highlight current selected option
+      const currentValue = this.control().value;
+      const currentIndex = this.options().findIndex((opt) => opt.value === currentValue);
+      this.#highlightedIndex.set(currentIndex >= 0 ? currentIndex : 0);
+    } else {
+      this.#highlightedIndex.set(-1);
+    }
+  }
+
+  selectOption(option: SelectOption): void {
+    if (option.disabled) {
+      return;
+    }
+    this.control().setValue(option.value);
+    this.control().markAsTouched();
+    this.close();
+  }
+
+  close(): void {
+    this.#isOpen.set(false);
+    this.#highlightedIndex.set(-1);
+  }
+
+  highlightOption(index: number): void {
+    this.#highlightedIndex.set(index);
+  }
+
+  handleKeyDown(event: KeyboardEvent): void {
+    if (this.control().disabled) {
+      return;
+    }
+
+    const opts = this.options();
+    const enabledOptions = opts.filter((opt) => !opt.disabled);
+
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        if (!this.#isOpen()) {
+          this.toggle();
+        } else {
+          this.#navigateDown(enabledOptions);
+        }
+        break;
+
+      case 'ArrowUp':
+        event.preventDefault();
+        if (!this.#isOpen()) {
+          this.toggle();
+        } else {
+          this.#navigateUp(enabledOptions);
+        }
+        break;
+
+      case 'Enter':
+      case ' ':
+        event.preventDefault();
+        if (this.#isOpen()) {
+          const highlighted = this.#highlightedIndex();
+          if (highlighted >= 0 && highlighted < opts.length) {
+            this.selectOption(opts[highlighted]);
+          }
+        } else {
+          this.toggle();
+        }
+        break;
+
+      case 'Escape':
+        event.preventDefault();
+        if (this.#isOpen()) {
+          this.close();
+        }
+        break;
+
+      case 'Home':
+        event.preventDefault();
+        if (this.#isOpen() && enabledOptions.length > 0) {
+          const firstEnabledIndex = opts.findIndex((opt) => !opt.disabled);
+          this.#highlightedIndex.set(firstEnabledIndex);
+        }
+        break;
+
+      case 'End':
+        event.preventDefault();
+        if (this.#isOpen() && enabledOptions.length > 0) {
+          const lastEnabledIndex = opts.length - 1 - [...opts].reverse().findIndex((opt) => !opt.disabled);
+          this.#highlightedIndex.set(lastEnabledIndex);
+        }
+        break;
+    }
+  }
+
+  #navigateDown(enabledOptions: SelectOption[]): void {
+    const opts = this.options();
+    const currentHighlight = this.#highlightedIndex();
+
+    // Find next enabled option
+    for (let i = currentHighlight + 1; i < opts.length; i++) {
+      if (!opts[i].disabled) {
+        this.#highlightedIndex.set(i);
+        return;
+      }
+    }
+
+    // Wrap to first enabled option
+    for (let i = 0; i <= currentHighlight; i++) {
+      if (!opts[i].disabled) {
+        this.#highlightedIndex.set(i);
+        return;
+      }
+    }
+  }
+
+  #navigateUp(enabledOptions: SelectOption[]): void {
+    const opts = this.options();
+    const currentHighlight = this.#highlightedIndex();
+
+    // Find previous enabled option
+    for (let i = currentHighlight - 1; i >= 0; i--) {
+      if (!opts[i].disabled) {
+        this.#highlightedIndex.set(i);
+        return;
+      }
+    }
+
+    // Wrap to last enabled option
+    for (let i = opts.length - 1; i >= currentHighlight; i--) {
+      if (!opts[i].disabled) {
+        this.#highlightedIndex.set(i);
+        return;
+      }
+    }
   }
 }

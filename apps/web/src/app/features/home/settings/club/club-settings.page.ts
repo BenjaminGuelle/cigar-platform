@@ -1,10 +1,12 @@
-import { Component, signal, inject, computed, effect } from '@angular/core';
+import { Component, signal, inject, computed, effect, viewChildren } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators, FormGroup, FormControl } from '@angular/forms';
 import { Router } from '@angular/router';
+import { LucideAngularModule, LockKeyhole } from 'lucide-angular';
 import { ContextStore } from '../../../../core/stores/context.store';
 import { ClubsService } from '@cigar-platform/types/lib/clubs/clubs.service';
 import { FormService, ToastService } from '../../../../core/services';
+import { injectMutation, Mutation } from '../../../../core/query';
 import type { ClubResponseDto, UpdateClubDto } from '@cigar-platform/types';
 import {
   PageHeaderComponent,
@@ -42,6 +44,7 @@ import {
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    LucideAngularModule,
     PageHeaderComponent,
     PageSectionComponent,
     ButtonComponent,
@@ -53,20 +56,68 @@ import {
 })
 export class ClubSettingsPage {
   contextStore = inject(ContextStore);
+  readonly LockKeyhole = LockKeyhole;
   #clubsService = inject(ClubsService);
   #formService = inject(FormService);
   #toastService = inject(ToastService);
   #fb = inject(FormBuilder);
   #router = inject(Router);
 
+  // ViewChildren for form components
+  inputs = viewChildren(InputComponent);
+  selects = viewChildren(SelectComponent);
+
+  // Mutation: Update Club
+  readonly updateClubMutation: Mutation<ClubResponseDto, { clubId: string; data: UpdateClubDto }> = injectMutation({
+    mutationFn: (variables: { clubId: string; data: UpdateClubDto }) =>
+      this.#clubsService.clubControllerUpdate(variables.clubId, variables.data),
+    onSuccess: async (updatedClub: ClubResponseDto) => {
+      this.club.set(updatedClub);
+      this.#toastService.success('Paramètres du club mis à jour avec succès');
+
+      // Update both original and current values after successful save
+      const savedValue = this.clubForm.getRawValue();
+      this.#originalFormValue.set(savedValue);
+      this.#currentFormValue.set(savedValue);
+      this.clubForm.markAsPristine();
+
+      // Refresh context to update club data in ContextStore
+      await this.contextStore.refresh();
+    },
+    onError: (error: Error) => {
+      console.error('[ClubSettingsPage] Failed to update club:', error);
+      this.#toastService.error('Impossible de mettre à jour le club');
+    },
+  });
+
   // State
   club = signal<ClubResponseDto | null>(null);
   loading = signal<boolean>(true);
-  saving = signal<boolean>(false);
+  #originalFormValue = signal<any>(null);
+  #currentFormValue = signal<any>(null);
 
   // Computed
   isOwner = computed(() => {
     return this.contextStore.context().clubRole === 'owner';
+  });
+
+  // Track if form has unsaved changes (reactive!)
+  hasUnsavedChanges = computed<boolean>(() => {
+    const original = this.#originalFormValue();
+    const current = this.#currentFormValue();
+
+    if (!original || !current) return false;
+
+    // Deep comparison of form values
+    return (
+      original.name !== current.name ||
+      original.description !== current.description ||
+      original.visibility !== current.visibility ||
+      original.isPublicDirectory !== current.isPublicDirectory ||
+      original.autoApproveMembers !== current.autoApproveMembers ||
+      original.allowMemberInvites !== current.allowMemberInvites ||
+      original.maxMembers !== current.maxMembers
+    );
   });
 
   // Select options
@@ -103,6 +154,15 @@ export class ClubSettingsPage {
         this.loadClubSettings(context.club.id);
       }
     });
+
+    // Track form changes reactively
+    effect((onCleanup) => {
+      const subscription = this.clubForm.valueChanges.subscribe(() => {
+        this.#currentFormValue.set(this.clubForm.getRawValue());
+      });
+
+      onCleanup(() => subscription.unsubscribe());
+    });
   }
 
   /**
@@ -133,7 +193,7 @@ export class ClubSettingsPage {
    * Patch form with club data
    */
   patchFormWithClubData(club: ClubResponseDto): void {
-    this.clubForm.patchValue({
+    const formValue = {
       name: club.name,
       description: club.description ? String(club.description) : null,
       visibility: club.visibility,
@@ -141,7 +201,28 @@ export class ClubSettingsPage {
       autoApproveMembers: club.autoApproveMembers,
       allowMemberInvites: club.allowMemberInvites,
       maxMembers: club.maxMembers ? Number(club.maxMembers) : null,
-    });
+    };
+
+    this.clubForm.patchValue(formValue);
+
+    // Store both original and current values for dirty tracking
+    const rawValue = this.clubForm.getRawValue();
+    this.#originalFormValue.set(rawValue);
+    this.#currentFormValue.set(rawValue);
+  }
+
+  /**
+   * Cancel pending changes and reset form to original values
+   */
+  onCancelChanges(): void {
+    const original = this.#originalFormValue();
+    if (original) {
+      this.clubForm.patchValue(original);
+      this.clubForm.markAsPristine();
+      this.clubForm.markAsUntouched();
+      // Update current value to match original (will be synced by valueChanges)
+      this.#currentFormValue.set(original);
+    }
   }
 
   /**
@@ -149,6 +230,10 @@ export class ClubSettingsPage {
    */
   async onUpdateClub(): Promise<void> {
     this.#formService.triggerValidation(this.clubForm);
+
+    // Force show errors on all UI components
+    this.inputs().forEach((input) => input.forceShowError());
+    this.selects().forEach((select) => select.forceShowError());
 
     if (this.clubForm.invalid) {
       return;
@@ -159,34 +244,18 @@ export class ClubSettingsPage {
       return;
     }
 
-    this.saving.set(true);
+    const formValue = this.clubForm.getRawValue();
+    const updateDto: UpdateClubDto = {
+      ...formValue,
+      description: formValue.description || undefined,
+      maxMembers: formValue.maxMembers || undefined,
+    };
 
-    try {
-      const formValue = this.clubForm.getRawValue();
-      const updateDto: UpdateClubDto = {
-        ...formValue,
-        description: formValue.description || undefined,
-        maxMembers: formValue.maxMembers || undefined,
-      };
-
-      const response: any = await this.#clubsService.clubControllerUpdate(
-        clubData.id,
-        updateDto
-      );
-
-      if (response?.data) {
-        this.club.set(response.data);
-        this.#toastService.success('Paramètres du club mis à jour avec succès');
-
-        // Refresh context to update club data in ContextStore
-        await this.contextStore.refresh();
-      }
-    } catch (error) {
-      console.error('[ClubSettingsPage] Failed to update club:', error);
-      this.#toastService.error('Impossible de mettre à jour le club');
-    } finally {
-      this.saving.set(false);
-    }
+    // Use mutation from query layer
+    await this.updateClubMutation.mutate({
+      clubId: clubData.id,
+      data: updateDto,
+    });
   }
 
   /**

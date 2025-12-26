@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, WritableSignal, Signal, effect } from '@angular/core';
+import { Component, inject, signal, computed, WritableSignal, Signal, effect, viewChildren } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
@@ -64,8 +64,13 @@ export class UserSettingsPage {
   readonly userStore: UserStore = injectUserStore();
   readonly currentUser: Signal<UserDto | null> = this.userStore.currentUser.data;
 
+  // ViewChildren for form components
+  inputs = viewChildren(InputComponent);
+
   // Avatar upload state
   #selectedAvatarPreview: WritableSignal<string | null> = signal<string | null>(null);
+  #originalFormValue = signal<any>(null);
+  #currentFormValue = signal<any>(null);
 
   readonly selectedAvatarPreview = this.#selectedAvatarPreview.asReadonly();
 
@@ -107,6 +112,16 @@ export class UserSettingsPage {
     }
   });
 
+  // Track if form has unsaved changes (reactive!)
+  hasUnsavedChanges = computed<boolean>(() => {
+    const original = this.#originalFormValue();
+    const current = this.#currentFormValue();
+
+    if (!original || !current) return false;
+
+    return original.displayName !== current.displayName;
+  });
+
   profileForm: FormGroup<{
     displayName: FormControl<string>;
   }> = this.#fb.nonNullable.group({
@@ -116,14 +131,41 @@ export class UserSettingsPage {
   #selectedAvatarFile: File | null = null;
 
   constructor() {
+    // Sync form with user data
     effect(() => {
       const user: UserDto | null = this.currentUser();
       if (user) {
         this.profileForm.patchValue({
           displayName: user.displayName,
         });
+        const formValue = this.profileForm.getRawValue();
+        this.#originalFormValue.set(formValue);
+        this.#currentFormValue.set(formValue);
       }
     });
+
+    // Track form changes reactively
+    effect((onCleanup) => {
+      const subscription = this.profileForm.valueChanges.subscribe(() => {
+        this.#currentFormValue.set(this.profileForm.getRawValue());
+      });
+
+      onCleanup(() => subscription.unsubscribe());
+    });
+  }
+
+  /**
+   * Cancel pending changes and reset form to original values
+   */
+  onCancelChanges(): void {
+    const original = this.#originalFormValue();
+    if (original) {
+      this.profileForm.patchValue(original);
+      this.profileForm.markAsPristine();
+      this.profileForm.markAsUntouched();
+      // Update current value to match original (will be synced by valueChanges)
+      this.#currentFormValue.set(original);
+    }
   }
 
   onAvatarFileSelected(event: Event): void {
@@ -170,6 +212,9 @@ export class UserSettingsPage {
   async onUpdateProfile(): Promise<void> {
     this.#formService.triggerValidation(this.profileForm);
 
+    // Force show errors on all UI components
+    this.inputs().forEach((input) => input.forceShowError());
+
     if (this.profileForm.invalid) {
       return;
     }
@@ -182,6 +227,11 @@ export class UserSettingsPage {
 
     if (result) {
       this.#toastService.success('Profil mis à jour avec succès');
+      // Update both original and current values after successful save
+      const savedValue = this.profileForm.getRawValue();
+      this.#originalFormValue.set(savedValue);
+      this.#currentFormValue.set(savedValue);
+      this.profileForm.markAsPristine();
     }
   }
 

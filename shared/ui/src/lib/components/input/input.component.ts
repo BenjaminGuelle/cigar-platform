@@ -72,6 +72,9 @@ let inputIdCounter: number = 0;
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './input.component.html',
+  host: {
+    class: 'block',
+  },
 })
 export class InputComponent {
   readonly inputId = input<string>(`input-${++inputIdCounter}`);

@@ -17,18 +17,33 @@ export type CheckboxSize = 'sm' | 'md' | 'lg';
 
 const CLASSES = {
   container: 'flex items-start gap-3',
-  wrapper: 'flex items-center',
-  input: {
-    base: 'rounded transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-smoke-900',
+  wrapper: 'relative inline-flex items-center cursor-pointer',
+  // Hidden native input (sr-only)
+  input: 'sr-only',
+  // Custom checkbox visual
+  customCheckbox: {
+    base: 'flex items-center justify-center rounded border-2 transition-all duration-200 cursor-pointer',
     size: {
       sm: 'w-4 h-4',
       md: 'w-5 h-5',
       lg: 'w-6 h-6',
     },
     state: {
-      normal: 'border-2 border-smoke-700 bg-smoke-850 text-gold-500 focus:ring-gold-500/20',
+      normal: 'border-gold-500 bg-transparent',
+      focus: 'peer-focus:ring-2 peer-focus:ring-gold-500/20 peer-focus:ring-offset-2 peer-focus:ring-offset-smoke-900',
       disabled: 'border-smoke-800 bg-smoke-900 cursor-not-allowed opacity-50',
     },
+  },
+  // Inner square (shown when checked)
+  innerSquare: {
+    base: 'bg-gold-500 rounded transition-opacity duration-200 pointer-events-none',
+    size: {
+      sm: 'w-2.5 h-2.5',
+      md: 'w-3 h-3',
+      lg: 'w-4 h-4',
+    },
+    visible: 'opacity-100',
+    hidden: 'opacity-0',
   },
   label: {
     base: 'cursor-pointer',
@@ -61,18 +76,30 @@ let checkboxIdCounter: number = 0;
   selector: 'ui-checkbox',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
+  host: {
+    class: 'block',
+  },
   template: `
     <div [class]="containerClasses()">
-      <div [class]="CLASSES.wrapper">
+      <!-- Label contains input = click anywhere triggers input -->
+      <label [class]="CLASSES.wrapper">
+        <!-- Hidden native input -->
         <input
           [id]="checkboxId()"
           type="checkbox"
-          [formControl]="control()"
-          [class]="inputClasses()"
+          [checked]="control().value"
+          (change)="onToggle($event)"
+          [disabled]="control().disabled"
+          [class]="CLASSES.input"
           [attr.aria-labelledby]="label() ? checkboxId() + '-label' : null"
           [attr.aria-describedby]="description() ? checkboxId() + '-desc' : null"
         />
-      </div>
+        <!-- Custom checkbox visual -->
+        <span [class]="customCheckboxClasses()">
+          <!-- Inner square (shown when checked) -->
+          <span [class]="innerSquareInnerClasses()"></span>
+        </span>
+      </label>
       @if (label() || description()) {
         <div [class]="CLASSES.label.base">
           @if (label()) {
@@ -104,19 +131,33 @@ export class CheckboxComponent {
   readonly description = input<string>('');
   readonly control = input.required<FormControl<boolean>>();
 
+  readonly #internalValue: WritableSignal<boolean> = signal<boolean>(false);
+
   readonly CLASSES = CLASSES;
 
   readonly containerClasses = computed<string>(() =>
     clsx(CLASSES.container)
   );
 
-  readonly inputClasses = computed<string>(() => {
+  readonly customCheckboxClasses = computed<string>(() => {
     const ctrl = this.control();
 
     return clsx(
-      CLASSES.input.base,
-      CLASSES.input.size[this.size()],
-      ctrl?.disabled ? CLASSES.input.state.disabled : CLASSES.input.state.normal
+      CLASSES.customCheckbox.base,
+      CLASSES.customCheckbox.size[this.size()],
+      ctrl?.disabled
+        ? CLASSES.customCheckbox.state.disabled
+        : [CLASSES.customCheckbox.state.normal, CLASSES.customCheckbox.state.focus]
+    );
+  });
+
+  readonly innerSquareInnerClasses = computed<string>(() => {
+    const isChecked = this.#internalValue();
+
+    return clsx(
+      CLASSES.innerSquare.base,
+      CLASSES.innerSquare.size[this.size()],
+      isChecked ? CLASSES.innerSquare.visible : CLASSES.innerSquare.hidden
     );
   });
 
@@ -126,4 +167,39 @@ export class CheckboxComponent {
       CLASSES.label.title
     )
   );
+
+  onToggle(event: Event): void {
+    if (this.control().disabled) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
+    const target = event.target as HTMLInputElement;
+    const newValue = target.checked;
+
+    // Update internal signal for reactivity
+    this.#internalValue.set(newValue);
+
+    // Update FormControl
+    this.control().setValue(newValue);
+    this.control().markAsTouched();
+  }
+
+  constructor() {
+    // Sync internal value with FormControl (reactive to value changes)
+    effect((onCleanup) => {
+      const ctrl = this.control();
+
+      // Set initial value
+      this.#internalValue.set(ctrl.value ?? false);
+
+      // Subscribe to value changes (for external updates like patchValue)
+      const subscription = ctrl.valueChanges.subscribe(() => {
+        this.#internalValue.set(ctrl.value ?? false);
+      });
+
+      onCleanup(() => subscription.unsubscribe());
+    });
+  }
 }
