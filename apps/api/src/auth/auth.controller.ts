@@ -21,10 +21,10 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import {
   SignUpDto,
   SignInDto,
-  UpdateProfileDto,
   AuthResponseDto,
   UserDto,
 } from './dto';
+import { UpdateProfileDto } from '../users/dto/update-profile.dto';
 
 /**
  * Controller handling authentication endpoints

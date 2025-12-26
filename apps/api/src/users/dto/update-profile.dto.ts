@@ -1,11 +1,13 @@
 import { IsString, IsOptional, MinLength, MaxLength, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import type { UpdateProfileRequest } from '@cigar-platform/types';
 
 /**
  * DTO for updating user profile
  * Only displayName and avatarUrl are editable
+ * Implements UpdateProfileRequest to ensure consistency with frontend
  */
-export class UpdateProfileDto {
+export class UpdateProfileDto implements UpdateProfileRequest {
   @IsOptional()
   @IsString()
   @MinLength(2, { message: 'Le nom doit contenir au moins 2 caractères' })

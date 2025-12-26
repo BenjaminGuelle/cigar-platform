@@ -6,10 +6,10 @@ import { PrismaService } from '../app/prisma.service';
 import {
   SignUpDto,
   SignInDto,
-  UpdateProfileDto,
   AuthResponseDto,
   UserDto,
 } from './dto';
+import { UpdateProfileDto } from '../users/dto/update-profile.dto';
 import {
   EmailConfirmationRequiredException,
   InvalidCredentialsException,
