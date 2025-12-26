@@ -44,6 +44,7 @@ import clsx from 'clsx';
         (click)="contextSelected.emit({ type: 'solo', id: null })"
         [class]="getAvatarButtonClasses('solo')"
         [attr.aria-label]="'Switch to solo context'"
+        [title]="getSoloTooltip()"
       >
         <div [class]="getAvatarWrapperClasses(activeContextType() === 'solo')">
           <ui-avatar [user]="user()" size="md" />
@@ -60,6 +61,7 @@ import clsx from 'clsx';
           (click)="contextSelected.emit({ type: 'club', id: club.id, club: club })"
           [class]="getAvatarButtonClasses('club', club.id)"
           [attr.aria-label]="'Switch to ' + club.name"
+          [title]="club.name"
         >
           <div [class]="getAvatarWrapperClasses(activeContextType() === 'club' && activeClubId() === club.id)">
             <ui-avatar [club]="club" size="md" />
@@ -105,8 +107,18 @@ export class ContextSidebarComponent {
    */
   getAvatarWrapperClasses(isActive: boolean): string {
     return clsx(
-      'relative',
-      isActive && 'ring-2 ring-gold-500 rounded-full'
+      'relative rounded-full transition-all duration-200',
+      isActive
+        ? 'ring-2 ring-gold-500 ring-offset-2 ring-offset-smoke-800 scale-105 shadow-lg shadow-gold-500/20'
+        : 'opacity-60 hover:opacity-100 hover:scale-105'
     );
+  }
+
+  /**
+   * Get tooltip text for solo context
+   */
+  getSoloTooltip(): string {
+    const userName = this.user()?.displayName || 'Mon compte';
+    return `${userName} (Personnel)`;
   }
 }
