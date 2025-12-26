@@ -7,6 +7,7 @@
     [fabMenuOpen]="fabMenuOpen()"
     [fabMenuItems]="fabMenuItems()"
     (contextClick)="onContextClick()"
+    (searchClick)="onSearchOpen()"
     (fabMenuToggle)="onFabMenuToggle()"
     (fabMenuClose)="onFabMenuClose()"
     (fabMenuItemClicked)="onFabMenuItemClick($event)"
@@ -23,17 +24,12 @@
   />
 
   <!-- Desktop Top Tabs (≥ 768px) - Horizontal navigation -->
-  <ui-desktop-top-tabs>
+  <ui-desktop-top-tabs (searchClick)="onSearchOpen()">
     <ui-desktop-top-tab-item
       label="Accueil"
       route="/dashboard"
       icon="home"
       [exact]="true"
-    />
-    <ui-desktop-top-tab-item
-      label="Explorer"
-      route="/explore"
-      icon="search"
     />
     <!-- Membres tab (only visible in club context) -->
     @if (context().type === 'club') {
@@ -67,7 +63,7 @@
   </ui-desktop-top-tabs>
 
   <!-- Main Content Area -->
-  <main class="min-h-screen overflow-auto px-4 pt-15 pb-24 md:pl-18 md:pr-8 md:pt-20 md:pb-8">
+  <main class="min-h-screen overflow-auto px-4 pt-15 pb-24 md:pl-18 md:pr-8 md:pt-24 md:pb-8">
     <router-outlet />
   </main>
 
@@ -89,18 +85,12 @@
       route="/dashboard"
       [exact]="true"
     />
-    <!-- Context-driven tab: Explorer (solo) or Membres (club) -->
+    <!-- Membres tab (only in club context) -->
     @if (context().type === 'club') {
       <ui-bottom-tab-item
         icon="users"
         label="Membres"
         route="/membres"
-      />
-    } @else {
-      <ui-bottom-tab-item
-        icon="search"
-        label="Explorer"
-        route="/explore"
       />
     }
     <ui-bottom-tab-item
@@ -145,5 +135,11 @@
     [contextClubName]="context().club?.name || null"
     (close)="onCreateContentModalClose()"
     (eventCreated)="onEventCreated()"
+  />
+
+  <!-- Global Search Modal -->
+  <app-global-search
+    [isOpen]="searchModalOpen()"
+    (close)="onSearchClose()"
   />
 </div>

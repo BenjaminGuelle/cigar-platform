@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -12,22 +12,32 @@ import {
   IconDirective,
   ClubCardComponent,
 } from '@cigar-platform/shared/ui';
+import { SearchModalService } from '../../../core/services';
 
 /**
- * Explore Page - Global Discovery Layer
+ * Explore Page - Technical Fallback Only
+ *
+ * ⚠️ IMPORTANT: This is NOT a primary navigation destination
+ *
+ * Product Decision:
+ * - App is usage-first, not browsing-first
+ * - Discovery = Global Search Modal (accessible via search icon)
+ * - This page exists ONLY as a technical fallback for:
+ *   1. Deep-link support (/explore URLs from external sources)
+ *   2. Auto-opens Global Search Modal on mount
+ *   3. Shows minimal browse UI if modal is closed
+ *
+ * Primary UX Entry Points:
+ * - Search icon (mobile header + desktop top bar)
+ * - Cmd+K keyboard shortcut (future)
+ *
+ * Architecture:
+ * - Opens Global Search Modal by default (ngOnInit)
+ * - Fallback browse page if user closes modal
+ * - NOT in primary navigation (removed from tabs)
  *
  * MVP Scope: Clubs only
  * Future: Users, Cigars, Events
- *
- * Architecture:
- * - Extensible filter system (?filter=clubs|users|cigars|events)
- * - Tab-based UI ready for multi-entity discovery
- * - Single source of truth for discovery UX
- *
- * ALL STARS Architecture ⭐
- * - Template in separate .html file
- * - Styles in separate .scss file
- * - Clean separation of concerns
  */
 
 type ExploreFilter = 'clubs' | 'users' | 'cigars' | 'events';
@@ -47,9 +57,10 @@ type ExploreFilter = 'clubs' | 'users' | 'cigars' | 'events';
   templateUrl: './explore.page.html',
   styleUrls: ['./explore.page.css'],
 })
-export class ExplorePage {
+export class ExplorePage implements OnInit {
   #clubsService = inject(ClubsService);
   #router = inject(Router);
+  #searchModal = inject(SearchModalService);
 
   // State - Entity filter (MVP: clubs only)
   #entityFilter = signal<ExploreFilter>('clubs');
@@ -100,7 +111,13 @@ export class ExplorePage {
       });
 
     // Load initial data based on entity filter
-    this.loadData();
+    void this.loadData();
+  }
+
+  ngOnInit(): void {
+    // Open global search modal by default
+    // Primary UX: Modal search > Browse page
+    this.#searchModal.open();
   }
 
   /**
@@ -109,7 +126,7 @@ export class ExplorePage {
    */
   setEntityFilter(filter: ExploreFilter): void {
     this.#entityFilter.set(filter);
-    this.loadData();
+    void this.loadData();
   }
 
   /**
@@ -163,7 +180,7 @@ export class ExplorePage {
    * Navigate to club public profile
    */
   navigateToClub(clubId: string): void {
-    this.#router.navigate(['/club', clubId]);
+    void this.#router.navigate(['/club', clubId]);
   }
 
   /**

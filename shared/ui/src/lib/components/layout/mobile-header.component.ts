@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { User } from '@cigar-platform/types';
 import { AvatarComponent } from '../avatar';
 import { FabMenuComponent, type FabMenuItem } from '../fab-menu';
+import { IconDirective } from '../../directives/icon';
 
 /**
  * Mobile Header Component
@@ -13,7 +14,7 @@ import { FabMenuComponent, type FabMenuItem } from '../fab-menu';
 @Component({
   selector: 'ui-mobile-header',
   standalone: true,
-  imports: [CommonModule, AvatarComponent, FabMenuComponent],
+  imports: [CommonModule, AvatarComponent, FabMenuComponent, IconDirective],
   template: `
     <header class="fixed left-0 right-0 top-0 z-40 border-b border-smoke-800 backdrop-blur-xl md:hidden">
       <div class="flex items-center justify-between px-4 py-3">
@@ -59,6 +60,16 @@ import { FabMenuComponent, type FabMenuItem } from '../fab-menu';
           <ng-content />
         </div>
 
+        <!-- Search Button -->
+        <button
+          type="button"
+          (click)="searchClick.emit()"
+          class="flex items-center justify-center w-10 h-10 rounded-lg text-smoke-400 hover:text-gold-500 hover:bg-smoke-800/50 transition-all duration-150 active:scale-95 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 focus:ring-offset-smoke-900"
+          aria-label="Rechercher"
+        >
+          <i name="search" class="w-5 h-5"></i>
+        </button>
+
         <!-- FAB Menu (contextual quick actions) -->
         <ui-fab-menu
           variant="inline"
@@ -84,6 +95,7 @@ export class MobileHeaderComponent {
 
   // Events
   readonly contextClick = output<void>();
+  readonly searchClick = output<void>();
   readonly fabMenuToggle = output<void>();
   readonly fabMenuClose = output<void>();
   readonly fabMenuItemClicked = output<string>();

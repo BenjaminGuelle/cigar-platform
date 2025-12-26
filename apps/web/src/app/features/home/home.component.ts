@@ -1,7 +1,7 @@
 import { Component, inject, Signal, signal, WritableSignal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
-import { AuthService } from '../../core/services';
+import { AuthService, SearchModalService } from '../../core/services';
 import { ContextStore } from '../../core/stores/context.store';
 import type { UserWithAuth } from '@cigar-platform/types';
 import {
@@ -17,6 +17,7 @@ import {
 } from '@cigar-platform/shared/ui';
 import { CreateJoinClubModalComponent } from '../../shared/components/create-join-club-modal';
 import { CreateContentModalComponent } from '../../shared/components/create-content-modal';
+import { GlobalSearchComponent } from '../../shared/components/global-search';
 
 /**
  * Home Component (Main App Layout)
@@ -40,16 +41,21 @@ import { CreateContentModalComponent } from '../../shared/components/create-cont
     CreateJoinClubModalComponent,
     CreateContentModalComponent,
     FabMenuComponent,
+    GlobalSearchComponent,
   ],
   templateUrl: './home.component.html',
 })
 export class HomeComponent {
   #authService = inject(AuthService);
   #contextStore = inject(ContextStore);
+  #searchModal = inject(SearchModalService);
 
   readonly currentUser: Signal<UserWithAuth | null> = this.#authService.currentUser;
   readonly context = this.#contextStore.context;
   readonly userClubs = this.#contextStore.userClubs;
+
+  // Global search modal state (shared service)
+  readonly searchModalOpen = this.#searchModal.isOpen;
 
   // Context switcher state (mobile bottom sheet)
   readonly contextSwitcherOpen: WritableSignal<boolean> = signal<boolean>(false);
@@ -163,5 +169,13 @@ export class HomeComponent {
     } else if (action === 'create-event') {
       this.createContentModalOpen.set(true);
     }
+  }
+
+  onSearchOpen(): void {
+    this.#searchModal.open();
+  }
+
+  onSearchClose(): void {
+    this.#searchModal.close();
   }
 }

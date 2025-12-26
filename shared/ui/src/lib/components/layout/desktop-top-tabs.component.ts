@@ -1,4 +1,4 @@
-import { Component, computed, Signal, input } from '@angular/core';
+import { Component, computed, Signal, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import clsx from 'clsx';
@@ -27,16 +27,31 @@ export interface TopTab {
 @Component({
   selector: 'ui-desktop-top-tabs',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, IconDirective],
   template: `
     <nav
-      class="hidden md:flex fixed top-0 left-18 right-0 z-40 h-14 items-center gap-1 bg-smoke-900 border-b border-smoke-700 px-6"
+      class="hidden md:flex fixed top-0 left-18 right-0 z-40 h-18 items-center gap-2 bg-smoke-800 border-b border-smoke-700/50 px-8 shadow-lg shadow-smoke-950/20"
     >
-      <ng-content />
+      <!-- Tabs (left side) -->
+      <div class="flex items-center gap-2 flex-1">
+        <ng-content />
+      </div>
+
+      <!-- Search button (right side) -->
+      <button
+        type="button"
+        (click)="searchClick.emit()"
+        class="flex items-center justify-center w-10 h-10 rounded-lg text-smoke-400 hover:text-gold-500 hover:bg-smoke-700/50 transition-all duration-150 active:scale-95 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 focus:ring-offset-smoke-800"
+        aria-label="Rechercher"
+      >
+        <i name="search" class="w-5 h-5"></i>
+      </button>
     </nav>
   `,
 })
-export class DesktopTopTabsComponent {}
+export class DesktopTopTabsComponent {
+  readonly searchClick = output<void>();
+}
 
 /**
  * Desktop Top Tab Item Component
@@ -54,27 +69,29 @@ export class DesktopTopTabsComponent {}
       [class]="tabClasses()"
       #rla="routerLinkActive"
     >
-      <!-- Icon (if provided) -->
-      @if (icon()) {
-        <i [name]="icon()!" class="h-4 w-4"></i>
-      }
+      <div class="flex items-center gap-2.5">
+        <!-- Icon (if provided) -->
+        @if (icon()) {
+          <i [name]="icon()!" class="h-5 w-5 transition-transform duration-200 group-hover:scale-110"></i>
+        }
 
-      <!-- Label -->
-      <span class="font-medium">{{ label() }}</span>
+        <!-- Label -->
+        <span class="font-semibold text-sm">{{ label() }}</span>
 
-      <!-- Badge (if provided) -->
-      @if (badge() && badge()! > 0) {
-        <span
-          class="ml-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-gold-500 px-1.5 text-xs font-bold text-smoke-950"
-        >
-          {{ badge()! > 99 ? '99+' : badge() }}
-        </span>
-      }
+        <!-- Badge (if provided) -->
+        @if (badge() && badge()! > 0) {
+          <span
+            class="flex h-5 min-w-5 items-center justify-center rounded-full bg-gold-500 px-1.5 text-xs font-bold text-smoke-950"
+          >
+            {{ badge()! > 99 ? '99+' : badge() }}
+          </span>
+        }
+      </div>
 
-      <!-- Active indicator -->
+      <!-- Active indicator glow -->
       @if (rla.isActive) {
         <div
-          class="absolute bottom-0 left-0 right-0 h-0.5 bg-gold-500"
+          class="absolute -bottom-2 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-gold-500 to-transparent shadow-lg shadow-gold-500/50"
         ></div>
       }
     </a>
@@ -89,12 +106,16 @@ export class DesktopTopTabItemComponent {
 
   readonly tabClasses: Signal<string> = computed<string>(() => {
     return clsx(
-      'relative flex items-center gap-2 px-4 h-full',
-      'text-sm text-smoke-300 transition-colors duration-200',
-      'hover:text-smoke-100 hover:bg-smoke-800',
-      'active:scale-95',
+      'group relative flex items-center px-6 h-full',
+      'text-smoke-400 transition-all duration-300',
+      'hover:text-smoke-100 hover:bg-smoke-700/50',
+      'active:scale-98',
+      'rounded-lg mx-1',
       // Active state handled by routerLinkActive
-      '[&.active]:text-gold-500'
+      '[&.active]:text-gold-500',
+      '[&.active]:bg-smoke-700/30',
+      '[&.active]:shadow-lg',
+      '[&.active]:shadow-gold-500/10'
     );
   });
 }

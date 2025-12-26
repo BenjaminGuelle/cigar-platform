@@ -1,0 +1,82 @@
+<ui-modal
+  [isOpen]="isOpen()"
+  size="md"
+  position="top-right"
+  (close)="handleClose()"
+>
+  <!-- Header -->
+  <div class="mb-6">
+    <h2 id="modal-title" class="text-2xl font-display text-smoke-50 mb-2">
+      Rechercher
+    </h2>
+    <p class="text-sm text-smoke-400">
+      Trouvez des clubs, des membres, des dégustations...
+    </p>
+  </div>
+
+  <!-- Search Input -->
+  <div class="mb-4">
+    <div class="relative">
+      <i name="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-smoke-500"></i>
+      <input
+        #searchInput
+        type="text"
+        [formControl]="searchControl"
+        class="w-full pl-10 pr-4 py-3 bg-smoke-900 border border-smoke-700 rounded-lg text-smoke-100 placeholder-smoke-500 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent transition-all"
+        placeholder="Rechercher un club..."
+        autocomplete="off"
+        spellcheck="false"
+      />
+    </div>
+  </div>
+
+  <!-- Content: Results or Empty/Loading State -->
+  <div class="max-h-96 overflow-y-auto">
+    <!-- Loading State -->
+    @if (loading()) {
+      <div class="py-12 text-center">
+        <i name="spinner" class="w-8 h-8 mx-auto text-gold-500 animate-spin"></i>
+        <p class="text-sm text-smoke-400 mt-3">Recherche en cours...</p>
+      </div>
+    }
+
+    <!-- Results (Grouped) -->
+    @if (!loading() && hasResults()) {
+      <!-- Clubs Group -->
+      <ui-search-result-group title="CLUBS">
+        @for (club of clubResults(); track club.id; let i = $index) {
+          <ui-search-result-item
+            [title]="club.name"
+            [subtitle]="club.subtitle"
+            [iconBadge]="club.iconBadge"
+            [avatarUrl]="club.avatarUrl"
+            [entityType]="'club'"
+            [isActive]="isResultActive(i)"
+            (clicked)="handleResultClick(club)"
+          />
+        }
+      </ui-search-result-group>
+    }
+
+    <!-- Empty State -->
+    @if (showEmpty()) {
+      <div class="py-12 text-center">
+        <i name="search" class="w-12 h-12 mx-auto text-smoke-600 mb-3"></i>
+        <p class="text-sm font-medium text-smoke-400">Aucun résultat</p>
+        <p class="text-xs text-smoke-500 mt-1">Essayez une autre recherche</p>
+      </div>
+    }
+  </div>
+
+  <!-- Footer: Keyboard Hints -->
+  <div class="mt-6 pt-4 border-t border-smoke-700 flex items-center justify-between text-xs text-smoke-500">
+    <div class="hidden md:flex items-center gap-2">
+      <kbd class="px-2 py-1 bg-smoke-700 rounded text-smoke-300 font-mono">↑↓</kbd>
+      <span>Navigate</span>
+      <kbd class="px-2 py-1 bg-smoke-700 rounded text-smoke-300 font-mono">Enter</kbd>
+      <span>Select</span>
+      <kbd class="px-2 py-1 bg-smoke-700 rounded text-smoke-300 font-mono">Esc</kbd>
+      <span>Close</span>
+    </div>
+  </div>
+</ui-modal>

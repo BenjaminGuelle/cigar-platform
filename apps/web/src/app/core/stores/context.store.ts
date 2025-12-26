@@ -1,6 +1,7 @@
 import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { ClubsService } from '@cigar-platform/types/lib/clubs/clubs.service';
 import type { ClubResponseDto, UpdateMemberRoleDtoRole } from '@cigar-platform/types';
+import { injectQuery } from '../query';
 
 /**
  * LocalStorage key for persisting context
@@ -92,14 +93,25 @@ export class ContextStore {
   });
 
   /**
-   * User's clubs with their roles
+   * User's clubs with their roles (Query Layer)
    */
-  readonly #userClubs = signal<ClubWithRole[]>([]);
+  readonly #userClubsQuery = injectQuery<ClubWithRole[]>({
+    queryKey: ['clubs', 'my-clubs'],
+    queryFn: async () => {
+      const myClubs = await this.#clubsService.clubControllerFindMyClubs();
+      if (Array.isArray(myClubs)) {
+        return myClubs as ClubWithRole[];
+      }
+      return [];
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: signal(false), // Disable auto-fetch, manual trigger
+  });
 
   // ==================== Public Signals ====================
 
   readonly context = this.#context.asReadonly();
-  readonly userClubs = this.#userClubs.asReadonly();
+  readonly userClubs = computed(() => this.#userClubsQuery.data() ?? []);
 
   // ==================== Computed ====================
 
@@ -152,28 +164,12 @@ export class ContextStore {
   }
 
   /**
-   * Load user's clubs with roles (ALL STARS)
+   * Load user's clubs with roles (Query Layer)
    * Single optimized query: GET /clubs/me
-   * Silently skips if user not authenticated (401)
+   * Uses query layer with automatic error handling and caching
    */
   async loadUserClubs(): Promise<void> {
-    try {
-      const myClubs = await this.#clubsService.clubControllerFindMyClubs();
-
-      if (Array.isArray(myClubs)) {
-        this.#userClubs.set(myClubs as ClubWithRole[]);
-      } else {
-        console.warn('[ContextStore] Unexpected response format from /clubs/me');
-        this.#userClubs.set([]);
-      }
-    } catch (error: any) {
-      // Silently skip if not authenticated (happens on app init before login)
-      if (error?.status === 401) {
-        return;
-      }
-      console.error('[ContextStore] Failed to load user clubs:', error);
-      this.#userClubs.set([]);
-    }
+    await this.#userClubsQuery.refetch();
   }
 
   /**
@@ -218,7 +214,7 @@ export class ContextStore {
       await this.loadUserClubs();
 
       // Find and restore the current club with updated data
-      const updatedClub = this.#userClubs().find((c) => c.id === ctx.clubId);
+      const updatedClub = this.userClubs().find((c) => c.id === ctx.clubId);
 
       if (updatedClub) {
         this.switchToClub(updatedClub, updatedClub.myRole);
@@ -242,7 +238,7 @@ export class ContextStore {
    * - Falls back to solo if club not found (user removed from club)
    */
   hydrateClubContext(clubId: string): void {
-    const clubs = this.#userClubs();
+    const clubs = this.userClubs();
     const club = clubs.find((c) => c.id === clubId);
 
     if (club) {

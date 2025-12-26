@@ -34,7 +34,10 @@ export const homeRoutes: Route[] = [
         loadChildren: () =>
           import('../admin/admin.routes').then((m) => m.adminChildRoutes),
       },
-      // Club routes
+      // Explore route (TECHNICAL FALLBACK ONLY - Not in primary navigation)
+      // Product Decision: Discovery = Global Search Modal (search icon + cmd+K)
+      // This route auto-opens search modal on mount, keeps minimal browse UI as fallback
+      // Use case: Deep-links from external sources (/explore URL sharing)
       {
         path: 'explore',
         loadComponent: () =>

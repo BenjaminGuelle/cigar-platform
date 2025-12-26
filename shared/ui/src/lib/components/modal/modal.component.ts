@@ -4,7 +4,7 @@ import { IconDirective } from '../../directives/icon';
 import clsx from 'clsx';
 
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl';
-export type ModalPosition = 'center' | 'right' | 'bottom-right';
+export type ModalPosition = 'center' | 'right' | 'bottom-right' | 'top-right';
 
 /**
  * Modal Component
@@ -37,6 +37,7 @@ export type ModalPosition = 'center' | 'right' | 'bottom-right';
         [attr.role]="'dialog'"
         [attr.aria-modal]="true"
         [attr.aria-labelledby]="'modal-title'"
+        (click)="onBackdropClick()"
       >
         <div
           [class]="modalClasses()"
@@ -129,7 +130,7 @@ export class ModalComponent {
 
   backdropClasses(): string {
     const pos = this.position();
-    const isPopover = pos === 'right' || pos === 'bottom-right';
+    const isPopover = pos === 'right' || pos === 'bottom-right' || pos === 'top-right';
 
     return clsx(
       'fixed inset-0 z-50 animate-fade-in',
@@ -149,7 +150,9 @@ export class ModalComponent {
       // Right position (popover from sidebar)
       pos === 'right' && 'inset-0 flex items-center justify-center p-4 md:inset-y-0 md:left-18 md:items-start md:pt-4 md:pr-4 md:justify-start',
       // Bottom-right position (popover from FAB)
-      pos === 'bottom-right' && 'inset-0 flex items-center justify-center p-4 md:bottom-24 md:right-8 md:top-auto md:left-auto md:items-end md:justify-end md:p-0'
+      pos === 'bottom-right' && 'inset-0 flex items-center justify-center p-4 md:bottom-24 md:right-8 md:top-auto md:left-auto md:items-end md:justify-end md:p-0',
+      // Top-right position (popover from search button)
+      pos === 'top-right' && 'inset-0 flex items-center justify-center p-4 md:top-4 md:right-4 md:bottom-auto md:left-auto md:items-start md:justify-end md:p-0'
     );
   }
 
@@ -170,6 +173,7 @@ export class ModalComponent {
       // Animation based on position
       pos === 'right' && 'animate-slide-up md:animate-slide-right',
       pos === 'bottom-right' && 'animate-slide-up',
+      pos === 'top-right' && 'animate-slide-up md:animate-slide-right',
       pos === 'center' && 'animate-slide-up',
       sizeMap[this.size()]
     );
