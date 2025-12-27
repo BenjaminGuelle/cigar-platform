@@ -32,6 +32,10 @@ import {
   UpdateMemberRoleDto,
   TransferOwnershipDto,
   BanMemberDto,
+  PaginatedClubResponseDto,
+  PaginatedMemberResponseDto,
+  PaginatedJoinRequestResponseDto,
+  JoinByCodeResponseDto,
 } from './dto';
 import { ClubRole } from '@cigar-platform/prisma-client';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -77,12 +81,13 @@ export class ClubController {
   @ApiResponse({
     status: 200,
     description: 'Clubs retrieved successfully',
+    type: PaginatedClubResponseDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Unauthorized',
   })
-  async findAll(@Query() filter: FilterClubDto) {
+  async findAll(@Query() filter: FilterClubDto): Promise<PaginatedClubResponseDto> {
     return this.clubService.findAll(filter);
   }
 
@@ -195,7 +200,11 @@ export class ClubController {
   @UseGuards(ClubRolesGuard)
   @ApiOperation({ summary: 'Get club members' })
   @ApiParam({ name: 'id', description: 'Club UUID' })
-  @ApiResponse({ status: 200, description: 'Members retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Members retrieved successfully',
+    type: PaginatedMemberResponseDto,
+  })
   @ApiResponse({ status: 403, description: 'Forbidden - Must be a club member' })
   @ApiResponse({ status: 404, description: 'Club not found' })
   async getMembers(
@@ -203,7 +212,7 @@ export class ClubController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
     @Query('role') role?: ClubRole
-  ) {
+  ): Promise<PaginatedMemberResponseDto> {
     return this.clubMemberService.getMembers(clubId, { page, limit, role });
   }
 
@@ -324,13 +333,17 @@ export class ClubController {
 
   @Post('join-by-code')
   @ApiOperation({ summary: 'Join a club using invite code' })
-  @ApiResponse({ status: 201, description: 'Joined successfully' })
+  @ApiResponse({
+    status: 201,
+    description: 'Joined successfully',
+    type: JoinByCodeResponseDto,
+  })
   @ApiResponse({ status: 400, description: 'Invalid invite code' })
   @ApiResponse({ status: 403, description: 'Forbidden - User is banned or already member' })
   async joinByCode(
     @CurrentUser('id') userId: string,
     @Body() joinDto: JoinByCodeDto
-  ) {
+  ): Promise<JoinByCodeResponseDto> {
     return this.clubJoinRequestService.joinByCode(joinDto, userId);
   }
 
@@ -339,14 +352,18 @@ export class ClubController {
   @ClubRoles(ClubRole.owner, ClubRole.admin)
   @ApiOperation({ summary: 'Get club join requests' })
   @ApiParam({ name: 'id', description: 'Club UUID' })
-  @ApiResponse({ status: 200, description: 'Join requests retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Join requests retrieved successfully',
+    type: PaginatedJoinRequestResponseDto,
+  })
   @ApiResponse({ status: 403, description: 'Forbidden - Only owners and admins' })
   async getJoinRequests(
     @Param('id') clubId: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
     @Query('status') status?: string
-  ) {
+  ): Promise<PaginatedJoinRequestResponseDto> {
     return this.clubJoinRequestService.getJoinRequests(clubId, { page, limit, status: status as any });
   }
 

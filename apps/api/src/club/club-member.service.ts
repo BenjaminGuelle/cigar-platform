@@ -2,7 +2,13 @@ import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../app/prisma.service';
 import { ClubMember, Prisma } from '../../../../generated/prisma';
 import { ClubRole } from '@cigar-platform/prisma-client';
-import { UpdateMemberRoleDto, TransferOwnershipDto, BanMemberDto } from './dto';
+import {
+  UpdateMemberRoleDto,
+  TransferOwnershipDto,
+  BanMemberDto,
+  PaginatedMemberResponseDto,
+  ClubMemberResponseDto,
+} from './dto';
 import {
   ClubNotFoundException,
   UserNotFoundException,
@@ -19,15 +25,6 @@ interface FilterMemberDto {
   role?: ClubRole;
 }
 
-interface PaginatedResponse<T> {
-  data: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
 
 @Injectable()
 export class ClubMemberService {
@@ -259,7 +256,7 @@ export class ClubMemberService {
   async getMembers(
     clubId: string,
     filter: FilterMemberDto = {}
-  ): Promise<PaginatedResponse<ClubMember>> {
+  ): Promise<PaginatedMemberResponseDto> {
     const { page = 1, limit = 20, role } = filter;
     const skip = (page - 1) * limit;
 
@@ -283,15 +280,18 @@ export class ClubMemberService {
       this.prisma.clubMember.count({ where }),
     ]);
 
-    const totalPages = Math.ceil(total / limit);
-
     return {
-      data: members,
-      pagination: {
+      data: members.map((member): ClubMemberResponseDto => ({
+        id: member.id,
+        clubId: member.clubId,
+        userId: member.userId,
+        role: member.role,
+        joinedAt: member.joinedAt,
+      })),
+      meta: {
+        total,
         page,
         limit,
-        total,
-        totalPages,
       },
     };
   }

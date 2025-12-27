@@ -2,7 +2,15 @@ import { Injectable, Logger, ForbiddenException, BadRequestException } from '@ne
 import { PrismaService } from '../app/prisma.service';
 import { ClubJoinRequest, Prisma } from '../../../../generated/prisma';
 import { JoinRequestStatus, ClubRole } from '@cigar-platform/prisma-client';
-import { CreateJoinRequestDto, UpdateJoinRequestDto, JoinByCodeDto } from './dto';
+import {
+  CreateJoinRequestDto,
+  UpdateJoinRequestDto,
+  JoinByCodeDto,
+  JoinByCodeResponseDto,
+  PaginatedJoinRequestResponseDto,
+  ClubJoinRequestResponseDto,
+} from './dto';
+import { ClubService } from './club.service';
 import {
   ClubNotFoundException,
   MemberAlreadyExistsException,
@@ -16,15 +24,6 @@ interface FilterJoinRequestDto {
   status?: JoinRequestStatus;
 }
 
-interface PaginatedResponse<T> {
-  data: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
 
 @Injectable()
 export class ClubJoinRequestService {
@@ -32,7 +31,8 @@ export class ClubJoinRequestService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly clubMemberService: ClubMemberService
+    private readonly clubMemberService: ClubMemberService,
+    private readonly clubService: ClubService
   ) {}
 
   /**
@@ -124,7 +124,7 @@ export class ClubJoinRequestService {
    * Join a club using an invite code
    * Auto-approves if code is valid
    */
-  async joinByCode(joinDto: JoinByCodeDto, userId: string): Promise<{ memberId: string }> {
+  async joinByCode(joinDto: JoinByCodeDto, userId: string): Promise<JoinByCodeResponseDto> {
     const { code } = joinDto;
 
     // Find club by invite code
@@ -173,7 +173,14 @@ export class ClubJoinRequestService {
     // Auto-approve with invite code
     const member = await this.clubMemberService.addMember(club.id, userId, ClubRole.member);
     this.logger.log(`User ${userId} joined club ${club.id} using invite code`);
-    return { memberId: member.id };
+
+    // Get the club response DTO
+    const clubResponse = await this.clubService.findOne(club.id);
+
+    return {
+      club: clubResponse,
+      role: ClubRole.member,
+    };
   }
 
   /**
@@ -225,7 +232,7 @@ export class ClubJoinRequestService {
   async getJoinRequests(
     clubId: string,
     filter: FilterJoinRequestDto = {}
-  ): Promise<PaginatedResponse<ClubJoinRequest>> {
+  ): Promise<PaginatedJoinRequestResponseDto> {
     const { page = 1, limit = 20, status } = filter;
     const skip = (page - 1) * limit;
 
@@ -249,15 +256,20 @@ export class ClubJoinRequestService {
       this.prisma.clubJoinRequest.count({ where }),
     ]);
 
-    const totalPages = Math.ceil(total / limit);
-
     return {
-      data: requests,
-      pagination: {
+      data: requests.map((request): ClubJoinRequestResponseDto => ({
+        id: request.id,
+        clubId: request.clubId,
+        userId: request.userId,
+        status: request.status,
+        message: request.message,
+        createdAt: request.createdAt,
+        updatedAt: request.updatedAt,
+      })),
+      meta: {
+        total,
         page,
         limit,
-        total,
-        totalPages,
       },
     };
   }
@@ -268,7 +280,7 @@ export class ClubJoinRequestService {
   async getUserJoinRequests(
     userId: string,
     filter: FilterJoinRequestDto = {}
-  ): Promise<PaginatedResponse<ClubJoinRequest>> {
+  ): Promise<PaginatedJoinRequestResponseDto> {
     const { page = 1, limit = 20, status } = filter;
     const skip = (page - 1) * limit;
 
@@ -292,15 +304,20 @@ export class ClubJoinRequestService {
       this.prisma.clubJoinRequest.count({ where }),
     ]);
 
-    const totalPages = Math.ceil(total / limit);
-
     return {
-      data: requests,
-      pagination: {
+      data: requests.map((request): ClubJoinRequestResponseDto => ({
+        id: request.id,
+        clubId: request.clubId,
+        userId: request.userId,
+        status: request.status,
+        message: request.message,
+        createdAt: request.createdAt,
+        updatedAt: request.updatedAt,
+      })),
+      meta: {
+        total,
         page,
         limit,
-        total,
-        totalPages,
       },
     };
   }

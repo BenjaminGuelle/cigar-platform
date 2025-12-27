@@ -12,15 +12,15 @@ export class ClubResponseDto {
   name: string;
 
   @Expose()
-  @ApiPropertyOptional({ example: 'A club for cigar enthusiasts in Paris' })
+  @ApiPropertyOptional({ type: String, example: 'A club for cigar enthusiasts in Paris' })
   description: string | null;
 
   @Expose()
-  @ApiPropertyOptional({ example: 'https://example.com/club-image.jpg' })
+  @ApiPropertyOptional({ type: String, example: 'https://example.com/club-image.jpg' })
   imageUrl: string | null;
 
   @Expose()
-  @ApiPropertyOptional({ example: 'https://example.com/club-cover.jpg' })
+  @ApiPropertyOptional({ type: String, example: 'https://example.com/club-cover.jpg' })
   coverUrl: string | null;
 
   @Expose()
@@ -28,7 +28,7 @@ export class ClubResponseDto {
   visibility: ClubVisibility;
 
   @Expose()
-  @ApiPropertyOptional({ example: 'A7X9K2M5', description: 'Only returned for club owners/admins' })
+  @ApiPropertyOptional({ type: String, example: 'A7X9K2M5', description: 'Only returned for club owners/admins' })
   inviteCode: string | null;
 
   @Expose()
@@ -44,7 +44,7 @@ export class ClubResponseDto {
   allowMemberInvites: boolean;
 
   @Expose()
-  @ApiPropertyOptional({ example: 100 })
+  @ApiPropertyOptional({ type: Number, example: 100 })
   maxMembers: number | null;
 
   @Expose()

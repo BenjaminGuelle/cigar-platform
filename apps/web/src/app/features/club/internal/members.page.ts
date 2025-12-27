@@ -2,26 +2,18 @@ import { Component, signal, computed, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ContextStore } from '../../../core/stores/context.store';
-import { ClubsService } from '@cigar-platform/types/lib/clubs/clubs.service';
-import type { UpdateMemberRoleDtoRole } from '@cigar-platform/types';
-
-// TODO: Replace with proper ClubMemberResponseDto once API types are generated
-interface ClubMember {
-  userId: string;
-  role: 'owner' | 'admin' | 'member';
-  joinedAt: string | Date;
-  user?: {
-    id: string;
-    displayName?: string;
-    avatarUrl?: string;
-    email?: string;
-  };
-}
+import { injectClubStore } from '../../../core/stores/club.store';
+import type {
+  ClubMemberResponseDto,
+  ClubJoinRequestResponseDto,
+} from '@cigar-platform/types';
+import { ToastService } from '../../../core/services';
 import {
   PageHeaderComponent,
   PageSectionComponent,
   ButtonComponent,
   MemberCardComponent,
+  MemberCardUser,
 } from '@cigar-platform/shared/ui';
 
 /**
@@ -59,76 +51,138 @@ import {
 export class MembersPage {
   contextStore = inject(ContextStore);
   #router = inject(Router);
-  #clubsService = inject(ClubsService);
+  #clubStore = injectClubStore();
+  #toastService = inject(ToastService);
 
-  // State
-  #members = signal<ClubMember[]>([]);
-  loading = signal<boolean>(true);
+  // Route params
+  readonly clubId = signal<string>('');
 
-  // Computed - Read-only members list
-  readonly members = this.#members.asReadonly();
+  // Tab state
+  readonly activeTab = signal<'members' | 'requests'>('members');
+
+  // Reactive queries with getter pattern
+  readonly membersQuery = this.#clubStore.getClubMembers(() => this.clubId());
+  // Only fetch join requests if user can manage club
+  readonly joinRequestsQuery = this.#clubStore.getJoinRequests(
+    () => this.clubId(),
+    () => this.contextStore.canManageClub()
+  );
+
+  // Computed states - extract signals from queries with fallbacks
+  readonly loading = this.membersQuery.loading;
+  readonly error = this.membersQuery.error;
+  readonly members = computed(() => this.membersQuery.data() ?? []);
+  readonly joinRequestsLoading = this.joinRequestsQuery.loading;
+  readonly joinRequests = computed(() => this.joinRequestsQuery.data() ?? []);
 
   // Computed - Members by role
   readonly ownerMembers = computed(() =>
-    this.#members().filter((m) => m.role === 'owner')
+    this.members().filter((m) => m.role === 'owner')
   );
 
   readonly adminMembers = computed(() =>
-    this.#members().filter((m) => m.role === 'admin')
+    this.members().filter((m) => m.role === 'admin')
   );
 
   readonly regularMembers = computed(() =>
-    this.#members().filter((m) => m.role === 'member')
+    this.members().filter((m) => m.role === 'member')
   );
 
+  // Computed - Join requests
+  readonly pendingRequestsCount = computed(() => this.joinRequests().length);
+
+  readonly hasPendingRequests = computed(() => this.pendingRequestsCount() > 0);
+
   constructor() {
-    // Load members when context changes
+    // Update club ID from context
     effect(() => {
       const context = this.contextStore.context();
       if (context.type === 'club' && context.clubId) {
-        this.loadMembers(context.clubId);
+        this.clubId.set(context.clubId);
+      } else {
+        this.clubId.set('');
       }
     });
-  }
-
-  /**
-   * Load club members from API
-   */
-  async loadMembers(clubId: string): Promise<void> {
-    this.loading.set(true);
-
-    try {
-      const response: any = await this.#clubsService.clubControllerGetMembers(clubId, {
-        limit: 100,
-        page: 1,
-      });
-
-      if (response?.data) {
-        this.#members.set(response.data);
-      } else {
-        this.#members.set([]);
-      }
-    } catch (error) {
-      console.error('[MembersPage] Failed to load members:', error);
-      this.#members.set([]);
-    } finally {
-      this.loading.set(false);
-    }
   }
 
   /**
    * Manage member (update role, remove, ban)
    * Only accessible to club admins
    */
-  onManageMember(member: ClubMember | any): void {
+  onManageMember(member: MemberCardUser): void {
     // TODO: Open manage member modal
     console.log('[MembersPage] Manage member:', member);
+  }
+
+  /**
+   * Approve join request
+   */
+  async onApproveRequest(request: ClubJoinRequestResponseDto): Promise<void> {
+    const clubId = this.clubId();
+    if (!clubId) return;
+
+    // Call store mutation
+    await this.#clubStore.updateJoinRequest.mutate({
+      clubId,
+      requestId: request.id,
+      data: { status: 'APPROVED' },
+    });
+
+    // Handle UX
+    if (this.#clubStore.updateJoinRequest.error()) {
+      this.#toastService.error('Échec de l\'approbation');
+      return;
+    }
+
+    this.#toastService.success('Demande approuvée avec succès');
+  }
+
+  /**
+   * Reject join request
+   */
+  async onRejectRequest(request: ClubJoinRequestResponseDto): Promise<void> {
+    const clubId = this.clubId();
+    if (!clubId) return;
+
+    // Call store mutation
+    await this.#clubStore.updateJoinRequest.mutate({
+      clubId,
+      requestId: request.id,
+      data: { status: 'REJECTED' },
+    });
+
+    // Handle UX
+    if (this.#clubStore.updateJoinRequest.error()) {
+      this.#toastService.error('Échec du rejet');
+      return;
+    }
+
+    this.#toastService.success('Demande rejetée');
+  }
+
+  /**
+   * Switch active tab
+   */
+  setActiveTab(tab: 'members' | 'requests'): void {
+    this.activeTab.set(tab);
   }
 
   /**
    * Navigate to explore page
    */
   goToExplore(): void {
-    this.#router.navigate(['/explore']);
+    void this.#router.navigate(['/explore']);
+  }
+
+  /**
+   * Format date for display
+   */
+  formatDate(date: string | Date): string {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return d.toLocaleDateString('fr-FR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
   }
 }

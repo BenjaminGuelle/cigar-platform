@@ -18,7 +18,7 @@ export interface ClubSearchResult {
   description: string | null;
   visibility: 'PUBLIC' | 'PRIVATE';
   memberCount: number;
-  avatarUrl?: string | null;
+  imageUrl?: string | null | undefined;
 }
 
 /**
@@ -80,7 +80,7 @@ export class GlobalSearchService {
     const trimmedQuery = query.trim().toLowerCase();
 
     try {
-      const response: any = await this.#clubsService.clubControllerFindAll({
+      const response = await this.#clubsService.clubControllerFindAll({
         limit: 100, // Fetch more for client-side filtering
         page: 1,
       });
@@ -129,11 +129,11 @@ export class GlobalSearchService {
         name: club.name,
         description: club.description ? String(club.description) : null,
         visibility: club.visibility,
-        memberCount: (club as any).memberCount ?? 0,
-        avatarUrl: (club as any).avatarUrl ?? null,
+        memberCount: club.memberCount,
+        imageUrl: club.imageUrl ? String(club.imageUrl) : null,
       }));
     } catch (error) {
-      console.error('[GlobalSearchService] Search clubs error:', error);
+      // Error handling - return empty results
       return [];
     }
   }

@@ -116,12 +116,6 @@ export interface CreateClubDto {
   isPublicDirectory?: boolean;
 }
 
-export type ClubResponseDtoDescription = { [key: string]: unknown };
-
-export type ClubResponseDtoImageUrl = { [key: string]: unknown };
-
-export type ClubResponseDtoCoverUrl = { [key: string]: unknown };
-
 export type ClubResponseDtoVisibility = typeof ClubResponseDtoVisibility[keyof typeof ClubResponseDtoVisibility];
 
 
@@ -131,32 +125,41 @@ export const ClubResponseDtoVisibility = {
   PRIVATE: 'PRIVATE',
 } as const;
 
-/**
- * Only returned for club owners/admins
- */
-export type ClubResponseDtoInviteCode = { [key: string]: unknown };
-
-export type ClubResponseDtoMaxMembers = { [key: string]: unknown };
-
 export interface ClubResponseDto {
   id: string;
   name: string;
-  description?: ClubResponseDtoDescription;
-  imageUrl?: ClubResponseDtoImageUrl;
-  coverUrl?: ClubResponseDtoCoverUrl;
+  description?: string;
+  imageUrl?: string;
+  coverUrl?: string;
   visibility: ClubResponseDtoVisibility;
   /** Only returned for club owners/admins */
-  inviteCode?: ClubResponseDtoInviteCode;
+  inviteCode?: string;
   isPublicDirectory: boolean;
   autoApproveMembers: boolean;
   allowMemberInvites: boolean;
-  maxMembers?: ClubResponseDtoMaxMembers;
+  maxMembers?: number;
   isArchived: boolean;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
   /** Total number of members in the club */
   memberCount: number;
+}
+
+export interface PaginationMetaDto {
+  /** Total number of items */
+  total: number;
+  /** Current page number */
+  page: number;
+  /** Items per page */
+  limit: number;
+}
+
+export interface PaginatedClubResponseDto {
+  /** Array of clubs */
+  data: ClubResponseDto[];
+  /** Pagination metadata */
+  meta: PaginationMetaDto;
 }
 
 /**
@@ -197,6 +200,31 @@ export interface UpdateClubDto {
   maxMembers?: number;
   /** Show in public directory (even if PRIVATE) */
   isPublicDirectory?: boolean;
+}
+
+export type ClubMemberResponseDtoRole = typeof ClubMemberResponseDtoRole[keyof typeof ClubMemberResponseDtoRole];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ClubMemberResponseDtoRole = {
+  owner: 'owner',
+  admin: 'admin',
+  member: 'member',
+} as const;
+
+export interface ClubMemberResponseDto {
+  id: string;
+  clubId: string;
+  userId: string;
+  role: ClubMemberResponseDtoRole;
+  joinedAt: string;
+}
+
+export interface PaginatedMemberResponseDto {
+  /** Array of club members */
+  data: ClubMemberResponseDto[];
+  /** Pagination metadata */
+  meta: PaginationMetaDto;
 }
 
 /**
@@ -241,6 +269,54 @@ export interface CreateJoinRequestDto {
 export interface JoinByCodeDto {
   /** Club invitation code */
   code?: string;
+}
+
+/**
+ * The role assigned to the user in the club
+ */
+export type JoinByCodeResponseDtoRole = typeof JoinByCodeResponseDtoRole[keyof typeof JoinByCodeResponseDtoRole];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const JoinByCodeResponseDtoRole = {
+  owner: 'owner',
+  admin: 'admin',
+  member: 'member',
+} as const;
+
+export interface JoinByCodeResponseDto {
+  /** The club that was joined */
+  club: ClubResponseDto;
+  /** The role assigned to the user in the club */
+  role: JoinByCodeResponseDtoRole;
+}
+
+export type ClubJoinRequestResponseDtoStatus = typeof ClubJoinRequestResponseDtoStatus[keyof typeof ClubJoinRequestResponseDtoStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ClubJoinRequestResponseDtoStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+} as const;
+
+export interface ClubJoinRequestResponseDto {
+  id: string;
+  clubId: string;
+  userId: string;
+  status: ClubJoinRequestResponseDtoStatus;
+  /** @nullable */
+  message: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaginatedJoinRequestResponseDto {
+  /** Array of join requests */
+  data: ClubJoinRequestResponseDto[];
+  /** Pagination metadata */
+  meta: PaginationMetaDto;
 }
 
 /**

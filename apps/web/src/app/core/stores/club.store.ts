@@ -1,11 +1,16 @@
 import { inject } from '@angular/core';
-import { injectQuery, injectMutation } from '../query';
+import { injectQuery, injectMutation, QueryCacheService } from '../query';
 import type { Query, Mutation } from '../query';
 import { ClubsService } from '@cigar-platform/types/lib/clubs/clubs.service';
 import type {
   ClubResponseDto,
   CreateClubDto,
   UpdateClubDto,
+  CreateJoinRequestDto,
+  JoinByCodeDto,
+  UpdateJoinRequestDto,
+  ClubMemberResponseDto,
+  ClubJoinRequestResponseDto,
 } from '@cigar-platform/types';
 
 /**
@@ -24,8 +29,9 @@ import type {
  * export class ClubProfileComponent {
  *   clubStore = injectClubStore();
  *
- *   clubId = input.required<string>();
- *   club = this.clubStore.getClubById(this.clubId());
+ *   clubId = signal<string>('');
+ *   // Pass a getter function for reactivity
+ *   club = this.clubStore.getClubById(() => this.clubId());
  *
  *   async updateClub(data: UpdateClubDto) {
  *     await this.clubStore.updateClub.mutate({ id: this.clubId(), data });
@@ -40,9 +46,21 @@ export interface ClubStore {
   publicClubs: Query<ClubResponseDto[]>;
 
   /**
-   * Get club by ID
+   * Get club by ID (reactive - pass a getter function)
    */
-  getClubById: (id: string) => Query<ClubResponseDto>;
+  getClubById: (idGetter: () => string) => Query<ClubResponseDto>;
+
+  /**
+   * Get club members by club ID (reactive - pass a getter function)
+   */
+  getClubMembers: (clubIdGetter: () => string) => Query<ClubMemberResponseDto[]>;
+
+  /**
+   * Get join requests by club ID (reactive - pass getter functions)
+   * @param clubIdGetter - Getter for club ID
+   * @param canManageGetter - Getter for permission check (optional, defaults to true)
+   */
+  getJoinRequests: (clubIdGetter: () => string, canManageGetter?: () => boolean) => Query<ClubJoinRequestResponseDto[]>;
 
   /**
    * Create club mutation
@@ -58,6 +76,26 @@ export interface ClubStore {
    * Delete club mutation
    */
   deleteClub: Mutation<void, string>;
+
+  /**
+   * Join club mutation (creates join request, auto-joins if public + auto-approve)
+   */
+  joinClub: Mutation<void, { clubId: string; data?: CreateJoinRequestDto }>;
+
+  /**
+   * Join club by invite code mutation
+   */
+  joinByCode: Mutation<void, JoinByCodeDto>;
+
+  /**
+   * Cancel join request mutation
+   */
+  cancelJoinRequest: Mutation<void, { clubId: string; requestId: string }>;
+
+  /**
+   * Update join request mutation (admin: approve/reject)
+   */
+  updateJoinRequest: Mutation<void, { clubId: string; requestId: string; data: UpdateJoinRequestDto }>;
 }
 
 /**
@@ -66,29 +104,77 @@ export interface ClubStore {
  */
 export function injectClubStore(): ClubStore {
   const clubsService = inject(ClubsService);
+  const queryCache = inject(QueryCacheService);
 
   // Query: Public Clubs (for explore/discovery)
-  const publicClubs = injectQuery<ClubResponseDto[]>({
+  const publicClubs = injectQuery<ClubResponseDto[]>(() => ({
     queryKey: ['clubs', 'public'],
     queryFn: async () => {
-      const response: any = await clubsService.clubControllerFindAll({
+      const response = await clubsService.clubControllerFindAll({
         limit: 100,
         page: 1,
       });
       return response?.data ?? [];
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+  }));
 
   /**
-   * Get club by ID (returns a new query)
+   * Get club by ID (returns a reactive query)
    */
-  const getClubById = (id: string): Query<ClubResponseDto> => {
-    return injectQuery<ClubResponseDto>({
-      queryKey: ['clubs', 'detail', id],
-      queryFn: () => clubsService.clubControllerFindOne(id),
+  const getClubById = (idGetter: () => string): Query<ClubResponseDto> => {
+    return injectQuery<ClubResponseDto>(() => ({
+      queryKey: ['clubs', 'detail', idGetter()],
+      queryFn: () => clubsService.clubControllerFindOne(idGetter()),
+      enabled: !!idGetter(),
       staleTime: 5 * 60 * 1000, // 5 minutes
-    });
+    }));
+  };
+
+  /**
+   * Get club members by club ID (returns a reactive query)
+   */
+  const getClubMembers = (clubIdGetter: () => string): Query<ClubMemberResponseDto[]> => {
+    return injectQuery<ClubMemberResponseDto[]>(() => ({
+      queryKey: ['clubs', 'members', clubIdGetter()],
+      queryFn: async () => {
+        const clubId = clubIdGetter();
+        if (!clubId) return [];
+        const response = await clubsService.clubControllerGetMembers(clubId, {
+          limit: 100,
+          page: 1,
+        });
+        return response?.data ?? [];
+      },
+      enabled: !!clubIdGetter(),
+      staleTime: 2 * 60 * 1000, // 2 minutes (members change more frequently)
+    }));
+  };
+
+  /**
+   * Get join requests by club ID (returns a reactive query)
+   * Only fetches if user has management permissions
+   */
+  const getJoinRequests = (
+    clubIdGetter: () => string,
+    canManageGetter?: () => boolean
+  ): Query<ClubJoinRequestResponseDto[]> => {
+    return injectQuery<ClubJoinRequestResponseDto[]>(() => ({
+      queryKey: ['clubs', 'join-requests', clubIdGetter()],
+      queryFn: async () => {
+        const clubId = clubIdGetter();
+        if (!clubId) return [];
+        const response = await clubsService.clubControllerGetJoinRequests(clubId, {
+          limit: 100,
+          page: 1,
+          status: 'PENDING', // Only get pending requests
+        });
+        return response?.data ?? [];
+      },
+      // Only fetch if club ID exists AND user has permission
+      enabled: !!clubIdGetter() && (canManageGetter ? canManageGetter() : true),
+      staleTime: 1 * 60 * 1000, // 1 minute (join requests are time-sensitive)
+    }));
   };
 
   // Mutation: Create Club
@@ -98,11 +184,10 @@ export function injectClubStore(): ClubStore {
     onSuccess: (newClub: ClubResponseDto) => {
       // Invalidate public clubs to include new club
       publicClubs.invalidate();
-      console.log('[ClubStore] Club created:', newClub.id);
     },
 
     onError: (error: Error) => {
-      console.error('[ClubStore] Create club failed:', error);
+      // Error handling will be done in component
     },
   });
 
@@ -111,18 +196,15 @@ export function injectClubStore(): ClubStore {
     mutationFn: ({ id, data }) => clubsService.clubControllerUpdate(id, data),
 
     onSuccess: (updatedClub: ClubResponseDto, variables) => {
-      // Invalidate specific club query
-      const clubQuery = getClubById(variables.id);
-      clubQuery.invalidate();
+      // Invalidate all club detail queries
+      queryCache.invalidateQueriesMatching(['clubs', 'detail']);
 
       // Invalidate public clubs list
       publicClubs.invalidate();
-
-      console.log('[ClubStore] Club updated:', updatedClub.id);
     },
 
     onError: (error: Error) => {
-      console.error('[ClubStore] Update club failed:', error);
+      // Error handling will be done in component
     },
   });
 
@@ -133,20 +215,94 @@ export function injectClubStore(): ClubStore {
     onSuccess: (_, clubId) => {
       // Invalidate public clubs
       publicClubs.invalidate();
-
-      console.log('[ClubStore] Club deleted:', clubId);
     },
 
     onError: (error: Error) => {
-      console.error('[ClubStore] Delete club failed:', error);
+      // Error handling will be done in component
+    },
+  });
+
+  // Mutation: Join Club (creates join request, auto-joins if public + auto-approve)
+  const joinClub = injectMutation<void, { clubId: string; data?: CreateJoinRequestDto }>({
+    mutationFn: ({ clubId, data = {} }) => clubsService.clubControllerJoinClub(clubId, data),
+
+    onSuccess: (_, variables) => {
+      // Invalidate all club detail queries (components use ['clubs', 'detail'])
+      queryCache.invalidateQueriesMatching(['clubs', 'detail']);
+
+      // Invalidate all members queries
+      queryCache.invalidateQueriesMatching(['clubs', 'members']);
+    },
+
+    onError: (error: Error) => {
+      // Error handling will be done in component
+    },
+  });
+
+  // Mutation: Join by Code
+  const joinByCode = injectMutation<void, JoinByCodeDto>({
+    mutationFn: (data: JoinByCodeDto) => clubsService.clubControllerJoinByCode(data),
+
+    onSuccess: () => {
+      // Invalidate public clubs list (in case they just joined a club)
+      publicClubs.invalidate();
+    },
+
+    onError: (error: Error) => {
+      // Error handling will be done in component
+    },
+  });
+
+  // Mutation: Cancel Join Request
+  const cancelJoinRequest = injectMutation<void, { clubId: string; requestId: string }>({
+    mutationFn: ({ clubId, requestId }) =>
+      clubsService.clubControllerCancelJoinRequest(clubId, requestId),
+
+    onSuccess: (_, variables) => {
+      // Invalidate join requests queries (remove from pending list)
+      queryCache.invalidateQueriesMatching(['clubs', 'join-requests']);
+
+      // Invalidate club detail (in case visibility depends on membership)
+      queryCache.invalidateQueriesMatching(['clubs', 'detail']);
+    },
+
+    onError: (error: Error) => {
+      // Error handling will be done in component
+    },
+  });
+
+  // Mutation: Update Join Request (admin: approve/reject)
+  const updateJoinRequest = injectMutation<void, { clubId: string; requestId: string; data: UpdateJoinRequestDto }>({
+    mutationFn: ({ clubId, requestId, data }) =>
+      clubsService.clubControllerUpdateJoinRequest(clubId, requestId, data),
+
+    onSuccess: (_, variables) => {
+      // Invalidate join requests queries (remove from pending list)
+      queryCache.invalidateQueriesMatching(['clubs', 'join-requests']);
+
+      // Invalidate all members queries (if approved, new member added)
+      queryCache.invalidateQueriesMatching(['clubs', 'members']);
+
+      // Invalidate all club detail queries (member count might change)
+      queryCache.invalidateQueriesMatching(['clubs', 'detail']);
+    },
+
+    onError: (error: Error) => {
+      // Error handling will be done in component
     },
   });
 
   return {
     publicClubs,
     getClubById,
+    getClubMembers,
+    getJoinRequests,
     createClub,
     updateClub,
     deleteClub,
+    joinClub,
+    joinByCode,
+    cancelJoinRequest,
+    updateJoinRequest,
   };
 }

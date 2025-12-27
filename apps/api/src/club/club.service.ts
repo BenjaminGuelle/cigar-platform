@@ -6,22 +6,15 @@ import {
   UpdateClubDto,
   ClubResponseDto,
   FilterClubDto,
+  PaginatedClubResponseDto,
 } from './dto';
+import { PaginationMetaDto } from '../common/dto/paginated-response.dto';
 import { ClubRole } from '@cigar-platform/prisma-client';
 import {
   ClubNotFoundException,
   ClubAlreadyExistsException,
 } from './exceptions';
 
-interface PaginatedResponse<T> {
-  data: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
 
 @Injectable()
 export class ClubService {
@@ -113,7 +106,7 @@ export class ClubService {
 
   async findAll(
     filter: FilterClubDto
-  ): Promise<PaginatedResponse<ClubResponseDto>> {
+  ): Promise<PaginatedClubResponseDto> {
     const { page = 1, limit = 10, search, sortBy = 'createdAt', order = 'desc' } = filter;
     const skip = (page - 1) * limit;
 
@@ -165,15 +158,12 @@ export class ClubService {
       this.prisma.club.count({ where }),
     ]);
 
-    const totalPages = Math.ceil(total / limit);
-
     return {
       data: clubs.map((club) => this.mapToResponse(club, club._count.members)),
-      pagination: {
+      meta: {
+        total,
         page,
         limit,
-        total,
-        totalPages,
       },
     };
   }

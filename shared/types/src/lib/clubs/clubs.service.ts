@@ -27,6 +27,10 @@ import type {
   CreateClubDto,
   CreateJoinRequestDto,
   JoinByCodeDto,
+  JoinByCodeResponseDto,
+  PaginatedClubResponseDto,
+  PaginatedJoinRequestResponseDto,
+  PaginatedMemberResponseDto,
   TransferOwnershipDto,
   UpdateClubDto,
   UpdateJoinRequestDto,
@@ -60,7 +64,7 @@ export class ClubsService {
   /**
  * @summary Get all clubs with pagination and filtering
  */
- clubControllerFindAll<TData = void>(
+ clubControllerFindAll<TData = PaginatedClubResponseDto>(
     params?: DeepNonNullable<ClubControllerFindAllParams>,
  ) {
       return customInstance<TData>(
@@ -124,7 +128,7 @@ export class ClubsService {
   /**
  * @summary Get club members
  */
- clubControllerGetMembers<TData = void>(
+ clubControllerGetMembers<TData = PaginatedMemberResponseDto>(
     id: string,
     params: DeepNonNullable<ClubControllerGetMembersParams>,
  ) {
@@ -238,7 +242,7 @@ export class ClubsService {
   /**
  * @summary Join a club using invite code
  */
- clubControllerJoinByCode<TData = void>(
+ clubControllerJoinByCode<TData = JoinByCodeResponseDto>(
     joinByCodeDto: JoinByCodeDto,
  ) {
       return customInstance<TData>(
@@ -252,7 +256,7 @@ export class ClubsService {
   /**
  * @summary Get club join requests
  */
- clubControllerGetJoinRequests<TData = void>(
+ clubControllerGetJoinRequests<TData = PaginatedJoinRequestResponseDto>(
     id: string,
     params: DeepNonNullable<ClubControllerGetJoinRequestsParams>,
  ) {
@@ -295,12 +299,12 @@ export class ClubsService {
   };
 
 export type ClubControllerCreateClientResult = NonNullable<ClubResponseDto>
-export type ClubControllerFindAllClientResult = NonNullable<void>
+export type ClubControllerFindAllClientResult = NonNullable<PaginatedClubResponseDto>
 export type ClubControllerFindMyClubsClientResult = NonNullable<void>
 export type ClubControllerFindOneClientResult = NonNullable<ClubResponseDto>
 export type ClubControllerUpdateClientResult = NonNullable<ClubResponseDto>
 export type ClubControllerRemoveClientResult = NonNullable<void>
-export type ClubControllerGetMembersClientResult = NonNullable<void>
+export type ClubControllerGetMembersClientResult = NonNullable<PaginatedMemberResponseDto>
 export type ClubControllerGetMyMembershipClientResult = NonNullable<void>
 export type ClubControllerUpdateMemberRoleClientResult = NonNullable<void>
 export type ClubControllerTransferOwnershipClientResult = NonNullable<void>
@@ -308,7 +312,7 @@ export type ClubControllerRemoveMemberClientResult = NonNullable<void>
 export type ClubControllerBanMemberClientResult = NonNullable<void>
 export type ClubControllerUnbanMemberClientResult = NonNullable<void>
 export type ClubControllerJoinClubClientResult = NonNullable<void>
-export type ClubControllerJoinByCodeClientResult = NonNullable<void>
-export type ClubControllerGetJoinRequestsClientResult = NonNullable<void>
+export type ClubControllerJoinByCodeClientResult = NonNullable<JoinByCodeResponseDto>
+export type ClubControllerGetJoinRequestsClientResult = NonNullable<PaginatedJoinRequestResponseDto>
 export type ClubControllerUpdateJoinRequestClientResult = NonNullable<void>
 export type ClubControllerCancelJoinRequestClientResult = NonNullable<void>
