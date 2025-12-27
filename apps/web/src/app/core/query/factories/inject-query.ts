@@ -1,4 +1,4 @@
-import { DestroyRef, effect, inject, signal } from '@angular/core';
+import { DestroyRef, effect, inject, signal, computed } from '@angular/core';
 import { QueryCacheService } from '../services/query-cache.service';
 import { QueryStoreBase } from '../base/query-store.base';
 import type { Query, QueryOptions } from '../types/query.types';
@@ -26,76 +26,129 @@ class DynamicQueryStore<T> extends QueryStoreBase<T> {
  * - Auto-fetch on component init
  * - Auto-cleanup on component destroy
  * - Conditional fetching with enabled signal
+ * - Reactive queryKey switching (factory pattern)
  *
  * @example
  * ```typescript
+ * // In Store:
+ * const getClubById = (idGetter: () => string): Query<ClubResponseDto> => {
+ *   return injectQuery(() => ({
+ *     queryKey: ['clubs', 'detail', idGetter()],
+ *     queryFn: () => clubsService.clubControllerFindOne(idGetter()),
+ *     enabled: !!idGetter(),
+ *     staleTime: 5 * 60 * 1000,
+ *   }));
+ * };
+ *
+ * // In Component:
  * @Component({...})
- * export class UserComponent {
- *   userId = input.required<string>();
- *
- *   user = injectQuery({
- *     queryKey: ['user', this.userId()],
- *     queryFn: () => this.api.getUser(this.userId()),
- *     staleTime: 5 * 60 * 1000, // 5 minutes
- *   });
- * }
- *
- * // Template
- * @if (user.loading()) {
- *   <spinner />
- * } @else if (user.data(); as userData) {
- *   <h1>{{ userData.name }}</h1>
+ * export class ClubComponent {
+ *   clubId = signal<string>('');
+ *   readonly clubQuery = this.#clubStore.getClubById(() => this.clubId());
  * }
  * ```
  */
-export function injectQuery<T>(options: QueryOptions<T>): Query<T> {
+export function injectQuery<T>(optionsFactory: () => QueryOptions<T>): Query<T> {
   const queryCache = inject(QueryCacheService);
   const destroyRef = inject(DestroyRef);
 
-  // Serialize query key for cache lookup
-  const cacheKey = JSON.stringify(options.queryKey);
+  // Track the current cache key
+  const currentCacheKey = signal<string | null>(null);
 
-  // Get or create query from cache
-  const queryStore = queryCache.getOrCreate<T>(
-    cacheKey,
-    () => {
-      const store = new DynamicQueryStore(options.queryFn);
-      if (options.staleTime) {
-        store.setStaleTime(options.staleTime);
-      }
-      return store;
+  // Compute cache info from factory (reactive)
+  const cacheInfo = computed(() => {
+    const opts = optionsFactory();
+    return {
+      key: JSON.stringify(opts.queryKey),
+      opts
+    };
+  });
+
+  // Initialize store immediately (synchronous)
+  const initialInfo = cacheInfo();
+  currentCacheKey.set(initialInfo.key);
+  const initialStore = queryCache.getOrCreate<T>(initialInfo.key, () => {
+    const s = new DynamicQueryStore(initialInfo.opts.queryFn);
+    if (initialInfo.opts.staleTime) {
+      s.setStaleTime(initialInfo.opts.staleTime);
     }
-  );
+    return s;
+  });
 
-  // Enabled signal (default: true)
-  const enabled = options.enabled ?? signal(true);
+  // Auto-fetch initial if enabled
+  const initialEnabled = initialInfo.opts.enabled ?? true;
+  const isInitialEnabled = typeof initialEnabled === 'boolean' ? initialEnabled : initialEnabled();
+  if (isInitialEnabled) {
+    initialStore.fetch().catch((error) => {
+      console.error('[Query] Initial fetch failed:', error);
+    });
+  }
 
-  // Auto-fetch when enabled
-  effect(
-    () => {
-      if (enabled()) {
-        queryStore.fetch().catch((error) => {
-          // Error is already in query.error signal
+  // Watch for queryKey changes and switch cache stores
+  effect(() => {
+    const { key, opts } = cacheInfo();
+    const oldKey = currentCacheKey();
+
+    // If queryKey changed, cleanup old and setup new
+    if (key !== oldKey) {
+      // Decrement ref on old cache store
+      if (oldKey) {
+        queryCache.decrementRef(oldKey);
+      }
+
+      // Update current key
+      currentCacheKey.set(key);
+
+      // Get or create new cache store
+      const store = queryCache.getOrCreate<T>(key, () => {
+        const s = new DynamicQueryStore(opts.queryFn);
+        if (opts.staleTime) {
+          s.setStaleTime(opts.staleTime);
+        }
+        return s;
+      });
+
+      // Auto-fetch if enabled
+      const enabled = opts.enabled ?? true;
+      const isEnabled = typeof enabled === 'boolean' ? enabled : enabled();
+      if (isEnabled) {
+        store.fetch().catch((error) => {
           console.error('[Query] Fetch failed:', error);
         });
       }
     }
-  );
+  });
 
   // Cleanup on component destroy
   destroyRef.onDestroy(() => {
-    queryCache.decrementRef(cacheKey);
+    const key = currentCacheKey();
+    if (key) {
+      queryCache.decrementRef(key);
+    }
   });
 
-  // Return public query interface
+  // Helper to get current store
+  const getStore = (): QueryStoreBase<T> => {
+    const key = currentCacheKey();
+    if (!key) {
+      throw new Error('[Query] Not initialized');
+    }
+    const store = queryCache.get<T>(key);
+    if (!store) {
+      throw new Error(`[Query] Store not found for key: ${key}`);
+    }
+    return store;
+  };
+
+  // Return public query interface with computed wrappers
   return {
-    data: queryStore.data,
-    loading: queryStore.loading,
-    error: queryStore.error,
-    isStale: queryStore.isStale,
-    refetch: () => queryStore.refetch(),
-    invalidate: () => queryStore.invalidate(),
-    setData: (data: T) => queryStore.setData(data),
-    setDataFresh: (data: T) => queryStore.setDataFresh(data),
+    data: computed(() => getStore().data()),
+    loading: computed(() => getStore().loading()),
+    error: computed(() => getStore().error()),
+    isStale: computed(() => getStore().isStale()),
+    refetch: () => getStore().refetch(),
+    invalidate: () => getStore().invalidate(),
+    setData: (data: T) => getStore().setData(data),
+    setDataFresh: (data: T) => getStore().setDataFresh(data),
   };
 }

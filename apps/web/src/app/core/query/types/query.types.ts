@@ -20,7 +20,7 @@ export interface QueryOptions<T> {
   queryKey: unknown[];
   queryFn: () => Promise<T>;
   staleTime?: number; // default: 5 minutes
-  enabled?: Signal<boolean>; // default: true
+  enabled?: boolean | Signal<boolean>; // default: true
 }
 
 /**

@@ -3,6 +3,7 @@ import { injectQuery, injectMutation } from '../query';
 import type { Query, Mutation } from '../query';
 import { AuthService } from '../services/auth.service';
 import { AuthenticationService } from '@cigar-platform/types/lib/authentication/authentication.service';
+import { UsersService } from '@cigar-platform/types/lib/users/users.service';
 import type {
   UserDto,
   UpdateProfileDto,
@@ -42,6 +43,11 @@ export interface UserStore {
    * Update user profile mutation
    */
   updateProfile: Mutation<UserDto, UpdateProfileDto>;
+
+  /**
+   * Upload user avatar mutation
+   */
+  uploadAvatar: Mutation<unknown, { avatar: File }>;
 }
 
 /**
@@ -56,14 +62,15 @@ export interface UserStore {
 export function injectUserStore(): UserStore {
   const authService = inject(AuthService);
   const authApiService = inject(AuthenticationService);
+  const usersService = inject(UsersService);
 
   // Query: Current User (disabled auto-fetch, uses AuthService as source)
-  const currentUser = injectQuery<UserDto>({
+  const currentUser = injectQuery<UserDto>(() => ({
     queryKey: ['user', 'current'],
     queryFn: () => authApiService.authControllerGetProfile(),
     staleTime: 5 * 60 * 1000, // 5 minutes
-    enabled: signal(false), // Disable auto-fetch, we'll hydrate from AuthService
-  });
+    enabled: false, // Disable auto-fetch, we'll hydrate from AuthService
+  }));
 
   // One-shot hydration from AuthService (no continuous effect!)
   const initialUser = authService.currentUser();
@@ -75,7 +82,6 @@ export function injectUserStore(): UserStore {
   const updateProfile = injectMutation<UserDto, UpdateProfileDto>({
     mutationFn: (data: UpdateProfileDto) => authApiService.authControllerUpdateProfile(data),
 
-    // Phase 1: Before API call - Optimistic update
     onMutate: (variables: UpdateProfileDto) => {
       const previousUser = currentUser.data();
 
@@ -92,7 +98,6 @@ export function injectUserStore(): UserStore {
       return { previousUser };
     },
 
-    // Phase 2: API success - Confirm with server data
     onSuccess: (updatedUser: UserDto) => {
       // Replace optimistic data with real server data + mark as fresh
       currentUser.setDataFresh(updatedUser);
@@ -101,8 +106,7 @@ export function injectUserStore(): UserStore {
       authService.updateCurrentUser(updatedUser as any);
     },
 
-    // Phase 3: API error - Rollback to previous state
-    onError: (error: Error, variables: UpdateProfileDto, context) => {
+    onError: (error: Error, _variables: UpdateProfileDto, context) => {
       // Rollback to previous user data
       if (context?.['previousUser']) {
         currentUser.setData(context['previousUser'] as UserDto);
@@ -111,8 +115,25 @@ export function injectUserStore(): UserStore {
     },
   });
 
+  // Mutation: Upload Avatar
+  const uploadAvatar = injectMutation<unknown, { avatar: File }>({
+    mutationFn: (variables: { avatar: File }) =>
+      usersService.usersControllerUploadAvatar(variables),
+
+    onSuccess: () => {
+      // Refetch user to get updated avatar URL
+      void currentUser.refetch();
+      console.log('[UserStore] Avatar uploaded successfully');
+    },
+
+    onError: (error: Error) => {
+      console.error('[UserStore] Upload avatar failed:', error);
+    },
+  });
+
   return {
     currentUser,
     updateProfile,
+    uploadAvatar,
   };
 }

@@ -1,7 +1,7 @@
 import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { ClubsService } from '@cigar-platform/types/lib/clubs/clubs.service';
 import type { ClubResponseDto, UpdateMemberRoleDtoRole } from '@cigar-platform/types';
-import { injectQuery } from '../query';
+import { injectQuery, QueryCacheService } from '../query';
 
 /**
  * LocalStorage key for persisting context
@@ -79,6 +79,7 @@ interface PersistedContext {
 })
 export class ContextStore {
   readonly #clubsService = inject(ClubsService);
+  readonly #queryCache = inject(QueryCacheService);
 
   // ==================== State ====================
 
@@ -95,7 +96,7 @@ export class ContextStore {
   /**
    * User's clubs with their roles (Query Layer)
    */
-  readonly #userClubsQuery = injectQuery<ClubWithRole[]>({
+  readonly #userClubsQuery = injectQuery<ClubWithRole[]>(() => ({
     queryKey: ['clubs', 'my-clubs'],
     queryFn: async () => {
       const myClubs = await this.#clubsService.clubControllerFindMyClubs();
@@ -105,8 +106,8 @@ export class ContextStore {
       return [];
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
-    enabled: signal(false), // Disable auto-fetch, manual trigger
-  });
+    enabled: false, // Disable auto-fetch, manual trigger
+  }));
 
   // ==================== Public Signals ====================
 
@@ -155,6 +156,11 @@ export class ContextStore {
    * Switch to club context
    */
   switchToClub(club: ClubResponseDto, role: ClubRole): void {
+    // Invalidate club-specific queries to force fresh data on next access
+    this.#queryCache.invalidateQueriesMatching(['clubs', 'detail', club.id]);
+    this.#queryCache.invalidateQueriesMatching(['clubs', 'members', club.id]);
+    this.#queryCache.invalidateQueriesMatching(['clubs', 'join-requests', club.id]);
+
     this.#context.set({
       type: 'club',
       clubId: club.id,

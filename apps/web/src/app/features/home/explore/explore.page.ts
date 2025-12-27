@@ -192,9 +192,9 @@ export class ExplorePage implements OnInit {
   }
 
   /**
-   * Get member count (handles missing property in type)
+   * Get member count
    */
   getMemberCount(club: ClubResponseDto): number {
-    return (club as any).memberCount || 0;
+    return club.memberCount || 0;
   }
 }

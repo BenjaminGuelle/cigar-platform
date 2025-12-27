@@ -61,7 +61,7 @@ export class GlobalSearchComponent {
   readonly #debouncedQuery: WritableSignal<string> = signal<string>('');
 
   // Query with manual refetch (no auto-caching per query, we refetch on demand)
-  readonly #searchResults = injectQuery<ClubSearchResult[]>({
+  readonly #searchResults = injectQuery<ClubSearchResult[]>(() => ({
     queryKey: ['clubs', 'search'], // Fixed queryKey (not dependent on search term)
     queryFn: () => {
       const query = this.#debouncedQuery();
@@ -70,8 +70,8 @@ export class GlobalSearchComponent {
       }
       return this.#searchService.searchClubs(query, 20);
     },
-    enabled: signal(false), // Disable auto-fetch, we'll trigger manually
-  });
+    enabled: false, // Disable auto-fetch, we'll trigger manually
+  }));
 
   // Computed
   readonly isLoading: Signal<boolean> = this.#searchResults.loading;
@@ -86,7 +86,7 @@ export class GlobalSearchComponent {
       description: club.description,
       visibility: club.visibility,
       memberCount: club.memberCount,
-      avatarUrl: club.avatarUrl ?? null,
+      avatarUrl: club.imageUrl ?? null,
       subtitle: this.formatSubtitle(club),
       iconBadge: club.visibility === 'PUBLIC' ? ('public' as const) : ('private' as const),
     }));

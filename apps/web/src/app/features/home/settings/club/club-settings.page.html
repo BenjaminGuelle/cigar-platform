@@ -121,7 +121,7 @@
               type="button"
               variant="ghost"
               size="md"
-              [disabled]="updateClubMutation.loading()"
+              [disabled]="updateClubLoading()"
               (click)="onCancelChanges()"
             >
               Annuler
@@ -131,8 +131,8 @@
             type="submit"
             variant="outline"
             size="md"
-            [loading]="updateClubMutation.loading()"
-            [disabled]="!hasUnsavedChanges() || clubForm.invalid || updateClubMutation.loading()"
+            [loading]="updateClubLoading()"
+            [disabled]="!hasUnsavedChanges() || clubForm.invalid || updateClubLoading()"
           >
             Enregistrer
           </ui-button>

@@ -1,11 +1,16 @@
-import { Component, signal, computed, inject, effect } from '@angular/core';
+import { Component, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ClubsService } from '@cigar-platform/types/lib/clubs/clubs.service';
-import type { ClubResponseDto } from '@cigar-platform/types';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { map } from 'rxjs/operators';
+import { injectClubStore } from '../../../core/stores/club.store';
+import { ToastService } from '../../../core/services';
 import {
+  PageHeaderComponent,
   PageSectionComponent,
   ButtonComponent,
+  ModalComponent,
 } from '@cigar-platform/shared/ui';
 
 /**
@@ -34,24 +39,41 @@ import {
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
+    PageHeaderComponent,
     PageSectionComponent,
     ButtonComponent,
+    ModalComponent,
   ],
   templateUrl: './club-profile.page.html',
 })
 export class ClubProfilePage {
   #route = inject(ActivatedRoute);
   #router = inject(Router);
-  #clubsService = inject(ClubsService);
+  #clubStore = injectClubStore();
+  #toastService = inject(ToastService);
 
-  // State
-  clubId = signal<string | null>(null);
-  club = signal<ClubResponseDto | null>(null);
-  loading = signal<boolean>(true);
-  error = signal<boolean>(false);
+  // Route params (toSignal pattern - no subscribe)
+  readonly clubId = toSignal(
+    this.#route.paramMap.pipe(map((p) => p.get('id') ?? '')),
+    { initialValue: '' }
+  );
 
-  // Computed (ALL STARS - no `!` assertions)
-  readonly currentClub = computed(() => this.club());
+  // Reactive query with getter pattern
+  readonly clubQuery = this.#clubStore.getClubById(() => this.clubId());
+
+  // Computed states - extract signals from query
+  readonly loading = this.clubQuery.loading;
+  readonly error = this.clubQuery.error;
+  readonly club = this.clubQuery.data;
+
+  // Joining state (from store mutations)
+  readonly joiningClub = this.#clubStore.joinClub.loading;
+  readonly joiningByCode = this.#clubStore.joinByCode.loading;
+
+  // Invite code modal
+  readonly showInviteCodeModal = signal<boolean>(false);
+  readonly inviteCode = signal<string>('');
 
   readonly memberCount = computed(() => {
     const club = this.club();
@@ -89,58 +111,81 @@ export class ClubProfilePage {
       : 'Les demandes sont examinées par les administrateurs';
   });
 
-  constructor() {
-    // Load club ID from route params
-    effect(() => {
-      this.#route.paramMap.subscribe((params) => {
-        const id = params.get('id');
-        this.clubId.set(id);
-        if (id) {
-          this.loadClub(id);
-        }
-      });
-    });
-  }
-
   /**
-   * Load club data from API
+   * Join club or request access
+   * - Public clubs with auto-approve: Instant join
+   * - Public clubs without auto-approve: Creates pending request
+   * - Private clubs: Creates pending request (requires approval)
    */
-  async loadClub(id: string): Promise<void> {
-    this.loading.set(true);
-    this.error.set(false);
+  async onJoinClub(): Promise<void> {
+    const currentClub = this.club();
+    if (!currentClub) return;
 
-    try {
-      const club: ClubResponseDto = await this.#clubsService.clubControllerFindOne(id);
+    // Store mutation handles API call + invalidation
+    await this.#clubStore.joinClub.mutate({
+      clubId: currentClub.id,
+      data: {},
+    });
 
-      if (club?.id) {
-        this.club.set(club);
-      } else {
-        this.error.set(true);
-      }
-    } catch (err) {
-      console.error('[ClubProfilePage] Failed to load club:', err);
-      this.error.set(true);
-    } finally {
-      this.loading.set(false);
+    // Component handles UX only
+    if (this.#clubStore.joinClub.error()) {
+      this.#toastService.error('Échec de la demande d\'adhésion');
+      return;
+    }
+
+    // Success toast based on club type
+    const isPublic = currentClub.visibility === 'PUBLIC';
+    const autoApprove = currentClub.autoApproveMembers ?? false;
+
+    if (isPublic && autoApprove) {
+      this.#toastService.success(`Vous avez rejoint ${currentClub.name}`);
+    } else {
+      this.#toastService.success('Demande envoyée avec succès');
     }
   }
 
   /**
-   * Join club or request access
+   * Open invite code modal
    */
-  onJoinClub(): void {
-    const currentClub = this.club();
-    if (!currentClub) return;
+  openInviteCodeModal(): void {
+    this.showInviteCodeModal.set(true);
+    this.inviteCode.set('');
+  }
 
-    // TODO: Open join/request modal or handle join logic
-    console.log('[ClubProfilePage] Join club:', currentClub.id);
+  /**
+   * Close invite code modal
+   */
+  closeInviteCodeModal(): void {
+    this.showInviteCodeModal.set(false);
+    this.inviteCode.set('');
+  }
+
+  /**
+   * Join club by invite code
+   */
+  async onJoinByCode(): Promise<void> {
+    const code = this.inviteCode().trim();
+    if (!code) return;
+
+    // Store mutation handles API call + invalidation
+    await this.#clubStore.joinByCode.mutate({ code });
+
+    // Component handles UX only
+    if (this.#clubStore.joinByCode.error()) {
+      this.#toastService.error('Code d\'invitation invalide ou expiré');
+      return;
+    }
+
+    // Success
+    this.#toastService.success('Vous avez rejoint le club avec succès');
+    this.closeInviteCodeModal();
   }
 
   /**
    * Navigate back to explore page
    */
   goBackToExplore(): void {
-    this.#router.navigate(['/explore']);
+    void this.#router.navigate(['/explore']);
   }
 
   /**

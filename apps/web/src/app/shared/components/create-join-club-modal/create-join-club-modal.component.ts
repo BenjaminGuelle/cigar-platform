@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ModalComponent, InputComponent, ButtonComponent, IconDirective } from '@cigar-platform/shared/ui';
 import { ClubsService } from '@cigar-platform/types/lib/clubs/clubs.service';
+import type { ClubResponseDto } from '@cigar-platform/types';
 import { ContextStore, type ClubWithRole } from '../../../core/stores/context.store';
 import { FormService, ToastService } from '../../../core/services';
 import clsx from 'clsx';
@@ -137,7 +138,7 @@ export class CreateJoinClubModalComponent {
       console.log('[CreateJoinClubModal] DTO prepared:', createClubDto);
       console.log('[CreateJoinClubModal] Calling API...');
 
-      const club: any = await this.#clubsService.clubControllerCreate(createClubDto);
+      const club = await this.#clubsService.clubControllerCreate(createClubDto) as ClubResponseDto;
 
       console.log('[CreateJoinClubModal] API response (club):', club);
 
@@ -179,20 +180,21 @@ export class CreateJoinClubModalComponent {
     try {
       const { invitationCode } = this.joinClubForm.getRawValue();
 
-      const data: any = await this.#clubsService.clubControllerJoinByCode({ code: invitationCode });
+      const data = await this.#clubsService.clubControllerJoinByCode({ code: invitationCode }) as { club?: ClubResponseDto; role?: string };
 
       if (data?.club) {
+        const club = data.club;
         this.#toastService.success('Vous avez rejoint le club avec succès !');
 
         // Reload user clubs to get actual role
         await this.#contextStore.loadUserClubs();
 
         // Find the club we just joined with its role
-        const joinedClub = this.#contextStore.userClubs().find((c) => c.id === data.club.id);
+        const joinedClub = this.#contextStore.userClubs().find((c) => c.id === club.id);
         const role = joinedClub?.myRole || 'member';
 
         // Switch to new club context with actual role
-        this.#contextStore.switchToClub(data.club, role);
+        this.#contextStore.switchToClub(club, role);
 
         this.clubJoined.emit();
         this.resetForms();

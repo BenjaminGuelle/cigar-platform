@@ -11,8 +11,6 @@ import { Router } from '@angular/router';
 import { take } from 'rxjs/operators';
 import { AuthService, FormService, ToastService } from '../../../../core/services';
 import { injectUserStore, UserStore } from '../../../../core/stores';
-import { injectMutation, Mutation } from '../../../../core/query';
-import { UsersService } from '@cigar-platform/types/lib/users/users.service';
 import {
   ButtonComponent,
   InputComponent,
@@ -55,7 +53,6 @@ import { UserDto } from '@cigar-platform/types';
 })
 export class UserSettingsPage {
   #authService = inject(AuthService);
-  #usersService = inject(UsersService);
   #formService = inject(FormService);
   #toastService = inject(ToastService);
   #fb = inject(FormBuilder);
@@ -73,24 +70,6 @@ export class UserSettingsPage {
   #currentFormValue = signal<any>(null);
 
   readonly selectedAvatarPreview = this.#selectedAvatarPreview.asReadonly();
-
-  // Avatar upload mutation
-  readonly uploadAvatarMutation: Mutation<unknown, { avatar: File }> = injectMutation({
-    mutationFn: (variables: { avatar: File }) =>
-      this.#usersService.usersControllerUploadAvatar(variables),
-    onSuccess: () => {
-      this.#toastService.success('Avatar mis à jour avec succès');
-      this.#selectedAvatarPreview.set(null);
-      this.#selectedAvatarFile = null;
-      // Refetch user to get updated avatar
-      this.userStore.currentUser.refetch();
-    },
-    onError: (error: Error) => {
-      this.#toastService.error(
-        (error as any).error?.error?.message || 'Échec de l\'upload de l\'avatar'
-      );
-    },
-  });
 
   #logoutLoading: WritableSignal<boolean> = signal<boolean>(false);
   readonly logoutLoading = this.#logoutLoading.asReadonly();
@@ -205,8 +184,18 @@ export class UserSettingsPage {
       return;
     }
 
-    // Use mutation instead of manual subscribe
-    await this.uploadAvatarMutation.mutate({ avatar: this.#selectedAvatarFile });
+    // Store handles API + invalidation
+    await this.userStore.uploadAvatar.mutate({ avatar: this.#selectedAvatarFile });
+
+    // Component handles UX only
+    if (this.userStore.uploadAvatar.error()) {
+      this.#toastService.error('Échec de l\'upload de l\'avatar');
+      return;
+    }
+
+    this.#toastService.success('Avatar mis à jour avec succès');
+    this.#selectedAvatarPreview.set(null);
+    this.#selectedAvatarFile = null;
   }
 
   async onUpdateProfile(): Promise<void> {

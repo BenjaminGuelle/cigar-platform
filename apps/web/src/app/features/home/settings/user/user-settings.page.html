@@ -32,7 +32,7 @@
             for="avatar-upload"
             class="body-sm cursor-pointer text-gold-500 transition-colors hover:text-gold-400"
           >
-            @if (uploadAvatarMutation.loading()) {
+            @if (userStore.uploadAvatar.loading()) {
               Chargement...
             } @else {
               Changer la photo

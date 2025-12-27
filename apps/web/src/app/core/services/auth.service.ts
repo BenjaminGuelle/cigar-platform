@@ -6,6 +6,7 @@ import { Observable, from, of, EMPTY } from 'rxjs';
 import { tap, map, catchError, switchMap, take, finalize } from 'rxjs/operators';
 import { SupabaseService } from './supabase.service';
 import { AuthenticationService } from '@cigar-platform/types/lib/authentication/authentication.service';
+import { QueryCacheService } from '../query/services/query-cache.service';
 import type { UserWithAuth } from '@cigar-platform/types';
 
 export interface AuthResult {
@@ -18,6 +19,7 @@ export interface AuthResult {
 export class AuthService {
   #supabaseService = inject(SupabaseService);
   #authenticationService = inject(AuthenticationService);
+  #queryCache = inject(QueryCacheService);
   #router = inject(Router);
   #destroyRef = inject(DestroyRef);
 
@@ -148,8 +150,12 @@ export class AuthService {
   signOut(): Observable<void> {
     return from(this.#supabaseService.client.auth.signOut()).pipe(
       tap(() => {
+        // Clear user signals
         this.#currentUserSignal.set(null);
         this.#sessionSignal.set(null);
+
+        // Clear ALL STARS cache to prevent stale data on next login
+        this.#queryCache.clear();
       }),
       switchMap(() => from(this.#router.navigate(['/auth/login']))),
       map(() => undefined),

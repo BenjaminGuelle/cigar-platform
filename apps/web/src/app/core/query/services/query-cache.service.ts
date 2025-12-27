@@ -28,6 +28,15 @@ export class QueryCacheService {
   #cache = new Map<string, CacheEntry<any>>();
 
   /**
+   * Get a query instance from cache (without incrementing refs)
+   * Returns null if not found
+   */
+  get<T>(key: string): QueryStoreBase<T> | null {
+    const entry = this.#cache.get(key);
+    return entry ? (entry.instance as QueryStoreBase<T>) : null;
+  }
+
+  /**
    * Get or create a query instance
    * If query exists in cache, returns existing instance and increments ref count
    * Otherwise creates new instance
@@ -101,10 +110,14 @@ export class QueryCacheService {
 
   /**
    * Clear all queries
-   * Removes all cached queries
+   * Clears data and invalidates all cached queries
+   * This ensures fresh state after logout without breaking queries
    */
   clear(): void {
-    this.#cache.clear();
+    for (const [, entry] of this.#cache.entries()) {
+      entry.instance.setData(null); // Clear data
+      entry.instance.invalidate();  // Mark as stale
+    }
   }
 
   /**

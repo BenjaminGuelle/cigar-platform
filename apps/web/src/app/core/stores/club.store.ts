@@ -196,10 +196,17 @@ export function injectClubStore(): ClubStore {
     mutationFn: ({ id, data }) => clubsService.clubControllerUpdate(id, data),
 
     onSuccess: (updatedClub: ClubResponseDto, variables) => {
-      // Invalidate all club detail queries
-      queryCache.invalidateQueriesMatching(['clubs', 'detail']);
+      // 1️⃣ Update cache immediately with fresh data (UX instantanée)
+      const detailQueryKey = JSON.stringify(['clubs', 'detail', updatedClub.id]);
+      const detailQuery = queryCache.get<ClubResponseDto>(detailQueryKey);
+      if (detailQuery) {
+        detailQuery.setDataFresh(updatedClub);
+      }
 
-      // Invalidate public clubs list
+      // 2️⃣ Invalidate my-clubs list to refresh ContextStore on next access
+      queryCache.invalidateQueriesMatching(['clubs', 'my-clubs']);
+
+      // 3️⃣ Invalidate public clubs list
       publicClubs.invalidate();
     },
 
