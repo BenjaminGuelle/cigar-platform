@@ -129,3 +129,16 @@
       </div>
     </ui-page-section>
   </div>
+
+  <!-- Logout Confirmation Modal -->
+  <app-confirmation-modal
+    [isOpen]="showLogoutConfirm()"
+    [title]="'Se déconnecter'"
+    [message]="'Êtes-vous sûr de vouloir vous déconnecter ?'"
+    [confirmLabel]="'Se déconnecter'"
+    [cancelLabel]="'Annuler'"
+    [variant]="'warning'"
+    [loading]="logoutLoading()"
+    (confirm)="onConfirmLogout()"
+    (cancel)="showLogoutConfirm.set(false)"
+  />

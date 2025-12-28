@@ -1,6 +1,6 @@
 <div class="mx-auto max-w-4xl space-y-6 md:space-y-8 px-4 md:px-6 py-6 md:py-8">
-  <!-- Guard: Must be club admin -->
-  @if (!contextStore.canManageClub()) {
+  <!-- Guard: Check access permissions -->
+  @if (!contextStore.canAccessSettings()) {
     <div class="flex flex-col items-center justify-center py-16 text-center">
       <div class="rounded-full bg-smoke-800/50 p-4 mb-4">
         <lucide-icon
@@ -13,7 +13,7 @@
         Accès restreint
       </h3>
       <p class="text-sm text-smoke-400 max-w-sm">
-        Seuls les administrateurs peuvent accéder aux paramètres du club
+        Vous n'avez pas accès aux paramètres dans ce contexte
       </p>
     </div>
   } @else if (loading()) {
@@ -30,50 +30,55 @@
       />
 
       <form [formGroup]="clubForm" (ngSubmit)="onUpdateClub()" class="space-y-8">
-        <!-- Club Information Section -->
-        <ui-page-section title="Informations du club">
-          <div class="space-y-6 md:space-y-8">
-            <ui-input
-              inputId="club-name"
-              type="text"
-              label="Nom du club"
-              placeholder="Ex: Les Aficionados du Cigare"
-              [control]="clubForm.controls.name"
-              [required]="true"
-              autocomplete="off"
-            />
+        <!-- Club Information Section (Admin & Owner only) -->
+        @if (contextStore.canManageClub()) {
+          <ui-page-section title="Informations du club">
+            <div class="space-y-6 md:space-y-8">
+              <!-- Name (Owner only) -->
+              <ui-input
+                inputId="club-name"
+                type="text"
+                label="Nom du club"
+                placeholder="Ex: Les Aficionados du Cigare"
+                [control]="clubForm.controls.name"
+                [required]="true"
+                autocomplete="off"
+              />
 
-            <div>
-              <label class="block text-sm font-medium text-smoke-100 mb-2">
-                Description
-              </label>
-              <textarea
-                formControlName="description"
-                rows="4"
-                class="w-full px-4 py-3 rounded-lg border-2 border-smoke-700 bg-smoke-850 text-smoke-100 placeholder-smoke-500 focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 focus:outline-none transition-all duration-200 resize-none"
-                placeholder="Décrivez votre club..."
-              ></textarea>
-              @if (clubForm.controls.description.invalid && clubForm.controls.description.touched) {
-                <p class="mt-1.5 text-sm text-error-500">
-                  Maximum 500 caractères
-                </p>
-              }
+              <!-- Description (Admin & Owner) -->
+              <div>
+                <label class="block text-sm font-medium text-smoke-100 mb-2">
+                  Description
+                </label>
+                <textarea
+                  formControlName="description"
+                  rows="4"
+                  class="w-full px-4 py-3 rounded-lg border-2 border-smoke-700 bg-smoke-850 text-smoke-100 placeholder-smoke-500 focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 focus:outline-none transition-all duration-200 resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  placeholder="Décrivez votre club..."
+                ></textarea>
+                @if (clubForm.controls.description.invalid && clubForm.controls.description.touched) {
+                  <p class="mt-1.5 text-sm text-error-500">
+                    Maximum 500 caractères
+                  </p>
+                }
+              </div>
             </div>
-          </div>
-        </ui-page-section>
+          </ui-page-section>
+        }
 
-        <!-- Privacy & Access Section -->
-        <ui-page-section title="Confidentialité & Accès">
-          <div class="space-y-6 md:space-y-8">
-            <!-- Visibility -->
-            <ui-select
-              selectId="visibility"
-              label="Visibilité du club"
-              hint="Les clubs publics sont visibles dans /explore. Les clubs privés ne sont accessibles que par invitation."
-              [control]="clubForm.controls.visibility"
-              [options]="visibilityOptions"
-              [required]="true"
-            />
+        <!-- Privacy & Access Section (Owner only) -->
+        @if (contextStore.canEditCriticalSettings()) {
+          <ui-page-section title="Confidentialité & Accès">
+            <div class="space-y-6 md:space-y-8">
+              <!-- Visibility -->
+              <ui-select
+                selectId="visibility"
+                label="Visibilité du club"
+                hint="Les clubs publics sont visibles dans /explore. Les clubs privés ne sont accessibles que par invitation."
+                [control]="clubForm.controls.visibility"
+                [options]="visibilityOptions"
+                [required]="true"
+              />
 
             <!-- Public Directory (only for PUBLIC clubs) -->
             @if (clubForm.controls.visibility.value === 'PUBLIC') {
@@ -113,56 +118,120 @@
             />
           </div>
         </ui-page-section>
+        }
 
-        <!-- Action Buttons -->
-        <div class="flex justify-end gap-3 pt-4">
-          @if (hasUnsavedChanges()) {
+        <!-- Action Buttons (Admin & Owner only) -->
+        @if (contextStore.canManageClub()) {
+          <div class="flex justify-end gap-3 pt-4">
+            @if (hasUnsavedChanges()) {
+              <ui-button
+                type="button"
+                variant="ghost"
+                size="md"
+                [disabled]="updateClubLoading()"
+                (click)="onCancelChanges()"
+              >
+                Annuler
+              </ui-button>
+            }
             <ui-button
-              type="button"
-              variant="ghost"
+              type="submit"
+              variant="outline"
               size="md"
-              [disabled]="updateClubLoading()"
-              (click)="onCancelChanges()"
+              [loading]="updateClubLoading()"
+              [disabled]="!hasUnsavedChanges() || clubForm.invalid || updateClubLoading()"
             >
-              Annuler
+              Enregistrer
             </ui-button>
-          }
-          <ui-button
-            type="submit"
-            variant="outline"
-            size="md"
-            [loading]="updateClubLoading()"
-            [disabled]="!hasUnsavedChanges() || clubForm.invalid || updateClubLoading()"
-          >
-            Enregistrer
-          </ui-button>
-        </div>
+          </div>
+        }
       </form>
 
-      <!-- Danger Zone (Owner Only) -->
-      @if (isOwner()) {
-        <ui-page-section title="Zone de danger">
-          <div class="rounded-lg border-2 border-error-500/30 bg-error-500/5 p-6">
+      <!-- Danger Zone -->
+      <ui-page-section title="Zone de danger">
+        <div class="space-y-4">
+          <!-- Archive Club (Owner Only) -->
+          @if (isOwner()) {
+            <div class="rounded-lg border-2 border-error-500/30 bg-error-500/5 p-6">
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex-1">
+                  <h3 class="text-base font-semibold text-smoke-100 mb-1">
+                    Archiver le club
+                  </h3>
+                  <p class="text-sm text-smoke-400">
+                    Le club ne sera plus accessible aux membres. Cette action est réversible.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  (click)="onArchiveClub()"
+                  class="shrink-0 px-4 py-2 bg-error-600 hover:bg-error-700 text-white font-medium rounded-lg transition-colors focus:ring-2 focus:ring-error-500/50 focus:outline-none"
+                >
+                  Archiver
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- Leave Club (All roles, disabled for Owner) -->
+          <div class="rounded-lg border-2 border-warning-500/30 bg-warning-500/5 p-6">
             <div class="flex items-start justify-between gap-4">
               <div class="flex-1">
                 <h3 class="text-base font-semibold text-smoke-100 mb-1">
-                  Archiver le club
+                  Quitter le club
                 </h3>
                 <p class="text-sm text-smoke-400">
-                  Le club ne sera plus accessible aux membres. Cette action est réversible.
+                  @if (isOwner()) {
+                    Vous devez transférer la propriété à un autre membre avant de pouvoir quitter le club.
+                  } @else {
+                    Vous ne serez plus membre de ce club. Vous pourrez demander à rejoindre à nouveau.
+                  }
                 </p>
               </div>
               <button
                 type="button"
-                (click)="onArchiveClub()"
-                class="shrink-0 px-4 py-2 bg-error-600 hover:bg-error-700 text-white font-medium rounded-lg transition-colors focus:ring-2 focus:ring-error-500/50 focus:outline-none"
+                (click)="onLeaveClub()"
+                [disabled]="leavingClub() || isOwner()"
+                class="shrink-0 px-4 py-2 bg-warning-600 hover:bg-warning-700 text-white font-medium rounded-lg transition-colors focus:ring-2 focus:ring-warning-500/50 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Archiver
+                @if (leavingClub()) {
+                  <span class="flex items-center gap-2">
+                    <div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    Chargement...
+                  </span>
+                } @else {
+                  Quitter
+                }
               </button>
             </div>
           </div>
-        </ui-page-section>
-      }
+        </div>
+      </ui-page-section>
     </div>
   }
 </div>
+
+<!-- Archive Club Confirmation Modal -->
+<app-confirmation-modal
+  [isOpen]="showArchiveConfirm()"
+  [title]="'Archiver le club'"
+  [message]="'Êtes-vous sûr de vouloir archiver ' + (club()?.name || 'ce club') + ' ? Le club ne sera plus accessible aux membres. Cette action est réversible.'"
+  [confirmLabel]="'Archiver'"
+  [cancelLabel]="'Annuler'"
+  [variant]="'destructive'"
+  (confirm)="onConfirmArchiveClub()"
+  (cancel)="showArchiveConfirm.set(false)"
+/>
+
+<!-- Leave Club Confirmation Modal -->
+<app-confirmation-modal
+  [isOpen]="showLeaveConfirm()"
+  [title]="'Quitter le club'"
+  [message]="'Êtes-vous sûr de vouloir quitter ' + (club()?.name || 'ce club') + ' ? Vous pourrez demander à rejoindre à nouveau.'"
+  [confirmLabel]="'Quitter'"
+  [cancelLabel]="'Annuler'"
+  [variant]="'warning'"
+  [loading]="leavingClub()"
+  (confirm)="onConfirmLeaveClub()"
+  (cancel)="showLeaveConfirm.set(false)"
+/>

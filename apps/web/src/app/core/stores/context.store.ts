@@ -128,6 +128,37 @@ export class ContextStore {
     return ctx.clubRole === 'admin' || ctx.clubRole === 'owner';
   });
 
+  /**
+   * Can user access club settings?
+   * Returns true for ANY role in club context (member, admin, owner)
+   * - Members can access to leave the club
+   * - Admins can edit description + leave
+   * - Owners have full access
+   */
+  readonly canAccessSettings = computed<boolean>(() => {
+    const ctx = this.context();
+    return ctx.type === 'club' && ctx.clubRole !== null;
+  });
+
+  /**
+   * Can user edit critical club settings?
+   * Returns true if user is owner in club context
+   * Critical settings: name, privacy, cover, delete club
+   */
+  readonly canEditCriticalSettings = computed<boolean>(() => {
+    const ctx = this.context();
+    return ctx.type === 'club' && ctx.clubRole === 'owner';
+  });
+
+  /**
+   * Is user the owner of the current club?
+   * Returns true if user is owner in club context
+   */
+  readonly isOwner = computed<boolean>(() => {
+    const ctx = this.context();
+    return ctx.type === 'club' && ctx.clubRole === 'owner';
+  });
+
   // ==================== Constructor ====================
 
   constructor() {

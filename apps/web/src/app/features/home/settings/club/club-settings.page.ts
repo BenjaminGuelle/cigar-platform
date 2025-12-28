@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 import { LucideAngularModule, LockKeyhole } from 'lucide-angular';
 import { ContextStore } from '../../../../core/stores/context.store';
 import { injectClubStore } from '../../../../core/stores/club.store';
-import { FormService, ToastService } from '../../../../core/services';
+import { FormService, ToastService, AuthService } from '../../../../core/services';
 import type { ClubResponseDto, UpdateClubDto } from '@cigar-platform/types';
 import {
   PageHeaderComponent,
@@ -16,6 +16,7 @@ import {
   SelectComponent,
   type SelectOption,
 } from '@cigar-platform/shared/ui';
+import { ConfirmationModalComponent } from '../../../../shared/components/confirmation-modal/confirmation-modal.component';
 
 /**
  * Club Settings Page (Internal)
@@ -50,12 +51,14 @@ import {
     InputComponent,
     CheckboxComponent,
     SelectComponent,
+    ConfirmationModalComponent,
   ],
   templateUrl: './club-settings.page.html',
 })
 export class ClubSettingsPage {
   contextStore = inject(ContextStore);
   #clubStore = injectClubStore();
+  #authService = inject(AuthService);
   readonly LockKeyhole = LockKeyhole;
   #formService = inject(FormService);
   #toastService = inject(ToastService);
@@ -79,6 +82,11 @@ export class ClubSettingsPage {
 
   // Mutation loading state
   readonly updateClubLoading = this.#clubStore.updateClub.loading;
+  readonly leavingClub = this.#clubStore.removeMember.loading;
+
+  // Confirmation modals
+  readonly showLeaveConfirm = signal<boolean>(false);
+  readonly showArchiveConfirm = signal<boolean>(false);
 
   // State
   #originalFormValue = signal<any>(null);
@@ -134,6 +142,17 @@ export class ClubSettingsPage {
   });
 
   constructor() {
+    // Guard: Redirect if user doesn't have access to settings
+    effect(() => {
+      const context = this.contextStore.context();
+      // All club roles (member, admin, owner) can access settings
+      // Members can leave, admins can edit description, owners have full access
+      if (context.type === 'club' && !this.contextStore.canAccessSettings()) {
+        console.warn('[ClubSettingsPage] User does not have access to settings, redirecting to home');
+        void this.#router.navigate(['/']);
+      }
+    });
+
     // Update club ID from context
     effect(() => {
       const context = this.contextStore.context();
@@ -159,6 +178,41 @@ export class ClubSettingsPage {
       });
 
       onCleanup(() => subscription.unsubscribe());
+    });
+
+    // Control form fields based on permissions
+    effect(() => {
+      const canEditCritical = this.contextStore.canEditCriticalSettings();
+      const canManage = this.contextStore.canManageClub();
+
+      if (canEditCritical) {
+        // Owner: All fields enabled
+        this.clubForm.controls.name.enable({ emitEvent: false });
+        this.clubForm.controls.description.enable({ emitEvent: false });
+        this.clubForm.controls.visibility.enable({ emitEvent: false });
+        this.clubForm.controls.isPublicDirectory.enable({ emitEvent: false });
+        this.clubForm.controls.autoApproveMembers.enable({ emitEvent: false });
+        this.clubForm.controls.allowMemberInvites.enable({ emitEvent: false });
+        this.clubForm.controls.maxMembers.enable({ emitEvent: false });
+      } else if (canManage) {
+        // Admin: Only description enabled
+        this.clubForm.controls.name.disable({ emitEvent: false });
+        this.clubForm.controls.description.enable({ emitEvent: false });
+        this.clubForm.controls.visibility.disable({ emitEvent: false });
+        this.clubForm.controls.isPublicDirectory.disable({ emitEvent: false });
+        this.clubForm.controls.autoApproveMembers.disable({ emitEvent: false });
+        this.clubForm.controls.allowMemberInvites.disable({ emitEvent: false });
+        this.clubForm.controls.maxMembers.disable({ emitEvent: false });
+      } else {
+        // Member: All fields disabled
+        this.clubForm.controls.name.disable({ emitEvent: false });
+        this.clubForm.controls.description.disable({ emitEvent: false });
+        this.clubForm.controls.visibility.disable({ emitEvent: false });
+        this.clubForm.controls.isPublicDirectory.disable({ emitEvent: false });
+        this.clubForm.controls.autoApproveMembers.disable({ emitEvent: false });
+        this.clubForm.controls.allowMemberInvites.disable({ emitEvent: false });
+        this.clubForm.controls.maxMembers.disable({ emitEvent: false });
+      }
     });
   }
 
@@ -253,16 +307,24 @@ export class ClubSettingsPage {
 
   /**
    * Archive club (owner only)
+   * Shows confirmation modal first
    */
-  async onArchiveClub(): Promise<void> {
-    if (!confirm('Êtes-vous sûr de vouloir archiver ce club ? Cette action est réversible.')) {
-      return;
-    }
+  onArchiveClub(): void {
+    this.showArchiveConfirm.set(true);
+  }
 
+  /**
+   * Confirm archive club
+   * Archives the club and switches to solo context
+   */
+  async onConfirmArchiveClub(): Promise<void> {
     const clubData = this.club();
     if (!clubData) {
       return;
     }
+
+    // Close modal
+    this.showArchiveConfirm.set(false);
 
     try {
       // TODO: Implement archive endpoint
@@ -271,10 +333,59 @@ export class ClubSettingsPage {
 
       // Switch to solo context and navigate to explore
       this.contextStore.switchToSolo();
-      this.#router.navigate(['/explore']);
+      await this.#router.navigate(['/explore']);
     } catch (error) {
       console.error('[ClubSettingsPage] Failed to archive club:', error);
       this.#toastService.error('Impossible d\'archiver le club');
     }
+  }
+
+  /**
+   * Leave club (admin/member only)
+   * Shows confirmation modal first
+   */
+  onLeaveClub(): void {
+    this.showLeaveConfirm.set(true);
+  }
+
+  /**
+   * Confirm leave club
+   * Removes current user from club and switches to solo context
+   */
+  async onConfirmLeaveClub(): Promise<void> {
+    // Lock: Prevent double-click
+    if (this.#clubStore.removeMember.loading()) return;
+
+    const clubData = this.club();
+    const currentUser = this.#authService.currentUser();
+
+    if (!clubData || !currentUser) {
+      return;
+    }
+
+    // Close modal
+    this.showLeaveConfirm.set(false);
+
+    // Remove current user from club
+    await this.#clubStore.removeMember.mutate({
+      clubId: clubData.id,
+      userId: currentUser.id,
+    });
+
+    if (this.#clubStore.removeMember.error()) {
+      this.#toastService.error('Impossible de quitter le club');
+      return;
+    }
+
+    this.#toastService.success(`Vous avez quitté ${clubData.name}`);
+
+    // Refresh user clubs to remove from available contexts
+    await this.contextStore.loadUserClubs();
+
+    // Switch to solo context
+    this.contextStore.switchToSolo();
+
+    // Navigate to home
+    void this.#router.navigate(['/']);
   }
 }

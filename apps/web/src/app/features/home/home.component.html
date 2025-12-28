@@ -55,11 +55,14 @@
       icon="bell"
       [badge]="3"
     />
-    <ui-desktop-top-tab-item
-      label="Paramètres"
-      route="/settings"
-      icon="settings"
-    />
+    <!-- Settings tab (always visible in solo, only for admin/owner in club) -->
+    @if (context().type === 'solo' || contextStore.canAccessSettings()) {
+      <ui-desktop-top-tab-item
+        label="Paramètres"
+        route="/settings"
+        icon="settings"
+      />
+    }
   </ui-desktop-top-tabs>
 
   <!-- Main Content Area -->
@@ -104,11 +107,14 @@
       route="/notifications"
       [badge]="3"
     />
-    <ui-bottom-tab-item
-      icon="settings"
-      label="Profil"
-      route="/settings"
-    />
+    <!-- Settings tab (always visible in solo, only for admin/owner in club) -->
+    @if (context().type === 'solo' || contextStore.canAccessSettings()) {
+      <ui-bottom-tab-item
+        icon="settings"
+        label="Profil"
+        route="/settings"
+      />
+    }
   </ui-bottom-tab-bar>
 
   <!-- Desktop FAB Menu - Quick Actions (≥ 768px) -->

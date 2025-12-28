@@ -47,12 +47,14 @@ import { GlobalSearchComponent } from '../../shared/components/global-search';
 })
 export class HomeComponent {
   #authService = inject(AuthService);
-  #contextStore = inject(ContextStore);
   #searchModal = inject(SearchModalService);
 
+  // Expose contextStore for template access to permission methods
+  readonly contextStore = inject(ContextStore);
+
   readonly currentUser: Signal<UserWithAuth | null> = this.#authService.currentUser;
-  readonly context = this.#contextStore.context;
-  readonly userClubs = this.#contextStore.userClubs;
+  readonly context = this.contextStore.context;
+  readonly userClubs = this.contextStore.userClubs;
 
   // Global search modal state (shared service)
   readonly searchModalOpen = this.#searchModal.isOpen;
@@ -95,12 +97,12 @@ export class HomeComponent {
     // Senior Dev Pattern: Load clubs + hydrate context after authentication
     // APP_INITIALIZER only restored clubId from localStorage (optimistic state)
     // Now we load real data and hydrate the "pending" club context
-    this.#contextStore.loadUserClubs().then(() => {
-      const context = this.#contextStore.context();
+    this.contextStore.loadUserClubs().then(() => {
+      const context = this.contextStore.context();
 
       // If we have a club context but no club data, hydrate it
       if (context.type === 'club' && context.clubId && !context.club) {
-        this.#contextStore.hydrateClubContext(context.clubId);
+        this.contextStore.hydrateClubContext(context.clubId);
       }
     });
   }
@@ -119,11 +121,11 @@ export class HomeComponent {
 
   onContextSelected(event: { type: 'solo' | 'club'; id: string | null; club?: any }): void {
     if (event.type === 'solo') {
-      this.#contextStore.switchToSolo();
+      this.contextStore.switchToSolo();
     } else if (event.type === 'club' && event.club) {
       // Use actual role from club data (included via /clubs/me endpoint)
       const role = event.club.myRole || 'member';
-      this.#contextStore.switchToClub(event.club, role);
+      this.contextStore.switchToClub(event.club, role);
     }
   }
 

@@ -19,6 +19,7 @@ import {
   PageSectionComponent,
 } from '@cigar-platform/shared/ui';
 import { UserDto } from '@cigar-platform/types';
+import { ConfirmationModalComponent } from '../../../../shared/components/confirmation-modal/confirmation-modal.component';
 
 /**
  * User Settings Page
@@ -48,6 +49,7 @@ import { UserDto } from '@cigar-platform/types';
     AvatarComponent,
     PageHeaderComponent,
     PageSectionComponent,
+    ConfirmationModalComponent,
   ],
   templateUrl: './user-settings.page.html',
 })
@@ -73,6 +75,9 @@ export class UserSettingsPage {
 
   #logoutLoading: WritableSignal<boolean> = signal<boolean>(false);
   readonly logoutLoading = this.#logoutLoading.asReadonly();
+
+  // Confirmation modals
+  readonly showLogoutConfirm = signal<boolean>(false);
 
   readonly isOAuthUser: Signal<boolean> = computed<boolean>(() => {
     const provider = this.currentUser()?.authProvider;
@@ -224,10 +229,23 @@ export class UserSettingsPage {
     }
   }
 
+  /**
+   * Logout user
+   * Shows confirmation modal first
+   */
   onLogout(): void {
-    if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
-      this.#logoutLoading.set(true);
-      this.#authService.signOut().pipe(take(1)).subscribe();
-    }
+    this.showLogoutConfirm.set(true);
+  }
+
+  /**
+   * Confirm logout
+   * Signs out the user
+   */
+  onConfirmLogout(): void {
+    // Close modal
+    this.showLogoutConfirm.set(false);
+
+    this.#logoutLoading.set(true);
+    this.#authService.signOut().pipe(take(1)).subscribe();
   }
 }
