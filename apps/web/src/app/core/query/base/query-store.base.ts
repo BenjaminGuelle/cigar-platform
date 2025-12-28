@@ -89,6 +89,30 @@ export abstract class QueryStoreBase<T> {
   }
 
   /**
+   * Background refetch (refetch without showing loading state)
+   * Keeps current data visible while fetching new data
+   */
+  async refetchInBackground(): Promise<void> {
+    // Don't set loading: true, keep current data visible
+    try {
+      const data = await this.queryFn();
+      this.#state.set({
+        data,
+        loading: false,
+        error: null,
+        lastFetched: Date.now(),
+        staleTime: this.#state().staleTime,
+      });
+    } catch (error) {
+      this.#state.update((s) => ({
+        ...s,
+        error: error as Error,
+      }));
+      throw error;
+    }
+  }
+
+  /**
    * Invalidate query (mark as stale)
    * Next access will trigger a refetch
    */

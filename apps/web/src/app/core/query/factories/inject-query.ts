@@ -147,6 +147,7 @@ export function injectQuery<T>(optionsFactory: () => QueryOptions<T>): Query<T> 
     error: computed(() => getStore().error()),
     isStale: computed(() => getStore().isStale()),
     refetch: () => getStore().refetch(),
+    refetchInBackground: () => getStore().refetchInBackground(),
     invalidate: () => getStore().invalidate(),
     setData: (data: T) => getStore().setData(data),
     setDataFresh: (data: T) => getStore().setDataFresh(data),

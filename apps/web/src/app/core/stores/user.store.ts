@@ -121,9 +121,8 @@ export function injectUserStore(): UserStore {
       usersService.usersControllerUploadAvatar(variables),
 
     onSuccess: () => {
-      // Refetch user to get updated avatar URL
-      void currentUser.refetch();
-      console.log('[UserStore] Avatar uploaded successfully');
+      // Background refetch to get updated avatar URL (no loader)
+      void currentUser.refetchInBackground();
     },
 
     onError: (error: Error) => {

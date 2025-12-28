@@ -244,8 +244,11 @@ export class ClubSettingsPage {
     this.#currentFormValue.set(savedValue);
     this.clubForm.markAsPristine();
 
-    // Refresh context to update club data in ContextStore
-    await this.contextStore.refresh();
+    // Update context with fresh club data (optimistic, no API call)
+    const updatedClubData = this.club();
+    if (updatedClubData) {
+      this.contextStore.updateCurrentClub(updatedClubData);
+    }
   }
 
   /**

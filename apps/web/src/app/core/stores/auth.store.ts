@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { injectMutation } from '../query';
+import { injectMutation, QueryCacheService } from '../query';
 import type { Mutation } from '../query';
 import { AuthService } from '../services/auth.service';
 import type { AuthResult } from '../services/auth.service';
@@ -81,6 +81,7 @@ export interface AuthStore {
 export function injectAuthStore(): AuthStore {
   const authService = inject(AuthService);
   const router = inject(Router);
+  const queryCache = inject(QueryCacheService);
 
   // Mutation: Sign In
   const signIn = injectMutation<AuthResult, { email: string; password: string }>({
@@ -88,6 +89,8 @@ export function injectAuthStore(): AuthStore {
       firstValueFrom(authService.signIn(email, password)),
     onSuccess: (result: AuthResult) => {
       if (!result.error) {
+        // Invalidate all club queries - user relationships have changed
+        queryCache.invalidateQueriesMatching(['clubs']);
         router.navigate(['/']);
       }
     },
@@ -99,6 +102,8 @@ export function injectAuthStore(): AuthStore {
       firstValueFrom(authService.signUp(email, password, displayName)),
     onSuccess: (result: AuthResult) => {
       if (!result.error) {
+        // Invalidate all club queries - new user, fresh start
+        queryCache.invalidateQueriesMatching(['clubs']);
         router.navigate(['/']);
       }
     },

@@ -170,6 +170,20 @@ export class ContextStore {
   }
 
   /**
+   * Update current club data without refetching
+   * Used for optimistic updates after mutations (e.g., updateClub)
+   */
+  updateCurrentClub(updatedClub: ClubResponseDto): void {
+    const currentContext = this.context();
+    if (currentContext.type === 'club' && currentContext.clubId === updatedClub.id) {
+      this.#context.set({
+        ...currentContext,
+        club: updatedClub,
+      });
+    }
+  }
+
+  /**
    * Load user's clubs with roles (Query Layer)
    * Single optimized query: GET /clubs/me
    * Uses query layer with automatic error handling and caching

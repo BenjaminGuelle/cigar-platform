@@ -33,6 +33,7 @@ export interface Query<T> {
   error: Signal<Error | null>;
   isStale: Signal<boolean>;
   refetch: () => Promise<void>;
+  refetchInBackground: () => Promise<void>; // Refetch without showing loading state
   invalidate: () => void;
   setData: (data: T) => void; // For optimistic updates (no timestamp update)
   setDataFresh: (data: T) => void; // Set data + mark as fresh

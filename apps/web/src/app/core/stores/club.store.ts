@@ -11,6 +11,7 @@ import type {
   UpdateJoinRequestDto,
   ClubMemberResponseDto,
   ClubJoinRequestResponseDto,
+  ClubBanResponseDto,
 } from '@cigar-platform/types';
 
 /**
@@ -63,6 +64,13 @@ export interface ClubStore {
   getJoinRequests: (clubIdGetter: () => string, canManageGetter?: () => boolean) => Query<ClubJoinRequestResponseDto[]>;
 
   /**
+   * Get banned members by club ID (reactive - pass getter functions)
+   * @param clubIdGetter - Getter for club ID
+   * @param canManageGetter - Getter for permission check (optional, defaults to true)
+   */
+  getBannedMembers: (clubIdGetter: () => string, canManageGetter?: () => boolean) => Query<ClubBanResponseDto[]>;
+
+  /**
    * Create club mutation
    */
   createClub: Mutation<ClubResponseDto, CreateClubDto>;
@@ -96,6 +104,26 @@ export interface ClubStore {
    * Update join request mutation (admin: approve/reject)
    */
   updateJoinRequest: Mutation<void, { clubId: string; requestId: string; data: UpdateJoinRequestDto }>;
+
+  /**
+   * Update member role mutation (admin: promote/demote)
+   */
+  updateMemberRole: Mutation<void, { clubId: string; userId: string; role: 'owner' | 'admin' | 'member' }>;
+
+  /**
+   * Remove member mutation (admin: kick from club)
+   */
+  removeMember: Mutation<void, { clubId: string; userId: string }>;
+
+  /**
+   * Ban member mutation (admin: ban + remove from club)
+   */
+  banMember: Mutation<void, { clubId: string; userId: string; reason?: string }>;
+
+  /**
+   * Unban member mutation (admin: remove ban)
+   */
+  unbanMember: Mutation<void, { clubId: string; userId: string }>;
 }
 
 /**
@@ -177,6 +205,31 @@ export function injectClubStore(): ClubStore {
     }));
   };
 
+  /**
+   * Get banned members by club ID (returns a reactive query)
+   * Only fetches if user has management permissions
+   */
+  const getBannedMembers = (
+    clubIdGetter: () => string,
+    canManageGetter?: () => boolean
+  ): Query<ClubBanResponseDto[]> => {
+    return injectQuery<ClubBanResponseDto[]>(() => ({
+      queryKey: ['clubs', 'bans', clubIdGetter()],
+      queryFn: async () => {
+        const clubId = clubIdGetter();
+        if (!clubId) return [];
+        const response = await clubsService.clubControllerGetBannedMembers(clubId, {
+          limit: 100,
+          page: 1,
+        });
+        return response?.data ?? [];
+      },
+      // Only fetch if club ID exists AND user has permission
+      enabled: !!clubIdGetter() && (canManageGetter ? canManageGetter() : true),
+      staleTime: 2 * 60 * 1000, // 2 minutes (bans don't change frequently)
+    }));
+  };
+
   // Mutation: Create Club
   const createClub = injectMutation<ClubResponseDto, CreateClubDto>({
     mutationFn: (data: CreateClubDto) => clubsService.clubControllerCreate(data),
@@ -234,10 +287,33 @@ export function injectClubStore(): ClubStore {
     mutationFn: ({ clubId, data = {} }) => clubsService.clubControllerJoinClub(clubId, data),
 
     onSuccess: (_, variables) => {
-      // Invalidate all club detail queries (components use ['clubs', 'detail'])
-      queryCache.invalidateQueriesMatching(['clubs', 'detail']);
+      // Optimistic update - instantly update club detail cache
+      const detailQueryKey = JSON.stringify(['clubs', 'detail', variables.clubId]);
+      const detailQuery = queryCache.get<ClubResponseDto>(detailQueryKey);
 
-      // Invalidate all members queries
+      if (detailQuery && detailQuery.data()) {
+        const currentClub = detailQuery.data();
+        if (!currentClub) return;
+
+        // Determine new status based on club settings
+        const isPublic = currentClub.visibility === 'PUBLIC';
+        const autoApprove = currentClub.autoApproveMembers ?? false;
+        const willBeAutoApproved = isPublic && autoApprove;
+
+        const updatedClub: ClubResponseDto = {
+          ...currentClub,
+          currentUserStatus: willBeAutoApproved ? 'member' : 'pending',
+          currentUserRole: willBeAutoApproved ? 'member' : undefined,
+          memberCount: willBeAutoApproved ? currentClub.memberCount + 1 : currentClub.memberCount,
+        };
+
+        detailQuery.setDataFresh(updatedClub);
+      }
+
+      // Invalidate club detail to force refetch (backup if optimistic update failed)
+      queryCache.invalidateQueriesMatching(['clubs', 'detail', variables.clubId]);
+
+      // Invalidate members queries (background refresh)
       queryCache.invalidateQueriesMatching(['clubs', 'members']);
     },
 
@@ -265,12 +341,17 @@ export function injectClubStore(): ClubStore {
     mutationFn: ({ clubId, requestId }) =>
       clubsService.clubControllerCancelJoinRequest(clubId, requestId),
 
-    onSuccess: (_, variables) => {
-      // Invalidate join requests queries (remove from pending list)
-      queryCache.invalidateQueriesMatching(['clubs', 'join-requests']);
+    onSuccess: async (_, variables) => {
+      // 1. Marquer les données comme périmées
+      queryCache.invalidateQueriesMatching(['clubs', 'join-requests', variables.clubId]);
+      queryCache.invalidateQueriesMatching(['clubs', 'detail', variables.clubId]);
 
-      // Invalidate club detail (in case visibility depends on membership)
-      queryCache.invalidateQueriesMatching(['clubs', 'detail']);
+      // 2. Forcer le refetch SANS attendre (async non-bloquant)
+      const joinRequestsQuery = queryCache.get(JSON.stringify(['clubs', 'join-requests', variables.clubId]));
+      const detailQuery = queryCache.get(JSON.stringify(['clubs', 'detail', variables.clubId]));
+
+      if (joinRequestsQuery) void joinRequestsQuery.refetch();
+      if (detailQuery) void detailQuery.refetch();
     },
 
     onError: (error: Error) => {
@@ -284,14 +365,140 @@ export function injectClubStore(): ClubStore {
       clubsService.clubControllerUpdateJoinRequest(clubId, requestId, data),
 
     onSuccess: (_, variables) => {
-      // Invalidate join requests queries (remove from pending list)
-      queryCache.invalidateQueriesMatching(['clubs', 'join-requests']);
+      // 1. Optimistic update: retirer la request de la liste immédiatement
+      const joinRequestsQueryKey = JSON.stringify(['clubs', 'join-requests', variables.clubId]);
+      const joinRequestsQuery = queryCache.get(joinRequestsQueryKey);
 
-      // Invalidate all members queries (if approved, new member added)
-      queryCache.invalidateQueriesMatching(['clubs', 'members']);
+      if (joinRequestsQuery) {
+        const currentRequests = joinRequestsQuery.data() as ClubJoinRequestResponseDto[] | null;
+        if (currentRequests) {
+          const updatedRequests = currentRequests.filter(r => r.id !== variables.requestId);
+          joinRequestsQuery.setDataFresh(updatedRequests);
+        }
+      }
 
-      // Invalidate all club detail queries (member count might change)
-      queryCache.invalidateQueriesMatching(['clubs', 'detail']);
+      // 2. Background refetch de la liste des membres (pour voir le nouveau membre si APPROVED)
+      if (variables.data.status === 'APPROVED') {
+        const membersQueryKey = JSON.stringify(['clubs', 'members', variables.clubId]);
+        const membersQuery = queryCache.get(membersQueryKey);
+        if (membersQuery) void membersQuery.refetchInBackground();
+      }
+
+      // 3. Invalidate detail pour refetch automatique plus tard
+      queryCache.invalidateQueriesMatching(['clubs', 'detail', variables.clubId]);
+    },
+
+    onError: (error: Error) => {
+      console.error('[CLUB STORE] updateJoinRequest.onError:', {
+        message: error.message,
+        name: error.name,
+        stack: error.stack
+      });
+    },
+  });
+
+  // Mutation: Update Member Role (admin: promote/demote)
+  const updateMemberRole = injectMutation<void, { clubId: string; userId: string; role: 'owner' | 'admin' | 'member' }>({
+    mutationFn: ({ clubId, userId, role }) =>
+      clubsService.clubControllerUpdateMemberRole(clubId, userId, { role }),
+
+    onSuccess: (_, variables) => {
+      // Update cache optimistically - instant UI update
+      const membersQueryKey = JSON.stringify(['clubs', 'members', variables.clubId]);
+      const membersQuery = queryCache.get<ClubMemberResponseDto[]>(membersQueryKey);
+
+      if (membersQuery && membersQuery.data()) {
+        const currentMembers = membersQuery.data() ?? [];
+        const updatedMembers = currentMembers.map(member =>
+          member.userId === variables.userId
+            ? { ...member, role: variables.role }
+            : member
+        );
+        membersQuery.setDataFresh(updatedMembers);
+      }
+    },
+
+    onError: (error: Error) => {
+      // Error handling will be done in component
+    },
+  });
+
+  // Mutation: Remove Member (admin: kick from club)
+  const removeMember = injectMutation<void, { clubId: string; userId: string }>({
+    mutationFn: ({ clubId, userId }) =>
+      clubsService.clubControllerRemoveMember(clubId, userId),
+
+    onSuccess: (_, variables) => {
+      // Optimistic update: retirer le membre de la liste immédiatement
+      const membersQueryKey = JSON.stringify(['clubs', 'members', variables.clubId]);
+      const membersQuery = queryCache.get(membersQueryKey);
+
+      if (membersQuery) {
+        const currentMembers = membersQuery.data() as ClubMemberResponseDto[] | null;
+        if (currentMembers) {
+          const updatedMembers = currentMembers.filter(m => m.userId !== variables.userId);
+          membersQuery.setDataFresh(updatedMembers);
+        }
+      }
+
+      // Invalidate pour refetch automatique plus tard
+      queryCache.invalidateQueriesMatching(['clubs', 'detail', variables.clubId]);
+    },
+
+    onError: (error: Error) => {
+      // Error handling will be done in component
+    },
+  });
+
+  // Mutation: Ban Member (admin: ban + remove from club)
+  const banMember = injectMutation<void, { clubId: string; userId: string; reason?: string }>({
+    mutationFn: ({ clubId, userId, reason }) =>
+      clubsService.clubControllerBanMember(clubId, userId, { reason }),
+
+    onSuccess: (_, variables) => {
+      // 1. Optimistic update: retirer le membre de la liste immédiatement
+      const membersQueryKey = JSON.stringify(['clubs', 'members', variables.clubId]);
+      const membersQuery = queryCache.get(membersQueryKey);
+
+      if (membersQuery) {
+        const currentMembers = membersQuery.data() as ClubMemberResponseDto[] | null;
+        if (currentMembers) {
+          const updatedMembers = currentMembers.filter(m => m.userId !== variables.userId);
+          membersQuery.setDataFresh(updatedMembers);
+        }
+      }
+
+      // 2. Background refetch de la liste des bans (pour voir le nouveau ban)
+      const bansQueryKey = JSON.stringify(['clubs', 'bans', variables.clubId]);
+      const bansQuery = queryCache.get(bansQueryKey);
+      if (bansQuery) void bansQuery.refetchInBackground();
+
+      // 3. Invalidate detail pour refetch automatique plus tard
+      queryCache.invalidateQueriesMatching(['clubs', 'detail', variables.clubId]);
+    },
+
+    onError: (error: Error) => {
+      // Error handling will be done in component
+    },
+  });
+
+  // Mutation: Unban Member (admin: remove ban)
+  const unbanMember = injectMutation<void, { clubId: string; userId: string }>({
+    mutationFn: ({ clubId, userId }) =>
+      clubsService.clubControllerUnbanMember(clubId, userId),
+
+    onSuccess: (_, variables) => {
+      // Optimistic update: retirer le ban de la liste immédiatement
+      const bansQueryKey = JSON.stringify(['clubs', 'bans', variables.clubId]);
+      const bansQuery = queryCache.get(bansQueryKey);
+
+      if (bansQuery) {
+        const currentBans = bansQuery.data() as ClubBanResponseDto[] | null;
+        if (currentBans) {
+          const updatedBans = currentBans.filter(b => b.userId !== variables.userId);
+          bansQuery.setDataFresh(updatedBans);
+        }
+      }
     },
 
     onError: (error: Error) => {
@@ -304,6 +511,7 @@ export function injectClubStore(): ClubStore {
     getClubById,
     getClubMembers,
     getJoinRequests,
+    getBannedMembers,
     createClub,
     updateClub,
     deleteClub,
@@ -311,5 +519,9 @@ export function injectClubStore(): ClubStore {
     joinByCode,
     cancelJoinRequest,
     updateJoinRequest,
+    updateMemberRole,
+    removeMember,
+    banMember,
+    unbanMember,
   };
 }
