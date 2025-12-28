@@ -6,12 +6,28 @@
 import { Logger, ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
 import { AppModule } from './app/app.module';
 import { HttpExceptionFilter } from './common/filters';
 import { TransformInterceptor } from './common/interceptors';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Security: Helmet middleware for HTTP headers protection
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrc: ["'self'"],
+          imgSrc: ["'self'", 'data:', 'https:'],
+        },
+      },
+      crossOriginEmbedderPolicy: false, // Allow embedding for Swagger UI
+    })
+  );
 
   // Global exception filter for standardized error handling
   app.useGlobalFilters(new HttpExceptionFilter());
