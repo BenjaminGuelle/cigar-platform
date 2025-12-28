@@ -111,6 +111,11 @@ export interface ClubStore {
   updateMemberRole: Mutation<void, { clubId: string; userId: string; role: 'owner' | 'admin' | 'member' }>;
 
   /**
+   * Transfer ownership mutation (owner only: transfer club ownership to another member)
+   */
+  transferOwnership: Mutation<void, { clubId: string; newOwnerId: string }>;
+
+  /**
    * Remove member mutation (admin: kick from club)
    */
   removeMember: Mutation<void, { clubId: string; userId: string }>;
@@ -423,6 +428,25 @@ export function injectClubStore(): ClubStore {
     },
   });
 
+  // Mutation: Transfer Ownership (owner only: transfer club to another member)
+  const transferOwnership = injectMutation<void, { clubId: string; newOwnerId: string }>({
+    mutationFn: ({ clubId, newOwnerId }) =>
+      clubsService.clubControllerTransferOwnership(clubId, { newOwnerId }),
+
+    onSuccess: (_, variables) => {
+      // Invalidate all queries for this club (major state change)
+      queryCache.invalidateQueriesMatching(['clubs', 'detail', variables.clubId]);
+      queryCache.invalidateQueriesMatching(['clubs', 'members', variables.clubId]);
+      queryCache.invalidateQueriesMatching(['clubs', 'my-clubs']);
+
+      // Note: User will likely lose admin access, so component should handle navigation
+    },
+
+    onError: (error: Error) => {
+      // Error handling will be done in component
+    },
+  });
+
   // Mutation: Remove Member (admin: kick from club)
   const removeMember = injectMutation<void, { clubId: string; userId: string }>({
     mutationFn: ({ clubId, userId }) =>
@@ -520,6 +544,7 @@ export function injectClubStore(): ClubStore {
     cancelJoinRequest,
     updateJoinRequest,
     updateMemberRole,
+    transferOwnership,
     removeMember,
     banMember,
     unbanMember,
