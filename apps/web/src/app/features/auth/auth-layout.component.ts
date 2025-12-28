@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { NgOptimizedImage } from '@angular/common';
 import { LogoComponent } from '@cigar-platform/shared/ui';

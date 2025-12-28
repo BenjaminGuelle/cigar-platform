@@ -1,4 +1,4 @@
-import { Component, inject, Signal, signal, WritableSignal, computed } from '@angular/core';
+import { Component, inject, Signal, signal, WritableSignal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { AuthService, SearchModalService } from '../../core/services';
@@ -44,6 +44,7 @@ import { GlobalSearchComponent } from '../../shared/components/global-search';
     GlobalSearchComponent,
   ],
   templateUrl: './home.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomeComponent {
   #authService = inject(AuthService);

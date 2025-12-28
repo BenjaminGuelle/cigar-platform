@@ -1,4 +1,4 @@
-import { Component, input, output, signal, WritableSignal, computed, Signal } from '@angular/core';
+import { Component, input, output, signal, WritableSignal, computed, Signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ModalComponent, InputComponent, ButtonComponent } from '@cigar-platform/shared/ui';

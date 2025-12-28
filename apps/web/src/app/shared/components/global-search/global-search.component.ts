@@ -1,4 +1,4 @@
-import { Component, input, output, signal, effect, inject, WritableSignal, Signal, computed } from '@angular/core';
+import { Component, input, output, signal, effect, inject, WritableSignal, Signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { injectQuery } from '../../../core/query';

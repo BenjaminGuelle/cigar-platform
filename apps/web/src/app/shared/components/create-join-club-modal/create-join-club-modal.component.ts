@@ -1,4 +1,4 @@
-import { Component, input, output, signal, WritableSignal, inject } from '@angular/core';
+import { Component, input, output, signal, WritableSignal, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ModalComponent, InputComponent, ButtonComponent, IconDirective } from '@cigar-platform/shared/ui';
@@ -27,6 +27,7 @@ type ModalTab = 'create' | 'join';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, ModalComponent, InputComponent, ButtonComponent, IconDirective],
   templateUrl: './create-join-club-modal.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CreateJoinClubModalComponent {
   #clubsService = inject(ClubsService);

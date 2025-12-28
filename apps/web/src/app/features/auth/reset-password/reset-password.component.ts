@@ -1,4 +1,4 @@
-import { Component, inject, signal, WritableSignal, OnInit } from '@angular/core';
+import { Component, inject, signal, WritableSignal, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   FormBuilder,
