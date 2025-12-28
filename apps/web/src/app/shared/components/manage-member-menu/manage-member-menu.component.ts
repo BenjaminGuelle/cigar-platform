@@ -2,39 +2,44 @@ import {
   Component,
   input,
   output,
-  signal,
   computed,
-  effect,
-  HostListener,
   ChangeDetectionStrategy,
-  ElementRef,
-  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import type { ClubMemberResponseDto } from '@cigar-platform/types';
-import { IconDirective } from '@cigar-platform/shared/ui';
+import { ModalComponent, ButtonComponent } from '@cigar-platform/shared/ui';
 
 /**
- * Manage Member Menu Component
+ * Manage Member Menu Component (ALL STARS ⭐)
  *
- * Dropdown menu for member management actions
- * - Desktop: Positioned dropdown next to trigger button
- * - Mobile: Same dropdown (could be bottom sheet in future)
+ * Responsive dropdown menu for member management actions
+ * - Desktop: Positioned dropdown aligned with trigger
+ * - Mobile: Bottom sheet modal
  *
  * Actions:
  * - Promote to admin (if member)
  * - Demote to member (if admin)
+ * - Transfer ownership (if owner, can't transfer to self)
  * - Remove from club
  * - Ban from club
+ *
+ * Architecture:
+ * - Uses ui-modal for responsive behavior
+ * - Uses ui-button for consistent styling
+ * - Left-aligned buttons with compact text
+ * - Proper z-index handling
  *
  * @example
  * ```html
  * <app-manage-member-menu
  *   [member]="member()"
+ *   [isOwner]="isOwner()"
+ *   [isCurrentUser]="member().userId === currentUserId()"
  *   [isOpen]="menuOpen()"
  *   (close)="menuOpen.set(false)"
  *   (promote)="handlePromote($event)"
  *   (demote)="handleDemote($event)"
+ *   (transferOwnership)="handleTransferOwnership($event)"
  *   (remove)="handleRemove($event)"
  *   (ban)="handleBan($event)"
  * />
@@ -44,105 +49,139 @@ import { IconDirective } from '@cigar-platform/shared/ui';
   selector: 'app-manage-member-menu',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, IconDirective],
+  imports: [CommonModule, ModalComponent, ButtonComponent],
   template: `
-    @if (isOpen()) {
-      <!-- Backdrop (mobile only) -->
-      <div
-        class="md:hidden fixed inset-0 bg-black/50 z-40"
-        (click)="handleClose()">
+    <ui-modal
+      [isOpen]="isOpen()"
+      [position]="'bottom-right'"
+      [size]="'sm'"
+      [showCloseButton]="false"
+      [closeOnBackdrop]="true"
+      (close)="handleClose()">
+
+      <!-- Header -->
+      <div class="mb-4 pb-4 border-b border-smoke-700">
+        <h3 class="text-xl font-display text-smoke-50 mb-2">
+          Gérer le membre
+        </h3>
+        <p class="text-base font-medium text-smoke-100 mb-1">
+          {{ member().user.displayName }}
+        </p>
+        <div class="text-sm text-smoke-300">
+          @if (member().role === 'owner') {
+            <span class="text-gold-400">Propriétaire</span>
+          } @else if (member().role === 'admin') {
+            <span class="text-blue-400">Administrateur</span>
+          } @else {
+            <span>Membre</span>
+          }
+        </div>
       </div>
 
-      <!-- Menu Dropdown -->
-      <div
-        class="absolute right-0 top-8 z-50 w-56 bg-smoke-800 border border-smoke-700 rounded-lg shadow-xl overflow-hidden"
-        (click)="$event.stopPropagation()">
+      <!-- Actions -->
+      <div class="flex flex-col gap-1">
 
-        <!-- Member Info Header -->
-        <div class="px-4 py-3 border-b border-smoke-700">
-          <div class="text-xs font-medium text-smoke-400 uppercase tracking-wider mb-1">
-            Gérer le membre
-          </div>
-          <div class="text-sm font-medium text-white truncate">
-            {{ member().user.displayName }}
-          </div>
-        </div>
+        <!-- Promote to Admin (only for members) -->
+        @if (canPromote()) {
+          <ui-button
+            variant="ghost"
+            icon="chevron-up"
+            size="sm"
+            fullWidth
+            customClass="!justify-start cursor-pointer"
+            (clicked)="handlePromote()">
+            <span class="text-sm">Promouvoir admin</span>
+          </ui-button>
+        }
 
-        <!-- Actions -->
-        <div class="py-1">
-          <!-- Promote to Admin (only for members) -->
-          @if (canPromote()) {
-            <button
-              (click)="handlePromote()"
-              type="button"
-              class="w-full px-4 py-2.5 text-left text-sm text-smoke-200 hover:bg-smoke-700 transition-colors flex items-center gap-3">
-              <i name="chevron-up" class="w-4 h-4 text-blue-400"></i>
-              <span>Promouvoir admin</span>
-            </button>
-          }
+        <!-- Demote to Member (only for admins, owner only) -->
+        @if (canDemote()) {
+          <ui-button
+            variant="ghost"
+            icon="chevron-down"
+            size="sm"
+            fullWidth
+            customClass="!justify-start cursor-pointer"
+            (clicked)="handleDemote()">
+            <span class="text-sm">Rétrograder membre</span>
+          </ui-button>
+        }
 
-          <!-- Demote to Member (only for admins) -->
-          @if (canDemote()) {
-            <button
-              (click)="handleDemote()"
-              type="button"
-              class="w-full px-4 py-2.5 text-left text-sm text-smoke-200 hover:bg-smoke-700 transition-colors flex items-center gap-3">
-              <i name="chevron-down" class="w-4 h-4 text-smoke-400"></i>
-              <span>Rétrograder membre</span>
-            </button>
-          }
+        <!-- Transfer Ownership (owner only, can't transfer to self) -->
+        @if (canTransferOwnership()) {
+          <ui-button
+            variant="ghost"
+            icon="users"
+            size="sm"
+            fullWidth
+            customClass="!justify-start cursor-pointer"
+            (clicked)="handleTransferOwnership()">
+            <span class="text-sm text-gold-400">Transférer la propriété</span>
+          </ui-button>
+        }
 
-          <!-- Divider -->
+        <!-- Divider (only if there are actions above) -->
+        @if (canPromote() || canDemote() || canTransferOwnership()) {
           <div class="my-1 border-t border-smoke-700"></div>
+        }
 
-          <!-- Remove from Club -->
-          <button
-            (click)="handleRemove()"
-            type="button"
-            class="w-full px-4 py-2.5 text-left text-sm text-smoke-200 hover:bg-smoke-700 transition-colors flex items-center gap-3">
-            <i name="minus" class="w-4 h-4 text-orange-400"></i>
-            <span>Retirer du club</span>
-          </button>
+        <!-- Remove from Club -->
+        <ui-button
+          variant="ghost"
+          icon="minus"
+          size="sm"
+          fullWidth
+          customClass="!justify-start cursor-pointer"
+          (clicked)="handleRemove()">
+          <span class="text-sm text-orange-400">Retirer du club</span>
+        </ui-button>
 
-          <!-- Ban from Club -->
-          <button
-            (click)="handleBan()"
-            type="button"
-            class="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-smoke-700 transition-colors flex items-center gap-3">
-            <i name="x" class="w-4 h-4 text-red-400"></i>
-            <span>Bannir du club</span>
-          </button>
-        </div>
+        <!-- Ban from Club -->
+        <ui-button
+          variant="ghost"
+          icon="x"
+          size="sm"
+          fullWidth
+          customClass="!justify-start cursor-pointer"
+          (clicked)="handleBan()">
+          <span class="text-sm text-red-400">Bannir du club</span>
+        </ui-button>
       </div>
-    }
+    </ui-modal>
   `,
-  host: {
-    '[class]': '"relative"',
-  },
 })
 export class ManageMemberMenuComponent {
-  // ElementRef injection for proper click outside detection
-  private readonly elementRef = inject(ElementRef);
-
   // Inputs
   readonly member = input.required<ClubMemberResponseDto>();
+  readonly isOwner = input<boolean>(false); // Is the current viewer the owner?
+  readonly isCurrentUser = input<boolean>(false); // Is this member the current user?
   readonly isOpen = input<boolean>(false);
 
   // Outputs
   readonly close = output<void>();
   readonly promote = output<ClubMemberResponseDto>();
   readonly demote = output<ClubMemberResponseDto>();
+  readonly transferOwnership = output<ClubMemberResponseDto>();
   readonly remove = output<ClubMemberResponseDto>();
   readonly ban = output<ClubMemberResponseDto>();
 
-  // Computed: Can promote (member → admin)
+  // Computed: Can promote (member → admin, viewer must be owner or admin)
   readonly canPromote = computed(() => {
     return this.member().role === 'member';
   });
 
-  // Computed: Can demote (admin → member)
+  // Computed: Can demote (admin → member, viewer must be owner)
   readonly canDemote = computed(() => {
-    return this.member().role === 'admin';
+    return this.member().role === 'admin' && this.isOwner();
+  });
+
+  // Computed: Can transfer ownership (viewer is owner, target is not owner, can't transfer to self)
+  readonly canTransferOwnership = computed(() => {
+    return (
+      this.isOwner() &&
+      this.member().role !== 'owner' &&
+      !this.isCurrentUser()
+    );
   });
 
   /**
@@ -158,6 +197,14 @@ export class ManageMemberMenuComponent {
    */
   handleDemote(): void {
     this.demote.emit(this.member());
+    this.handleClose();
+  }
+
+  /**
+   * Handle transfer ownership action
+   */
+  handleTransferOwnership(): void {
+    this.transferOwnership.emit(this.member());
     this.handleClose();
   }
 
@@ -182,29 +229,5 @@ export class ManageMemberMenuComponent {
    */
   handleClose(): void {
     this.close.emit();
-  }
-
-  /**
-   * Close menu on Escape key
-   */
-  @HostListener('window:keydown.escape')
-  onEscapeKey(): void {
-    if (this.isOpen()) {
-      this.handleClose();
-    }
-  }
-
-  /**
-   * Close menu on click outside
-   * Uses ElementRef to avoid conflicts with multiple menus on the page
-   */
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent): void {
-    if (!this.isOpen()) return;
-
-    // Close if clicked outside this specific component instance
-    if (!this.elementRef.nativeElement.contains(event.target)) {
-      this.handleClose();
-    }
   }
 }

@@ -93,11 +93,11 @@ const CLASSES = {
   standalone: true,
   imports: [IconDirective],
   template: `
-    <button [type]="type()" 
-            [disabled]="disabled() || loading()" 
-            [class]="classes()" 
-            [attr.aria-busy]="loading()" 
-            [attr.aria-disabled]="disabled()" 
+    <button [type]="type()"
+            [disabled]="disabled() || loading()"
+            [class]="classes()"
+            [attr.aria-busy]="loading()"
+            [attr.aria-disabled]="disabled()"
             (click)="handleClick($event)"
     >
       @if (loading()) {
@@ -140,6 +140,12 @@ export class ButtonComponent {
   icon: InputSignal<IconName | undefined> = input<IconName>();
   iconPos: InputSignal<IconPos> = input<IconPos>('left');
 
+  /**
+   * Custom CSS classes to merge with base classes
+   * Use this to override default styles (e.g., "!justify-start" for left alignment)
+   */
+  customClass: InputSignal<string> = input<string>('');
+
   clicked: OutputEmitterRef<MouseEvent> = output<MouseEvent>();
 
   classes: Signal<any> = computed(() => {
@@ -147,7 +153,8 @@ export class ButtonComponent {
       CLASSES.base,
       CLASSES.variant[this.variant()],
       CLASSES.size[this.size()],
-      this.fullWidth() && 'w-full'
+      this.fullWidth() && 'w-full',
+      this.customClass()
     );
   });
 

@@ -44,18 +44,19 @@
           <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-500"></div>
         </div>
       } @else if (members().length > 0) {
-        <!-- Tab Navigation -->
-        <div class="flex items-center gap-2 mb-6 border-b border-smoke-700">
+        <!-- Tab Navigation (Mobile: horizontal scroll, Desktop: full width) -->
+        <div class="flex items-center gap-1 md:gap-2 mb-6 border-b border-smoke-700 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
           <!-- Members Tab -->
           <button
             (click)="setActiveTab('members')"
             [class]="activeTab() === 'members'
-              ? 'px-4 py-3 font-semibold text-gold-500 border-b-2 border-gold-500 transition-colors'
-              : 'px-4 py-3 font-medium text-smoke-400 hover:text-smoke-200 border-b-2 border-transparent transition-colors'"
+              ? 'px-3 py-2.5 md:px-4 md:py-3 font-semibold text-gold-500 border-b-2 border-gold-500 transition-colors text-sm md:text-base whitespace-nowrap'
+              : 'px-3 py-2.5 md:px-4 md:py-3 font-medium text-smoke-400 hover:text-smoke-200 border-b-2 border-transparent transition-colors text-sm md:text-base whitespace-nowrap'"
           >
-            <div class="flex items-center gap-2">
-              <span>Membres actifs</span>
-              <span class="px-2 py-0.5 bg-smoke-700 text-smoke-300 rounded-full text-xs font-bold">
+            <div class="flex items-center gap-1.5 md:gap-2">
+              <span class="hidden md:inline">Membres actifs</span>
+              <span class="md:hidden">Actifs</span>
+              <span class="px-1.5 md:px-2 py-0.5 bg-smoke-700 text-smoke-300 rounded-full text-xs font-bold">
                 {{ members().length }}
               </span>
             </div>
@@ -66,18 +67,18 @@
             <button
               (click)="setActiveTab('requests')"
               [class]="activeTab() === 'requests'
-                ? 'px-4 py-3 font-semibold text-gold-500 border-b-2 border-gold-500 transition-colors'
-                : 'px-4 py-3 font-medium text-smoke-400 hover:text-smoke-200 border-b-2 border-transparent transition-colors'"
+                ? 'px-3 py-2.5 md:px-4 md:py-3 font-semibold text-gold-500 border-b-2 border-gold-500 transition-colors text-sm md:text-base whitespace-nowrap'
+                : 'px-3 py-2.5 md:px-4 md:py-3 font-medium text-smoke-400 hover:text-smoke-200 border-b-2 border-transparent transition-colors text-sm md:text-base whitespace-nowrap'"
             >
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-1.5 md:gap-2">
                 <span>Demandes</span>
-                @if (hasPendingRequests()) {
-                  <span class="px-2 py-0.5 bg-orange-500 text-white rounded-full text-xs font-bold animate-pulse">
-                    {{ pendingRequestsCount() }}
+                @if (hasNewRequests()) {
+                  <span class="px-1.5 md:px-2 py-0.5 bg-orange-500 text-white rounded-full text-xs font-bold animate-pulse">
+                    {{ newRequestsCount() }}
                   </span>
-                } @else {
-                  <span class="px-2 py-0.5 bg-smoke-700 text-smoke-300 rounded-full text-xs font-bold">
-                    0
+                } @else if (hasPendingRequests()) {
+                  <span class="px-1.5 md:px-2 py-0.5 bg-smoke-700 text-smoke-300 rounded-full text-xs font-bold">
+                    {{ pendingRequestsCount() }}
                   </span>
                 }
               </div>
@@ -87,18 +88,18 @@
             <button
               (click)="setActiveTab('banned')"
               [class]="activeTab() === 'banned'
-                ? 'px-4 py-3 font-semibold text-gold-500 border-b-2 border-gold-500 transition-colors'
-                : 'px-4 py-3 font-medium text-smoke-400 hover:text-smoke-200 border-b-2 border-transparent transition-colors'"
+                ? 'px-3 py-2.5 md:px-4 md:py-3 font-semibold text-gold-500 border-b-2 border-gold-500 transition-colors text-sm md:text-base whitespace-nowrap'
+                : 'px-3 py-2.5 md:px-4 md:py-3 font-medium text-smoke-400 hover:text-smoke-200 border-b-2 border-transparent transition-colors text-sm md:text-base whitespace-nowrap'"
             >
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-1.5 md:gap-2">
                 <span>Exclus</span>
-                @if (hasBannedMembers()) {
-                  <span class="px-2 py-0.5 bg-red-500 text-white rounded-full text-xs font-bold">
-                    {{ bannedMembersCount() }}
+                @if (hasNewBanned()) {
+                  <span class="px-1.5 md:px-2 py-0.5 bg-red-500 text-white rounded-full text-xs font-bold animate-pulse">
+                    {{ newBannedCount() }}
                   </span>
-                } @else {
-                  <span class="px-2 py-0.5 bg-smoke-700 text-smoke-300 rounded-full text-xs font-bold">
-                    0
+                } @else if (hasBannedMembers()) {
+                  <span class="px-1.5 md:px-2 py-0.5 bg-smoke-700 text-smoke-300 rounded-full text-xs font-bold">
+                    {{ bannedMembersCount() }}
                   </span>
                 }
               </div>
@@ -117,8 +118,11 @@
                   <app-member-item
                     [member]="member"
                     [canManage]="contextStore.canManageClub()"
+                    [isOwner]="isOwner()"
+                    [currentUserId]="currentUserId()"
                     (promote)="onPromoteMember($event)"
                     (demote)="onDemoteMember($event)"
+                    (transferOwnership)="onTransferOwnership($event)"
                     (remove)="onRemoveMember($event)"
                     (ban)="onBanMember($event)"
                   />
@@ -138,51 +142,15 @@
               } @else if (hasPendingRequests()) {
                 <!-- Pending Requests List -->
                 <ui-page-section title="Demandes en attente">
-                  <div class="space-y-4">
+                  <div class="divide-y divide-white/5 border-t border-white/5">
                     @for (request of joinRequests(); track request.id) {
-                      <div class="group flex items-start justify-between p-5 rounded-xl border-2 bg-smoke-850 border-orange-500/20 hover:border-orange-500/40 shadow-sm hover:shadow-lg hover:shadow-orange-500/5 transition-all duration-300">
-                        <!-- Content -->
-                        <div class="flex-1 min-w-0">
-                          <div class="flex items-center gap-3 mb-2">
-                            <div class="font-semibold text-smoke-100">
-                              Utilisateur {{ request.userId.substring(0, 8) }}...
-                            </div>
-                            <span class="px-2 py-1 bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded text-xs font-medium">
-                              En attente
-                            </span>
-                          </div>
-                          @if (request.message) {
-                            <div class="text-sm text-smoke-400 mt-2 italic">
-                              "{{ request.message }}"
-                            </div>
-                          }
-                          <div class="text-xs text-smoke-500 mt-2">
-                            Demandé le {{ formatDate(request.createdAt) }}
-                          </div>
-                        </div>
-
-                        <!-- Actions -->
-                        <div class="flex items-center gap-2 ml-4 shrink-0">
-                          <ui-button
-                            (click)="onApproveRequest(request)"
-                            variant="primary"
-                            size="sm"
-                            [loading]="updatingJoinRequest()"
-                            [disabled]="updatingJoinRequest()"
-                          >
-                            Approuver
-                          </ui-button>
-                          <ui-button
-                            (click)="onRejectRequest(request)"
-                            variant="secondary"
-                            size="sm"
-                            [loading]="updatingJoinRequest()"
-                            [disabled]="updatingJoinRequest()"
-                          >
-                            Rejeter
-                          </ui-button>
-                        </div>
-                      </div>
+                      <app-join-request-item
+                        [request]="request"
+                        [processingRequestId]="processingRequestId()"
+                        [processingAction]="processingAction()"
+                        (approve)="onApproveRequest($event)"
+                        (reject)="onRejectRequest($event)"
+                      />
                     }
                   </div>
                 </ui-page-section>
@@ -229,6 +197,7 @@
                       <app-banned-member-item
                         [ban]="ban"
                         [canManage]="contextStore.canManageClub()"
+                        [unbanningUserId]="unbanningUserId()"
                         (unban)="onUnbanMember($event)"
                       />
                     }
@@ -316,4 +285,17 @@
   [loading]="banningMember()"
   (confirm)="onConfirmBanMember($event)"
   (cancel)="showBanConfirm.set(false)"
+/>
+
+<!-- Transfer Ownership Confirmation Modal -->
+<app-confirmation-modal
+  [isOpen]="showTransferOwnershipConfirm()"
+  [title]="'⚠️ Transférer la propriété'"
+  [message]="'Êtes-vous absolument sûr de vouloir transférer la propriété du club à ' + (memberToAction()?.user?.displayName || 'ce membre') + ' ? Vous perdrez tous vos droits de propriétaire et deviendrez administrateur. Cette action est IRRÉVERSIBLE.'"
+  [confirmLabel]="'Transférer'"
+  [cancelLabel]="'Annuler'"
+  [variant]="'destructive'"
+  [loading]="false"
+  (confirm)="onConfirmTransferOwnership()"
+  (cancel)="showTransferOwnershipConfirm.set(false)"
 />

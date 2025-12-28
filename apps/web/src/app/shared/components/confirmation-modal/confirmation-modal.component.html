@@ -30,11 +30,10 @@
   }
 
   <!-- Actions -->
-  <div class="flex items-center gap-3">
+  <div class="flex items-center justify-end gap-3">
     <ui-button
       (click)="onCancel()"
       variant="secondary"
-      class="flex-1"
       [disabled]="loading()"
     >
       {{ cancelLabel() }}
@@ -44,7 +43,6 @@
       [variant]="getConfirmButtonVariant()"
       [loading]="loading()"
       [disabled]="loading()"
-      class="flex-1"
     >
       {{ confirmLabel() }}
     </ui-button>

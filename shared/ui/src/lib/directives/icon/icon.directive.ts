@@ -37,6 +37,7 @@ export type IconName =
   | 'bookmark'
   // UI
   | 'settings'
+  | 'ellipsis-vertical'
   | 'eye'
   | 'eye-off'
   | 'x'

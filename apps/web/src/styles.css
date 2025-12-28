@@ -267,3 +267,16 @@ body {
     @apply bg-smoke-700 hover:bg-smoke-600 border-smoke-600;
   }
 }
+
+/* ============================================ */
+/* UTILITIES - Scrollbar hide for mobile tabs */
+/* ============================================ */
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+  }
+}
