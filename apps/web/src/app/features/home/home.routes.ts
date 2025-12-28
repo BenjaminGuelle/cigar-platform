@@ -49,6 +49,12 @@ export const homeRoutes: Route[] = [
         loadComponent: () =>
           import('../club/public/club-profile.page').then((m) => m.ClubProfilePage),
       },
+      // User public profile
+      {
+        path: 'user/:id',
+        loadComponent: () =>
+          import('../user/public/user-profile.page').then((m) => m.UserProfilePage),
+      },
       // Club internal pages (context-driven, requires club context)
       {
         path: 'membres',

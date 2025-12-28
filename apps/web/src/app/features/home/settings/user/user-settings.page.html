@@ -5,41 +5,34 @@
       description="Gérez votre profil et vos préférences"
     />
 
+    <!-- Public Profile Link -->
+    @if (currentUser()) {
+      <a
+        [routerLink]="['/user', currentUser()!.id]"
+        class="group flex items-center gap-2 -mt-2 mb-2"
+      >
+        <i
+          name="eye"
+          class="w-4 h-4 text-gold-500 group-hover:scale-110 transition-transform duration-200"
+        ></i>
+        <span class="text-sm font-medium text-gold-500 hover:text-gold-400 transition-colors">
+          Voir mon profil public
+        </span>
+      </a>
+    }
+
     <!-- Profil Section -->
     <ui-page-section title="Profil">
-      <!-- Grid 2 colonnes: Avatar à gauche, Form à droite -->
-      <div class="grid gap-12 md:grid-cols-[auto_1fr]">
-        <!-- Avatar -->
-        <div class="flex flex-col items-center gap-4">
-          @if (selectedAvatarPreview()) {
-            <img
-              [src]="selectedAvatarPreview()!"
-              alt="Preview"
-              class="h-24 w-24 rounded-full object-cover shadow-lg ring-2 ring-gold-500/20"
-            />
-          } @else {
-            <ui-avatar [user]="currentUser()" size="lg" />
-          }
-
-          <input
-            type="file"
-            id="avatar-upload"
-            accept="image/jpeg,image/png,image/webp"
-            (change)="onAvatarFileSelected($event)"
-            class="hidden"
-          />
-          <label
-            for="avatar-upload"
-            class="body-sm cursor-pointer text-gold-500 transition-colors hover:text-gold-400"
-          >
-            @if (userStore.uploadAvatar.loading()) {
-              Chargement...
-            } @else {
-              Changer la photo
-            }
-          </label>
-          <p class="caption">JPG, PNG, WebP (max 5MB)</p>
-        </div>
+      <!-- Avatar Upload -->
+      <div class="mb-8">
+        <ui-avatar-upload
+          type="user"
+          [user]="currentUser()"
+          [loading]="userStore.uploadAvatar.loading()"
+          size="md"
+          (fileSelected)="onAvatarFileSelected($event)"
+        />
+      </div>
 
         <!-- Form -->
         <form [formGroup]="profileForm" (ngSubmit)="onUpdateProfile()" class="space-y-6 md:space-y-8">
@@ -53,31 +46,68 @@
             autocomplete="name"
           />
 
-          <div class="flex justify-end gap-3">
-            @if (hasUnsavedChanges()) {
-              <ui-button
-                type="button"
-                variant="ghost"
-                size="md"
-                [disabled]="userStore.updateProfile.loading()"
-                (click)="onCancelChanges()"
-              >
-                Annuler
-              </ui-button>
+          <!-- Bio -->
+          <div>
+            <label class="block text-sm font-medium text-smoke-100 mb-2">
+              Bio <span class="text-smoke-500">(optionnel)</span>
+            </label>
+            <textarea
+              formControlName="bio"
+              rows="3"
+              maxlength="500"
+              class="w-full px-4 py-3 rounded-lg border-2 border-smoke-700 bg-smoke-850 text-smoke-100 placeholder-smoke-500 focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 focus:outline-none transition-all duration-200 resize-none"
+              placeholder="Décrivez-vous en quelques mots..."
+            ></textarea>
+            @if (profileForm.controls.bio.value) {
+              <p class="mt-1.5 text-sm text-smoke-400">
+                {{ (profileForm.controls.bio.value || '').length }}/500 caractères
+              </p>
             }
-            <ui-button
-              type="submit"
-              variant="outline"
-              size="md"
-              [loading]="userStore.updateProfile.loading()"
-              [disabled]="!hasUnsavedChanges() || profileForm.invalid || userStore.updateProfile.loading()"
-            >
-              Enregistrer
-            </ui-button>
+            @if (profileForm.controls.bio.invalid && profileForm.controls.bio.touched) {
+              <p class="mt-1.5 text-sm text-error-500">
+                Maximum 500 caractères
+              </p>
+            }
           </div>
         </form>
-      </div>
     </ui-page-section>
+
+    <!-- Confidentialité Section -->
+    <ui-page-section title="Confidentialité">
+      <ui-switch
+        switchId="share-evaluations"
+        switchPosition="right"
+        label="Partager mes dégustations publiquement"
+        description="Rendre mes évaluations de cigares visibles sur mon profil public"
+        [control]="profileForm.controls.shareEvaluationsPublicly"
+      />
+    </ui-page-section>
+
+    <!-- Action Buttons -->
+    <form [formGroup]="profileForm" (ngSubmit)="onUpdateProfile()">
+      <div class="flex justify-end gap-3">
+        @if (hasUnsavedChanges()) {
+          <ui-button
+            type="button"
+            variant="ghost"
+            size="md"
+            [disabled]="userStore.updateProfile.loading()"
+            (click)="onCancelChanges()"
+          >
+            Annuler
+          </ui-button>
+        }
+        <ui-button
+          type="submit"
+          variant="outline"
+          size="md"
+          [loading]="userStore.updateProfile.loading()"
+          [disabled]="!hasUnsavedChanges() || profileForm.invalid || userStore.updateProfile.loading()"
+        >
+          Enregistrer
+        </ui-button>
+      </div>
+    </form>
 
     <!-- Compte Section -->
     <ui-page-section title="Compte">

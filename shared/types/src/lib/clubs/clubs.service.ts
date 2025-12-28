@@ -24,6 +24,8 @@ import type {
   ClubControllerGetBannedMembersParams,
   ClubControllerGetJoinRequestsParams,
   ClubControllerGetMembersParams,
+  ClubControllerUploadAvatar200,
+  ClubControllerUploadAvatarBody,
   ClubResponseDto,
   CreateClubDto,
   CreateJoinRequestDto,
@@ -123,6 +125,25 @@ export class ClubsService {
  ) {
       return customInstance<TData>(
       {url: `/api/clubs/${id}`, method: 'DELETE'
+    },
+      this.http,
+      );
+    }
+  /**
+ * @summary Upload club avatar
+ */
+ clubControllerUploadAvatar<TData = ClubControllerUploadAvatar200>(
+    id: string,
+    clubControllerUploadAvatarBody: ClubControllerUploadAvatarBody,
+ ) {const formData = new FormData();
+if(clubControllerUploadAvatarBody.avatar !== undefined) {
+ formData.append(`avatar`, clubControllerUploadAvatarBody.avatar)
+ }
+
+      return customInstance<TData>(
+      {url: `/api/clubs/${id}/avatar`, method: 'POST',
+      headers: {'Content-Type': 'multipart/form-data', },
+       data: formData
     },
       this.http,
       );
@@ -320,6 +341,7 @@ export type ClubControllerFindMyClubsClientResult = NonNullable<void>
 export type ClubControllerFindOneClientResult = NonNullable<ClubResponseDto>
 export type ClubControllerUpdateClientResult = NonNullable<ClubResponseDto>
 export type ClubControllerRemoveClientResult = NonNullable<void>
+export type ClubControllerUploadAvatarClientResult = NonNullable<ClubControllerUploadAvatar200>
 export type ClubControllerGetMembersClientResult = NonNullable<PaginatedMemberResponseDto>
 export type ClubControllerGetMyMembershipClientResult = NonNullable<void>
 export type ClubControllerUpdateMemberRoleClientResult = NonNullable<void>

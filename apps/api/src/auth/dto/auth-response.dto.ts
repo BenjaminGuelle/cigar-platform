@@ -30,6 +30,17 @@ export class UserDto implements User {
   avatarUrl: string | null;
 
   @Expose()
+  @ApiPropertyOptional({
+    type: String,
+    example: 'Passionate cigar enthusiast from Paris',
+  })
+  bio: string | null;
+
+  @Expose()
+  @ApiProperty({ example: true })
+  shareEvaluationsPublicly: boolean;
+
+  @Expose()
   @ApiProperty({ enum: Role, example: Role.USER })
   role: Role;
 

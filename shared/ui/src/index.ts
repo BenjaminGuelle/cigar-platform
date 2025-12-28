@@ -1,6 +1,7 @@
 // Components
 export * from './lib/components/action-button';
 export * from './lib/components/avatar';
+export * from './lib/components/avatar-upload';
 export * from './lib/components/button';
 export * from './lib/components/checkbox';
 export * from './lib/components/club-card';
@@ -19,6 +20,7 @@ export * from './lib/components/select';
 export * from './lib/components/sidebar-action';
 export * from './lib/components/sidebar-profile';
 export * from './lib/components/skeleton';
+export * from './lib/components/switch';
 
 // Directives
 export * from './lib/directives/icon';

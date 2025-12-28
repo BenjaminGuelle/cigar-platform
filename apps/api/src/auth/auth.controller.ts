@@ -91,7 +91,12 @@ export class AuthController {
    * Get current user profile
    * GET /api/auth/profile
    *
-   * Uses dbUser from JwtAuthGuard (no additional DB query needed)
+   * ARCHITECTURE: Prisma is the source of truth
+   * - OAuth (Google): Provides initial data on first login (onboarding)
+   * - Prisma: Stores user's custom bio/avatar/displayName (source of truth)
+   * - JWT virtual dbUser: Has stale OAuth data, NOT used here
+   *
+   * Always fetches fresh data from Prisma to respect user's custom changes
    */
   @Get('profile')
   @UseGuards(JwtAuthGuard)
@@ -104,8 +109,9 @@ export class AuthController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getProfile(@CurrentUser() user: RequestUser): Promise<UserDto> {
-    // Use dbUser directly from JwtAuthGuard (already contains all user data)
-    return this.authService.buildUserDto(user.dbUser, user.authProvider);
+    // ✅ Fetch fresh data from Prisma (source of truth)
+    // ❌ NOT using JWT virtual dbUser (has stale OAuth avatar/no bio)
+    return this.authService.getProfile(user.id, user.authProvider);
   }
 
   /**

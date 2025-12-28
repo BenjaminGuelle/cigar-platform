@@ -51,6 +51,11 @@ model User {
   email       String   @unique
   displayName String
   avatarUrl   String?
+  bio         String?  @db.Text
+
+  // Privacy settings
+  shareEvaluationsPublicly Boolean @default(true)
+
   role        Role     @default(USER)
   createdAt   DateTime @default(now())
 

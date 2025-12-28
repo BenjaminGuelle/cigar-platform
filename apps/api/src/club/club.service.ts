@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../app/prisma.service';
+import { StorageService } from '../common/services/storage.service';
 import { Club, Prisma } from '../../../../generated/prisma';
 import {
   CreateClubDto,
@@ -21,7 +22,10 @@ import {
 export class ClubService {
   private readonly logger = new Logger(ClubService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storageService: StorageService
+  ) {}
 
   async create(
     createClubDto: CreateClubDto,
@@ -362,6 +366,51 @@ export class ClubService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Upload club avatar and update club profile
+   * Deletes old avatar if exists, uploads new one, and updates database
+   *
+   * @param clubId - ID of the club
+   * @param imageBuffer - Processed image buffer
+   * @returns New avatar URL
+   */
+  async uploadAndUpdateAvatar(
+    clubId: string,
+    imageBuffer: Buffer
+  ): Promise<string> {
+    this.logger.log(`Uploading new avatar for club ${clubId}`);
+
+    // Get current club to check for existing avatar
+    const club = await this.prisma.club.findUnique({
+      where: { id: clubId },
+    });
+
+    if (!club) {
+      throw new ClubNotFoundException(clubId);
+    }
+
+    // Delete old avatar if exists
+    if (club.imageUrl) {
+      await this.storageService.deleteImage(club.imageUrl);
+    }
+
+    // Upload new avatar using generic storage service
+    const imageUrl = await this.storageService.uploadImage(
+      'avatar',
+      clubId,
+      imageBuffer
+    );
+
+    // Update club profile with new avatar URL
+    await this.prisma.club.update({
+      where: { id: clubId },
+      data: { imageUrl },
+    });
+
+    this.logger.log(`Avatar updated successfully for club ${clubId}`);
+    return imageUrl;
   }
 
   /**

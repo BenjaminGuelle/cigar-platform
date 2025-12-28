@@ -1,8 +1,11 @@
 import {
   Controller,
+  Get,
   Patch,
   Post,
   Body,
+  Param,
+  Query,
   UseGuards,
   Request,
   HttpCode,
@@ -10,6 +13,7 @@ import {
   UploadedFile,
   UseInterceptors,
   BadRequestException,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -19,11 +23,15 @@ import {
   ApiResponse,
   ApiConsumes,
   ApiBody,
+  ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UserPublicProfileDto } from './dto/user-public-profile.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { MAX_IMAGE_SIZE, ALLOWED_IMAGE_MIMES } from '../common/config/image-presets.config';
+import { ClubResponseDto } from '../club/dto';
 import sharp from 'sharp';
 
 /**
@@ -31,16 +39,65 @@ import sharp from 'sharp';
  */
 @ApiTags('users')
 @Controller('users')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  /**
+   * Get public profile for a user
+   * GET /users/:id/profile
+   * Public endpoint - no authentication required
+   */
+  @Get(':id/profile')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get user public profile with stats' })
+  @ApiParam({ name: 'id', description: 'User ID', example: '123e4567-e89b-12d3-a456-426614174000' })
+  @ApiResponse({
+    status: 200,
+    description: 'User public profile retrieved successfully',
+    type: UserPublicProfileDto,
+  })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async getPublicProfile(@Param('id') userId: string): Promise<UserPublicProfileDto> {
+    return this.usersService.getPublicProfile(userId);
+  }
+
+  /**
+   * Get clubs for a user
+   * GET /users/:id/clubs
+   * Public endpoint - no authentication required
+   * Returns public clubs only
+   */
+  @Get(':id/clubs')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get user\'s public clubs' })
+  @ApiParam({ name: 'id', description: 'User ID', example: '123e4567-e89b-12d3-a456-426614174000' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Maximum number of clubs to return',
+    example: 6,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User clubs retrieved successfully',
+    type: [ClubResponseDto],
+  })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async getUserClubs(
+    @Param('id') userId: string,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number
+  ): Promise<ClubResponseDto[]> {
+    return this.usersService.getUserClubs(userId, limit ?? 6);
+  }
 
   /**
    * Update current user's profile
    * PATCH /users/me
    */
   @Patch('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Update current user profile' })
   @ApiResponse({ status: 200, description: 'Profile updated successfully' })
@@ -79,6 +136,8 @@ export class UsersController {
    * - Auto-delete: Old avatar removed
    */
   @Post('me/avatar')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(
     FileInterceptor('avatar', {

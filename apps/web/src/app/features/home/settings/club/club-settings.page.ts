@@ -1,7 +1,7 @@
 import { Component, signal, inject, computed, effect, viewChildren } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators, FormGroup, FormControl } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { LucideAngularModule, LockKeyhole } from 'lucide-angular';
 import { ContextStore } from '../../../../core/stores/context.store';
 import { injectClubStore } from '../../../../core/stores/club.store';
@@ -14,6 +14,8 @@ import {
   InputComponent,
   CheckboxComponent,
   SelectComponent,
+  AvatarUploadComponent,
+  IconDirective,
   type SelectOption,
 } from '@cigar-platform/shared/ui';
 import { ConfirmationModalComponent } from '../../../../shared/components/confirmation-modal/confirmation-modal.component';
@@ -57,20 +59,23 @@ interface ClubSettingsFormValue {
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    RouterLink,
     LucideAngularModule,
+    IconDirective,
     PageHeaderComponent,
     PageSectionComponent,
     ButtonComponent,
     InputComponent,
     CheckboxComponent,
     SelectComponent,
+    AvatarUploadComponent,
     ConfirmationModalComponent,
   ],
   templateUrl: './club-settings.page.html',
 })
 export class ClubSettingsPage {
   contextStore = inject(ContextStore);
-  #clubStore = injectClubStore();
+  readonly clubStore = injectClubStore();
   #authService = inject(AuthService);
   readonly LockKeyhole = LockKeyhole;
   #formService = inject(FormService);
@@ -86,7 +91,7 @@ export class ClubSettingsPage {
   readonly clubId = signal<string>('');
 
   // Reactive query with getter pattern
-  readonly clubQuery = this.#clubStore.getClubById(() => this.clubId());
+  readonly clubQuery = this.clubStore.getClubById(() => this.clubId());
 
   // Computed states - extract signals from query
   readonly loading = this.clubQuery.loading;
@@ -94,8 +99,8 @@ export class ClubSettingsPage {
   readonly club = this.clubQuery.data;
 
   // Mutation loading state
-  readonly updateClubLoading = this.#clubStore.updateClub.loading;
-  readonly leavingClub = this.#clubStore.removeMember.loading;
+  readonly updateClubLoading = this.clubStore.updateClub.loading;
+  readonly leavingClub = this.clubStore.removeMember.loading;
 
   // Confirmation modals
   readonly showLeaveConfirm = signal<boolean>(false);
@@ -266,6 +271,32 @@ export class ClubSettingsPage {
   }
 
   /**
+   * Handle avatar file selection
+   * Uploads the selected file and shows success/error feedback
+   */
+  async onAvatarFileSelected(file: File): Promise<void> {
+    const clubData = this.club();
+    if (!clubData) {
+      this.#toastService.error('Club introuvable');
+      return;
+    }
+
+    // Store handles API + invalidation
+    await this.clubStore.uploadClubAvatar.mutate({
+      clubId: clubData.id,
+      avatar: file,
+    });
+
+    // Component handles UX feedback
+    if (this.clubStore.uploadClubAvatar.error()) {
+      this.#toastService.error('Échec de l\'upload de l\'avatar');
+      return;
+    }
+
+    this.#toastService.success('Avatar du club mis à jour avec succès');
+  }
+
+  /**
    * Update club settings
    */
   async onUpdateClub(): Promise<void> {
@@ -292,13 +323,13 @@ export class ClubSettingsPage {
     };
 
     // Store handles API + invalidation
-    await this.#clubStore.updateClub.mutate({
+    await this.clubStore.updateClub.mutate({
       id: clubData.id,
       data: updateDto,
     });
 
     // Component handles UX only
-    if (this.#clubStore.updateClub.error()) {
+    if (this.clubStore.updateClub.error()) {
       this.#toastService.error('Impossible de mettre à jour le club');
       return;
     }
@@ -367,7 +398,7 @@ export class ClubSettingsPage {
    */
   async onConfirmLeaveClub(): Promise<void> {
     // Lock: Prevent double-click
-    if (this.#clubStore.removeMember.loading()) return;
+    if (this.clubStore.removeMember.loading()) return;
 
     const clubData = this.club();
     const currentUser = this.#authService.currentUser();
@@ -380,12 +411,12 @@ export class ClubSettingsPage {
     this.showLeaveConfirm.set(false);
 
     // Remove current user from club
-    await this.#clubStore.removeMember.mutate({
+    await this.clubStore.removeMember.mutate({
       clubId: clubData.id,
       userId: currentUser.id,
     });
 
-    if (this.#clubStore.removeMember.error()) {
+    if (this.clubStore.removeMember.error()) {
       this.#toastService.error('Impossible de quitter le club');
       return;
     }

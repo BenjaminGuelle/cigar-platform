@@ -156,7 +156,7 @@ body {
 @layer components {
   /* Display & Headers */
   .heading-display {
-    @apply font-display text-4xl md:text-6xl text-gold-500;
+    @apply font-display text-3xl md:text-4xl text-gold-500;
   }
 
   .heading-1 {

@@ -7,6 +7,8 @@ import { UsersService } from '@cigar-platform/types/lib/users/users.service';
 import type {
   UserDto,
   UpdateProfileDto,
+  UserPublicProfileDto,
+  ClubResponseDto,
 } from '@cigar-platform/types';
 
 /**
@@ -38,6 +40,16 @@ export interface UserStore {
    * Current authenticated user query
    */
   currentUser: Query<UserDto>;
+
+  /**
+   * Get public profile for a user by ID (reactive - pass a getter function)
+   */
+  getUserPublicProfile: (userIdGetter: () => string) => Query<UserPublicProfileDto>;
+
+  /**
+   * Get clubs for a user by ID (reactive - pass a getter function)
+   */
+  getUserClubs: (userIdGetter: () => string, limitGetter?: () => number) => Query<ClubResponseDto[]>;
 
   /**
    * Update user profile mutation
@@ -78,6 +90,40 @@ export function injectUserStore(): UserStore {
     currentUser.setDataFresh(initialUser as UserDto);
   }
 
+  /**
+   * Get public profile for a user by ID (returns a reactive query)
+   */
+  const getUserPublicProfile = (userIdGetter: () => string): Query<UserPublicProfileDto> => {
+    return injectQuery<UserPublicProfileDto>(() => ({
+      queryKey: ['users', 'profile', userIdGetter()],
+      queryFn: () => usersService.usersControllerGetPublicProfile(userIdGetter()),
+      enabled: !!userIdGetter(),
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    }));
+  };
+
+  /**
+   * Get clubs for a user by ID (returns a reactive query)
+   */
+  const getUserClubs = (
+    userIdGetter: () => string,
+    limitGetter?: () => number
+  ): Query<ClubResponseDto[]> => {
+    return injectQuery<ClubResponseDto[]>(() => ({
+      queryKey: ['users', 'clubs', userIdGetter(), limitGetter?.() ?? 6],
+      queryFn: async () => {
+        const userId = userIdGetter();
+        if (!userId) return [];
+        const clubs = await usersService.usersControllerGetUserClubs(userId, {
+          limit: limitGetter?.() ?? 6,
+        });
+        return clubs ?? [];
+      },
+      enabled: !!userIdGetter(),
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    }));
+  };
+
   // Mutation: Update Profile with TRUE optimistic update
   const updateProfile = injectMutation<UserDto, UpdateProfileDto>({
     mutationFn: (data: UpdateProfileDto) => authApiService.authControllerUpdateProfile(data),
@@ -85,11 +131,13 @@ export function injectUserStore(): UserStore {
     onMutate: (variables: UpdateProfileDto) => {
       const previousUser = currentUser.data();
 
-      // Optimistic update: Apply changes immediately
+      // Optimistic update: Apply ALL changes immediately
       if (previousUser) {
         const optimisticUser: UserDto = {
           ...previousUser,
-          ...(variables.displayName && { displayName: variables.displayName }),
+          ...(variables.displayName !== undefined && { displayName: variables.displayName }),
+          ...(variables.bio !== undefined && { bio: variables.bio }),
+          ...(variables.shareEvaluationsPublicly !== undefined && { shareEvaluationsPublicly: variables.shareEvaluationsPublicly }),
         };
         currentUser.setData(optimisticUser);
       }
@@ -103,7 +151,7 @@ export function injectUserStore(): UserStore {
       currentUser.setDataFresh(updatedUser);
 
       // Sync with AuthService to update all components using AuthService.currentUser
-      authService.updateCurrentUser(updatedUser as any);
+      authService.updateCurrentUser(updatedUser);
     },
 
     onError: (error: Error, _variables: UpdateProfileDto, context) => {
@@ -116,13 +164,25 @@ export function injectUserStore(): UserStore {
   });
 
   // Mutation: Upload Avatar
-  const uploadAvatar = injectMutation<unknown, { avatar: File }>({
+  const uploadAvatar = injectMutation<{ avatarUrl: string }, { avatar: File }>({
     mutationFn: (variables: { avatar: File }) =>
       usersService.usersControllerUploadAvatar(variables),
 
-    onSuccess: () => {
-      // Background refetch to get updated avatar URL (no loader)
-      void currentUser.refetchInBackground();
+    onSuccess: (response) => {
+      const newAvatarUrl = response.avatarUrl;
+      const previousUser = currentUser.data();
+
+      // Optimistic update: Immediately update avatar URL
+      if (previousUser) {
+        const updatedUser: UserDto = {
+          ...previousUser,
+          avatarUrl: newAvatarUrl,
+        };
+        currentUser.setDataFresh(updatedUser);
+
+        // Sync with AuthService to update all components using AuthService.currentUser
+        authService.updateCurrentUser(updatedUser);
+      }
     },
 
     onError: (error: Error) => {
@@ -132,6 +192,8 @@ export function injectUserStore(): UserStore {
 
   return {
     currentUser,
+    getUserPublicProfile,
+    getUserClubs,
     updateProfile,
     uploadAvatar,
   };

@@ -86,6 +86,11 @@ export interface ClubStore {
   deleteClub: Mutation<void, string>;
 
   /**
+   * Upload club avatar mutation
+   */
+  uploadClubAvatar: Mutation<unknown, { clubId: string; avatar: File }>;
+
+  /**
    * Join club mutation (creates join request, auto-joins if public + auto-approve)
    */
   joinClub: Mutation<void, { clubId: string; data?: CreateJoinRequestDto }>;
@@ -290,6 +295,47 @@ export function injectClubStore(): ClubStore {
 
     onError: (error: Error) => {
       // Error handling will be done in component
+    },
+  });
+
+  // Mutation: Upload Club Avatar
+  const uploadClubAvatar = injectMutation<{ imageUrl: string }, { clubId: string; avatar: File }>({
+    mutationFn: (variables: { clubId: string; avatar: File }) =>
+      clubsService.clubControllerUploadAvatar(variables.clubId, { avatar: variables.avatar }),
+
+    onSuccess: (response, variables) => {
+      const newImageUrl = response.imageUrl;
+
+      // Optimistic update: Immediately update club detail cache with new imageUrl
+      const detailQueryKey = JSON.stringify(['clubs', 'detail', variables.clubId]);
+      const detailQuery = queryCache.get<ClubResponseDto>(detailQueryKey);
+      if (detailQuery && detailQuery.data()) {
+        const currentClub = detailQuery.data();
+        if (currentClub) {
+          const updatedClub: ClubResponseDto = {
+            ...currentClub,
+            imageUrl: newImageUrl,
+          };
+          detailQuery.setDataFresh(updatedClub);
+        }
+      }
+
+      // Optimistic update: Update my-clubs cache with new imageUrl
+      const myClubsQueryKey = JSON.stringify(['clubs', 'my-clubs']);
+      const myClubsQuery = queryCache.get<ClubResponseDto[]>(myClubsQueryKey);
+      if (myClubsQuery && myClubsQuery.data()) {
+        const currentClubs = myClubsQuery.data();
+        if (currentClubs) {
+          const updatedClubs = currentClubs.map((club) =>
+            club.id === variables.clubId ? { ...club, imageUrl: newImageUrl } : club
+          );
+          myClubsQuery.setDataFresh(updatedClubs);
+        }
+      }
+    },
+
+    onError: (error: Error) => {
+      console.error('[ClubStore] Upload avatar failed:', error);
     },
   });
 
@@ -551,6 +597,7 @@ export function injectClubStore(): ClubStore {
     createClub,
     updateClub,
     deleteClub,
+    uploadClubAvatar,
     joinClub,
     joinByCode,
     cancelJoinRequest,

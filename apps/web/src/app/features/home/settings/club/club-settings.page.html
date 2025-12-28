@@ -29,6 +29,36 @@
         [description]="'Gérez les paramètres de ' + (club()?.name || 'votre club')"
       />
 
+      <!-- Public Club Page Link -->
+      @if (club()) {
+        <a
+          [routerLink]="['/club', club()!.id]"
+          class="group flex items-center gap-2 -mt-2 mb-2"
+        >
+          <i
+            name="eye"
+            class="w-4 h-4 text-gold-500 group-hover:scale-110 transition-transform duration-200"
+          ></i>
+          <span class="text-sm font-medium text-gold-500 hover:text-gold-400 transition-colors">
+            Voir la page du club
+          </span>
+        </a>
+      }
+
+      <!-- Avatar Section (Admin & Owner only) -->
+      @if (contextStore.canManageClub()) {
+        <ui-page-section title="Avatar du club">
+          <ui-avatar-upload
+            type="club"
+            [imageUrl]="club()?.imageUrl ?? null"
+            [name]="club()?.name ?? ''"
+            [loading]="clubStore.uploadClubAvatar.loading()"
+            size="md"
+            (fileSelected)="onAvatarFileSelected($event)"
+          />
+        </ui-page-section>
+      }
+
       <form [formGroup]="clubForm" (ngSubmit)="onUpdateClub()" class="space-y-8">
         <!-- Club Information Section (Admin & Owner only) -->
         @if (contextStore.canManageClub()) {

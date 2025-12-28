@@ -142,12 +142,16 @@ export class AuthService {
       update: {
         ...(dto.displayName && { displayName: dto.displayName }),
         ...(dto.avatarUrl !== undefined && { avatarUrl: dto.avatarUrl }),
+        ...(dto.bio !== undefined && { bio: dto.bio }),
+        ...(dto.shareEvaluationsPublicly !== undefined && { shareEvaluationsPublicly: dto.shareEvaluationsPublicly }),
       },
       create: {
         id: dbUser.id,
         email: dbUser.email,
         displayName: dto.displayName || dbUser.displayName,
         avatarUrl: dto.avatarUrl !== undefined ? dto.avatarUrl : dbUser.avatarUrl,
+        bio: dto.bio,
+        shareEvaluationsPublicly: dto.shareEvaluationsPublicly ?? true,
         role: Role.USER, // Default role for OAuth users (platform role != club role)
       },
     });
@@ -164,6 +168,8 @@ export class AuthService {
       email: user.email,
       displayName: user.displayName,
       avatarUrl: user.avatarUrl,
+      bio: user.bio,
+      shareEvaluationsPublicly: user.shareEvaluationsPublicly,
       role: user.role as unknown as UserDto['role'],
       createdAt: user.createdAt,
     };
@@ -179,6 +185,8 @@ export class AuthService {
       email: user.email,
       displayName: user.displayName,
       avatarUrl: user.avatarUrl,
+      bio: user.bio ?? null,
+      shareEvaluationsPublicly: user.shareEvaluationsPublicly ?? true,
       role: user.role as unknown as UserDto['role'],
       createdAt: user.createdAt instanceof Date ? user.createdAt : new Date(user.createdAt),
     };

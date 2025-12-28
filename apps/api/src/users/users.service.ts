@@ -2,8 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../app/prisma.service';
 import { StorageService } from '../common/services/storage.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { User } from '@cigar-platform/prisma-client';
+import { User, ClubVisibility } from '@cigar-platform/prisma-client';
 import { UserNotFoundException } from '../common/exceptions';
+import { UserPublicProfileDto } from './dto/user-public-profile.dto';
+import { ClubResponseDto } from '../club/dto';
 
 /**
  * Service for managing user profiles
@@ -18,7 +20,7 @@ export class UsersService {
   ) {}
 
   /**
-   * Update user profile (displayName, avatarUrl)
+   * Update user profile (displayName, avatarUrl, bio, shareEvaluationsPublicly)
    * @param userId - ID of the user to update
    * @param updateProfileDto - Profile update data
    * @returns Updated user
@@ -47,6 +49,12 @@ export class UsersService {
         }),
         ...(updateProfileDto.avatarUrl !== undefined && {
           avatarUrl: updateProfileDto.avatarUrl,
+        }),
+        ...(updateProfileDto.bio !== undefined && {
+          bio: updateProfileDto.bio,
+        }),
+        ...(updateProfileDto.shareEvaluationsPublicly !== undefined && {
+          shareEvaluationsPublicly: updateProfileDto.shareEvaluationsPublicly,
         }),
       },
     });
@@ -109,5 +117,130 @@ export class UsersService {
     return this.prismaService.user.findUnique({
       where: { id: userId },
     });
+  }
+
+  /**
+   * Get public profile for a user with stats
+   * @param userId - ID of the user
+   * @returns User public profile with stats
+   */
+  async getPublicProfile(userId: string): Promise<UserPublicProfileDto> {
+    this.logger.log(`Getting public profile for user ${userId}`);
+
+    // Get user basic info
+    const user = await this.prismaService.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        displayName: true,
+        avatarUrl: true,
+        bio: true,
+        createdAt: true,
+      },
+    });
+
+    if (!user) {
+      throw new UserNotFoundException(userId);
+    }
+
+    // Get evaluation count
+    const evaluationCount = await this.prismaService.evaluation.count({
+      where: { userId },
+    });
+
+    // Get favorite brand (most evaluated brand)
+    let favoriteBrand: string | null = null;
+    if (evaluationCount > 0) {
+      const brandStats = await this.prismaService.evaluation.groupBy({
+        by: ['cigarId'],
+        where: { userId },
+        _count: { cigarId: true },
+        orderBy: { _count: { cigarId: 'desc' } },
+        take: 1,
+      });
+
+      if (brandStats.length > 0) {
+        const topCigar = await this.prismaService.cigar.findUnique({
+          where: { id: brandStats[0].cigarId },
+          select: { brand: true },
+        });
+        favoriteBrand = topCigar?.brand ?? null;
+      }
+    }
+
+    // Get club count
+    const clubCount = await this.prismaService.clubMember.count({
+      where: { userId },
+    });
+
+    return {
+      id: user.id,
+      displayName: user.displayName,
+      avatarUrl: user.avatarUrl,
+      bio: user.bio,
+      createdAt: user.createdAt,
+      stats: {
+        evaluationCount,
+        favoriteBrand,
+        clubCount,
+      },
+    };
+  }
+
+  /**
+   * Get clubs for a user (all clubs: public and private)
+   * @param userId - ID of the user
+   * @param limit - Maximum number of clubs to return
+   * @returns Array of clubs the user is member of
+   */
+  async getUserClubs(userId: string, limit: number = 6): Promise<ClubResponseDto[]> {
+    this.logger.log(`Getting clubs for user ${userId} (limit: ${limit})`);
+
+    // Check if user exists
+    const user = await this.findById(userId);
+    if (!user) {
+      throw new UserNotFoundException(userId);
+    }
+
+    // Get user's club memberships (all clubs, excluding archived)
+    const memberships = await this.prismaService.clubMember.findMany({
+      where: {
+        userId,
+        club: {
+          isArchived: false,
+        },
+      },
+      include: {
+        club: {
+          include: {
+            _count: {
+              select: { members: true },
+            },
+          },
+        },
+      },
+      orderBy: { joinedAt: 'desc' },
+      take: limit,
+    });
+
+    // Map to ClubResponseDto
+    return memberships.map((membership) => ({
+      id: membership.club.id,
+      name: membership.club.name,
+      description: membership.club.description,
+      imageUrl: membership.club.imageUrl,
+      coverUrl: membership.club.coverUrl,
+      visibility: membership.club.visibility,
+      inviteCode: null, // Don't expose invite code on public profiles
+      isPublicDirectory: membership.club.isPublicDirectory,
+      autoApproveMembers: membership.club.autoApproveMembers,
+      allowMemberInvites: membership.club.allowMemberInvites,
+      maxMembers: membership.club.maxMembers,
+      isArchived: membership.club.isArchived,
+      createdBy: membership.club.createdBy,
+      createdAt: membership.club.createdAt,
+      updatedAt: membership.club.updatedAt,
+      memberCount: membership.club._count.members,
+    }));
   }
 }

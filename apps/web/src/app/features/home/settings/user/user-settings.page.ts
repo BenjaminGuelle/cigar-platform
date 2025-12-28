@@ -7,16 +7,18 @@ import {
   FormGroup,
   FormControl,
 } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { take } from 'rxjs/operators';
 import { AuthService, FormService, ToastService } from '../../../../core/services';
 import { injectUserStore, UserStore } from '../../../../core/stores';
 import {
   ButtonComponent,
   InputComponent,
-  AvatarComponent,
+  AvatarUploadComponent,
   PageHeaderComponent,
   PageSectionComponent,
+  SwitchComponent,
+  IconDirective,
 } from '@cigar-platform/shared/ui';
 import { UserDto } from '@cigar-platform/types';
 import { ConfirmationModalComponent } from '../../../../shared/components/confirmation-modal/confirmation-modal.component';
@@ -26,6 +28,8 @@ import { ConfirmationModalComponent } from '../../../../shared/components/confir
  */
 interface UserProfileFormValue {
   displayName: string;
+  bio: string | null;
+  shareEvaluationsPublicly: boolean;
 }
 
 /**
@@ -51,11 +55,14 @@ interface UserProfileFormValue {
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    RouterLink,
+    IconDirective,
     ButtonComponent,
     InputComponent,
-    AvatarComponent,
+    AvatarUploadComponent,
     PageHeaderComponent,
     PageSectionComponent,
+    SwitchComponent,
     ConfirmationModalComponent,
   ],
   templateUrl: './user-settings.page.html',
@@ -73,12 +80,9 @@ export class UserSettingsPage {
   // ViewChildren for form components
   inputs = viewChildren(InputComponent);
 
-  // Avatar upload state
-  #selectedAvatarPreview: WritableSignal<string | null> = signal<string | null>(null);
+  // Form state
   #originalFormValue = signal<UserProfileFormValue | null>(null);
   #currentFormValue = signal<UserProfileFormValue | null>(null);
-
-  readonly selectedAvatarPreview = this.#selectedAvatarPreview.asReadonly();
 
   #logoutLoading: WritableSignal<boolean> = signal<boolean>(false);
   readonly logoutLoading = this.#logoutLoading.asReadonly();
@@ -110,16 +114,22 @@ export class UserSettingsPage {
 
     if (!original || !current) return false;
 
-    return original.displayName !== current.displayName;
+    return (
+      original.displayName !== current.displayName ||
+      original.bio !== current.bio ||
+      original.shareEvaluationsPublicly !== current.shareEvaluationsPublicly
+    );
   });
 
   profileForm: FormGroup<{
     displayName: FormControl<string>;
+    bio: FormControl<string | null>;
+    shareEvaluationsPublicly: FormControl<boolean>;
   }> = this.#fb.nonNullable.group({
     displayName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
+    bio: this.#fb.control<string | null>(null, [Validators.maxLength(500)]),
+    shareEvaluationsPublicly: [true],
   });
-
-  #selectedAvatarFile: File | null = null;
 
   constructor() {
     // Sync form with user data
@@ -128,6 +138,8 @@ export class UserSettingsPage {
       if (user) {
         this.profileForm.patchValue({
           displayName: user.displayName,
+          bio: user.bio ?? null,
+          shareEvaluationsPublicly: user.shareEvaluationsPublicly ?? true,
         });
         const formValue = this.profileForm.getRawValue();
         this.#originalFormValue.set(formValue);
@@ -159,55 +171,21 @@ export class UserSettingsPage {
     }
   }
 
-  onAvatarFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (!input.files || input.files.length === 0) {
-      return;
-    }
-
-    const file = input.files[0];
-
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-      this.#toastService.error('Type de fichier invalide. Seuls JPEG, PNG et WebP sont autorisés.');
-      return;
-    }
-
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
-      this.#toastService.error('Fichier trop volumineux. Taille maximale : 5MB.');
-      return;
-    }
-
-    this.#selectedAvatarFile = file;
-
-    const reader = new FileReader();
-    reader.onload = (e: ProgressEvent<FileReader>) => {
-      this.#selectedAvatarPreview.set(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-
-    this.uploadAvatar();
-  }
-
-  async uploadAvatar(): Promise<void> {
-    if (!this.#selectedAvatarFile) {
-      this.#toastService.error('Aucun fichier sélectionné');
-      return;
-    }
-
+  /**
+   * Handle avatar file selection
+   * Uploads the selected file and shows success/error feedback
+   */
+  async onAvatarFileSelected(file: File): Promise<void> {
     // Store handles API + invalidation
-    await this.userStore.uploadAvatar.mutate({ avatar: this.#selectedAvatarFile });
+    await this.userStore.uploadAvatar.mutate({ avatar: file });
 
-    // Component handles UX only
+    // Component handles UX feedback
     if (this.userStore.uploadAvatar.error()) {
       this.#toastService.error('Échec de l\'upload de l\'avatar');
       return;
     }
 
     this.#toastService.success('Avatar mis à jour avec succès');
-    this.#selectedAvatarPreview.set(null);
-    this.#selectedAvatarFile = null;
   }
 
   async onUpdateProfile(): Promise<void> {
@@ -222,9 +200,13 @@ export class UserSettingsPage {
 
     this.userStore.updateProfile.reset();
 
-    const { displayName } = this.profileForm.getRawValue();
+    const { displayName, bio, shareEvaluationsPublicly } = this.profileForm.getRawValue();
 
-    const result: UserDto | null = await this.userStore.updateProfile.mutate({ displayName });
+    const result: UserDto | null = await this.userStore.updateProfile.mutate({
+      displayName,
+      bio: bio ?? undefined,
+      shareEvaluationsPublicly,
+    });
 
     if (result) {
       this.#toastService.success('Profil mis à jour avec succès');

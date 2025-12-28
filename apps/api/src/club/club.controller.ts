@@ -10,7 +10,11 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  UploadedFile,
+  UseInterceptors,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
@@ -18,7 +22,11 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiQuery,
+  ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
+import sharp from 'sharp';
+import { MAX_IMAGE_SIZE, ALLOWED_IMAGE_MIMES } from '../common/config/image-presets.config';
 import { ClubService } from './club.service';
 import { ClubMemberService } from './club-member.service';
 import { ClubJoinRequestService } from './club-join-request.service';
@@ -169,6 +177,113 @@ export class ClubController {
     @Body() updateClubDto: UpdateClubDto
   ): Promise<ClubResponseDto> {
     return this.clubService.update(id, updateClubDto);
+  }
+
+  /**
+   * Upload club avatar
+   * POST /clubs/:id/avatar
+   *
+   * All Stars 2026:
+   * - Max size: 5MB
+   * - Formats: JPEG, PNG, WebP
+   * - Auto-resize: 256x256
+   * - Auto-optimize: JPEG 90% quality
+   * - Auto-delete: Old avatar removed
+   * - Only club owners and admins can upload
+   */
+  @Post(':id/avatar')
+  @UseGuards(ClubRolesGuard)
+  @ClubRoles(ClubRole.owner, ClubRole.admin)
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(
+    FileInterceptor('avatar', {
+      limits: { fileSize: MAX_IMAGE_SIZE },
+      fileFilter: (req, file, cb) => {
+        if (!ALLOWED_IMAGE_MIMES.includes(file.mimetype as any)) {
+          return cb(
+            new BadRequestException(
+              'Invalid file type. Only JPEG, PNG, and WebP are allowed.'
+            ),
+            false
+          );
+        }
+        cb(null, true);
+      },
+    })
+  )
+  @ApiOperation({ summary: 'Upload club avatar' })
+  @ApiParam({
+    name: 'id',
+    description: 'Club UUID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Avatar image file',
+    schema: {
+      type: 'object',
+      properties: {
+        avatar: {
+          type: 'string',
+          format: 'binary',
+          description: 'Image file (JPEG, PNG, WebP, max 5MB)',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Avatar uploaded successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        imageUrl: {
+          type: 'string',
+          example: 'https://...supabase.co/storage/v1/object/public/club-avatars/...',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid file or file too large' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Only club owners and admins can upload avatar' })
+  @ApiResponse({ status: 404, description: 'Club not found' })
+  async uploadAvatar(
+    @Param('id') clubId: string,
+    @UploadedFile() file: { buffer: Buffer; size: number; mimetype: string }
+  ): Promise<{ imageUrl: string }> {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    // Validate file size (double-check)
+    if (file.size > MAX_IMAGE_SIZE) {
+      throw new BadRequestException(
+        `File too large. Maximum size is ${MAX_IMAGE_SIZE / 1024 / 1024}MB`
+      );
+    }
+
+    try {
+      // Process image with sharp (resize + optimize)
+      // StorageService will handle the final processing, but we validate here
+      const metadata = await sharp(file.buffer).metadata();
+
+      if (!metadata.width || !metadata.height) {
+        throw new BadRequestException('Invalid image file');
+      }
+
+      // Upload and update avatar (includes deletion of old avatar)
+      const imageUrl = await this.clubService.uploadAndUpdateAvatar(
+        clubId,
+        file.buffer
+      );
+
+      return { imageUrl };
+    } catch (error) {
+      throw new BadRequestException(
+        `Failed to process avatar: ${error.message}`
+      );
+    }
   }
 
   @Delete(':id')

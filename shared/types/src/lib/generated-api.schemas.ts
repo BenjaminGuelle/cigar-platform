@@ -45,6 +45,8 @@ export interface UserDto {
   email: string;
   displayName: string;
   avatarUrl?: string;
+  bio?: string;
+  shareEvaluationsPublicly: boolean;
   role: UserDtoRole;
   createdAt: string;
   /** Authentication provider (from Supabase metadata) */
@@ -74,6 +76,10 @@ export interface UpdateProfileDto {
   displayName?: string;
   /** Avatar URL */
   avatarUrl?: string;
+  /** User bio/description */
+  bio?: string;
+  /** Share evaluations publicly on user profile */
+  shareEvaluationsPublicly?: boolean;
 }
 
 /**
@@ -397,6 +403,25 @@ export interface UpdateJoinRequestDto {
   status?: UpdateJoinRequestDtoStatus;
 }
 
+export interface UserStatsDto {
+  /** Total number of cigar evaluations by this user */
+  evaluationCount: number;
+  /** User's favorite cigar brand (most evaluated brand) */
+  favoriteBrand?: string;
+  /** Total number of clubs the user is member of */
+  clubCount: number;
+}
+
+export interface UserPublicProfileDto {
+  id: string;
+  displayName: string;
+  avatarUrl?: string;
+  bio?: string;
+  createdAt: string;
+  /** User statistics (evaluations, clubs, favorite brand) */
+  stats: UserStatsDto;
+}
+
 export type ClubControllerFindAllParams = {
 /**
  * Page number
@@ -441,6 +466,15 @@ export const ClubControllerFindAllOrder = {
   desc: 'desc',
 } as const;
 
+export type ClubControllerUploadAvatarBody = {
+  /** Image file (JPEG, PNG, WebP, max 5MB) */
+  avatar?: Blob;
+};
+
+export type ClubControllerUploadAvatar200 = {
+  imageUrl?: string;
+};
+
 export type ClubControllerGetMembersParams = {
 page: number;
 limit: number;
@@ -461,6 +495,13 @@ export type ClubControllerGetJoinRequestsParams = {
 page: number;
 limit: number;
 status: string;
+};
+
+export type UsersControllerGetUserClubsParams = {
+/**
+ * Maximum number of clubs to return
+ */
+limit?: number;
 };
 
 export type UsersControllerUploadAvatarBody = {

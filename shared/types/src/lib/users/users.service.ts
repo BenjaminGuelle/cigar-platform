@@ -15,7 +15,14 @@ import {
 } from '@angular/core';
 
 import type {
+  DeepNonNullable
+} from '@orval/core';
+
+import type {
+  ClubResponseDto,
   UpdateProfileDto,
+  UserPublicProfileDto,
+  UsersControllerGetUserClubsParams,
   UsersControllerUploadAvatar200,
   UsersControllerUploadAvatarBody
 } from '../generated-api.schemas';
@@ -31,6 +38,32 @@ import { customInstance } from '../../../../../apps/web/src/app/core/api/custom-
 export class UsersService {
   private readonly http = inject(HttpClient);
 /**
+ * @summary Get user public profile with stats
+ */
+ usersControllerGetPublicProfile<TData = UserPublicProfileDto>(
+    id: string,
+ ) {
+      return customInstance<TData>(
+      {url: `/api/users/${id}/profile`, method: 'GET'
+    },
+      this.http,
+      );
+    }
+  /**
+ * @summary Get user's public clubs
+ */
+ usersControllerGetUserClubs<TData = ClubResponseDto[]>(
+    id: string,
+    params?: DeepNonNullable<UsersControllerGetUserClubsParams>,
+ ) {
+      return customInstance<TData>(
+      {url: `/api/users/${id}/clubs`, method: 'GET',
+        params
+    },
+      this.http,
+      );
+    }
+  /**
  * @summary Update current user profile
  */
  usersControllerUpdateProfile<TData = void>(
@@ -64,5 +97,7 @@ if(usersControllerUploadAvatarBody.avatar !== undefined) {
     }
   };
 
+export type UsersControllerGetPublicProfileClientResult = NonNullable<UserPublicProfileDto>
+export type UsersControllerGetUserClubsClientResult = NonNullable<ClubResponseDto[]>
 export type UsersControllerUpdateProfileClientResult = NonNullable<void>
 export type UsersControllerUploadAvatarClientResult = NonNullable<UsersControllerUploadAvatar200>
