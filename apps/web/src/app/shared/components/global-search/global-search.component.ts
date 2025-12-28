@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { injectQuery } from '../../../core/query';
 import { GlobalSearchService, type ClubSearchResult } from '../../../core/services/global-search.service';
+import { AuthService } from '../../../core/services/auth.service';
 import {
   GlobalSearchModalComponent,
   type ClubSearchResultItem,
@@ -49,6 +50,7 @@ import {
 export class GlobalSearchComponent {
   #router = inject(Router);
   #searchService = inject(GlobalSearchService);
+  #authService = inject(AuthService);
 
   // Inputs
   readonly isOpen = input<boolean>(false);
@@ -116,11 +118,23 @@ export class GlobalSearchComponent {
 
       // Only fetch if query is not empty
       if (query && query.trim().length > 0) {
+        // Reset query state before refetch to ensure clean state after cache clear
+        this.#searchResults.invalidate();
         void this.#searchResults.refetch();
       } else {
         // Clear results if query is empty
         this.#searchResults.setData([]);
       }
+    });
+
+    // Reset search when user changes (login/logout)
+    effect(() => {
+      const currentUser = this.#authService.currentUser();
+
+      // Invalidate and clear search results
+      this.#searchResults.invalidate();
+      this.#searchQuery.set('');
+      this.#debouncedQuery.set('');
     });
   }
 

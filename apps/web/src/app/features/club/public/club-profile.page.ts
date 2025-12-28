@@ -97,6 +97,37 @@ export class ClubProfilePage {
       : "Demander l'accès";
   });
 
+  readonly shouldShowJoinButton = computed(() => {
+    const club = this.club();
+    if (!club) return false;
+
+    // Show join button if:
+    // - User has no relationship (NONE)
+    // - User was rejected but can re-apply (REJECTED)
+    // Hide if: MEMBER, PENDING, or BANNED
+    return !club.currentUserStatus || club.currentUserStatus === 'rejected';
+  });
+
+  readonly isMember = computed(() => {
+    const club = this.club();
+    return club?.currentUserStatus === 'member';
+  });
+
+  readonly isPending = computed(() => {
+    const club = this.club();
+    return club?.currentUserStatus === 'pending';
+  });
+
+  readonly isRejected = computed(() => {
+    const club = this.club();
+    return club?.currentUserStatus === 'rejected';
+  });
+
+  readonly isBanned = computed(() => {
+    const club = this.club();
+    return club?.currentUserStatus === 'banned';
+  });
+
   readonly clubTypeLabel = computed(() => {
     const club = this.club();
     return club?.visibility === 'PUBLIC'

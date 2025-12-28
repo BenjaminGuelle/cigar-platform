@@ -125,6 +125,33 @@ export const ClubResponseDtoVisibility = {
   PRIVATE: 'PRIVATE',
 } as const;
 
+/**
+ * Current user's status in relation to this club (member, pending, banned, or null if no relationship)
+ */
+export type ClubResponseDtoCurrentUserStatus = typeof ClubResponseDtoCurrentUserStatus[keyof typeof ClubResponseDtoCurrentUserStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ClubResponseDtoCurrentUserStatus = {
+  member: 'member',
+  pending: 'pending',
+  rejected: 'rejected',
+  banned: 'banned',
+} as const;
+
+/**
+ * Current user's role in this club (only present if currentUserStatus is MEMBER)
+ */
+export type ClubResponseDtoCurrentUserRole = typeof ClubResponseDtoCurrentUserRole[keyof typeof ClubResponseDtoCurrentUserRole];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ClubResponseDtoCurrentUserRole = {
+  owner: 'owner',
+  admin: 'admin',
+  member: 'member',
+} as const;
+
 export interface ClubResponseDto {
   id: string;
   name: string;
@@ -144,6 +171,10 @@ export interface ClubResponseDto {
   updatedAt: string;
   /** Total number of members in the club */
   memberCount: number;
+  /** Current user's status in relation to this club (member, pending, banned, or null if no relationship) */
+  currentUserStatus?: ClubResponseDtoCurrentUserStatus;
+  /** Current user's role in this club (only present if currentUserStatus is MEMBER) */
+  currentUserRole?: ClubResponseDtoCurrentUserRole;
 }
 
 export interface PaginationMetaDto {
@@ -202,6 +233,13 @@ export interface UpdateClubDto {
   isPublicDirectory?: boolean;
 }
 
+export interface MemberUserDto {
+  id: string;
+  displayName: string;
+  /** @nullable */
+  avatarUrl: string | null;
+}
+
 export type ClubMemberResponseDtoRole = typeof ClubMemberResponseDtoRole[keyof typeof ClubMemberResponseDtoRole];
 
 
@@ -218,6 +256,7 @@ export interface ClubMemberResponseDto {
   userId: string;
   role: ClubMemberResponseDtoRole;
   joinedAt: string;
+  user: MemberUserDto;
 }
 
 export interface PaginatedMemberResponseDto {
@@ -256,6 +295,27 @@ export interface BanMemberDto {
    * @maxLength 500
    */
   reason?: string;
+}
+
+export interface ClubBanResponseDto {
+  id: string;
+  clubId: string;
+  userId: string;
+  bannedBy: string;
+  /** @nullable */
+  reason: string | null;
+  createdAt: string;
+  /** Banned user details */
+  user: MemberUserDto;
+  /** User who performed the ban */
+  bannedByUser: MemberUserDto;
+}
+
+export interface PaginatedBanResponseDto {
+  /** Array of banned members */
+  data: ClubBanResponseDto[];
+  /** Pagination metadata */
+  meta: PaginationMetaDto;
 }
 
 export interface CreateJoinRequestDto {
@@ -384,6 +444,17 @@ export const ClubControllerFindAllOrder = {
 export type ClubControllerGetMembersParams = {
 page: number;
 limit: number;
+};
+
+export type ClubControllerGetBannedMembersParams = {
+/**
+ * Page number
+ */
+page?: number;
+/**
+ * Items per page
+ */
+limit?: number;
 };
 
 export type ClubControllerGetJoinRequestsParams = {

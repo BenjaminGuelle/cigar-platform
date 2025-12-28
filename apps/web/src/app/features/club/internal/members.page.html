@@ -82,6 +82,27 @@
                 }
               </div>
             </button>
+
+            <!-- Banned Tab (Admin Only) -->
+            <button
+              (click)="setActiveTab('banned')"
+              [class]="activeTab() === 'banned'
+                ? 'px-4 py-3 font-semibold text-gold-500 border-b-2 border-gold-500 transition-colors'
+                : 'px-4 py-3 font-medium text-smoke-400 hover:text-smoke-200 border-b-2 border-transparent transition-colors'"
+            >
+              <div class="flex items-center gap-2">
+                <span>Exclus</span>
+                @if (hasBannedMembers()) {
+                  <span class="px-2 py-0.5 bg-red-500 text-white rounded-full text-xs font-bold">
+                    {{ bannedMembersCount() }}
+                  </span>
+                } @else {
+                  <span class="px-2 py-0.5 bg-smoke-700 text-smoke-300 rounded-full text-xs font-bold">
+                    0
+                  </span>
+                }
+              </div>
+            </button>
           }
         </div>
 
@@ -89,51 +110,21 @@
         <div>
           <!-- Members Tab Content -->
           @if (activeTab() === 'members') {
-            <div class="space-y-6 md:space-y-8">
-              <!-- Owners -->
-              @if (ownerMembers().length > 0) {
-                <ui-page-section title="Propriétaires">
-                  <div class="space-y-4">
-                    @for (member of ownerMembers(); track member.userId) {
-                      <ui-member-card
-                        [member]="member"
-                        [canManage]="false"
-                      />
-                    }
-                  </div>
-                </ui-page-section>
-              }
-
-              <!-- Admins -->
-              @if (adminMembers().length > 0) {
-                <ui-page-section title="Administrateurs">
-                  <div class="space-y-4">
-                    @for (member of adminMembers(); track member.userId) {
-                      <ui-member-card
-                        [member]="member"
-                        [canManage]="contextStore.canManageClub()"
-                        (manageClick)="onManageMember($event)"
-                      />
-                    }
-                  </div>
-                </ui-page-section>
-              }
-
-              <!-- Regular Members -->
-              @if (regularMembers().length > 0) {
-                <ui-page-section title="Membres">
-                  <div class="space-y-4">
-                    @for (member of regularMembers(); track member.userId) {
-                      <ui-member-card
-                        [member]="member"
-                        [canManage]="contextStore.canManageClub()"
-                        (manageClick)="onManageMember($event)"
-                      />
-                    }
-                  </div>
-                </ui-page-section>
-              }
-            </div>
+            <!-- Compact Member List (Sorted by Role) -->
+            <ui-page-section [title]="'Membres du club'">
+              <div class="divide-y divide-white/5 border-t border-white/5">
+                @for (member of sortedMembers(); track member.id) {
+                  <app-member-item
+                    [member]="member"
+                    [canManage]="contextStore.canManageClub()"
+                    (promote)="onPromoteMember($event)"
+                    (demote)="onDemoteMember($event)"
+                    (remove)="onRemoveMember($event)"
+                    (ban)="onBanMember($event)"
+                  />
+                }
+              </div>
+            </ui-page-section>
           }
 
           <!-- Requests Tab Content -->
@@ -176,6 +167,8 @@
                             (click)="onApproveRequest(request)"
                             variant="primary"
                             size="sm"
+                            [loading]="updatingJoinRequest()"
+                            [disabled]="updatingJoinRequest()"
                           >
                             Approuver
                           </ui-button>
@@ -183,6 +176,8 @@
                             (click)="onRejectRequest(request)"
                             variant="secondary"
                             size="sm"
+                            [loading]="updatingJoinRequest()"
+                            [disabled]="updatingJoinRequest()"
                           >
                             Rejeter
                           </ui-button>
@@ -217,6 +212,54 @@
               }
             </div>
           }
+
+          <!-- Banned Tab Content -->
+          @if (activeTab() === 'banned' && contextStore.canManageClub()) {
+            <div class="space-y-6 md:space-y-8">
+              @if (bannedMembersLoading()) {
+                <!-- Loading State -->
+                <div class="flex justify-center items-center py-12">
+                  <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div>
+                </div>
+              } @else if (hasBannedMembers()) {
+                <!-- Banned Members List -->
+                <ui-page-section title="Membres bannis">
+                  <div class="divide-y divide-white/5 border-t border-white/5">
+                    @for (ban of bannedMembers(); track ban.id) {
+                      <app-banned-member-item
+                        [ban]="ban"
+                        [canManage]="contextStore.canManageClub()"
+                        (unban)="onUnbanMember($event)"
+                      />
+                    }
+                  </div>
+                </ui-page-section>
+              } @else {
+                <!-- Empty State -->
+                <div class="text-center py-12">
+                  <svg
+                    class="mx-auto h-12 w-12 text-smoke-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <h3 class="mt-2 text-sm font-medium text-smoke-900 dark:text-white">
+                    Aucun membre banni
+                  </h3>
+                  <p class="mt-1 text-sm text-smoke-500">
+                    Tous les membres peuvent accéder au club
+                  </p>
+                </div>
+              }
+            </div>
+          }
         </div>
       } @else {
         <!-- Empty State -->
@@ -245,3 +288,32 @@
     </div>
   }
 </div>
+
+<!-- Remove Member Confirmation Modal -->
+<app-confirmation-modal
+  [isOpen]="showRemoveConfirm()"
+  [title]="'Retirer du club'"
+  [message]="'Êtes-vous sûr de vouloir retirer ' + (memberToAction()?.user?.displayName || 'ce membre') + ' du club ? Cette action est réversible, le membre pourra demander à rejoindre à nouveau.'"
+  [confirmLabel]="'Retirer'"
+  [cancelLabel]="'Annuler'"
+  [variant]="'warning'"
+  [loading]="removingMember()"
+  (confirm)="onConfirmRemoveMember()"
+  (cancel)="showRemoveConfirm.set(false)"
+/>
+
+<!-- Ban Member Confirmation Modal -->
+<app-confirmation-modal
+  [isOpen]="showBanConfirm()"
+  [title]="'Bannir du club'"
+  [message]="'Êtes-vous sûr de vouloir bannir ' + (memberToAction()?.user?.displayName || 'ce membre') + ' du club ? Le membre ne pourra plus rejoindre le club.'"
+  [confirmLabel]="'Bannir'"
+  [cancelLabel]="'Annuler'"
+  [variant]="'destructive'"
+  [showReasonInput]="true"
+  [reasonLabel]="'Raison du bannissement (optionnelle)'"
+  [reasonPlaceholder]="'Ex: Comportement inapproprié, spam, violation des règles...'"
+  [loading]="banningMember()"
+  (confirm)="onConfirmBanMember($event)"
+  (cancel)="showBanConfirm.set(false)"
+/>

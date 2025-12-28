@@ -6,6 +6,27 @@ import clsx from 'clsx';
 export type AvatarSize = 'sm' | 'md' | 'lg';
 
 /**
+ * Minimal User type for Avatar display
+ * Avatar only needs these fields, not the full UserDto
+ */
+export type AvatarUser = {
+  id: string;
+  displayName: string;
+  avatarUrl: string | null;
+  email?: string; // Optional for fallback initials
+};
+
+/**
+ * Minimal Club type for Avatar display
+ * Avatar only needs these fields, not the full ClubDto
+ */
+export type AvatarClub = {
+  id: string;
+  name: string;
+  imageUrl: string | null;
+};
+
+/**
  * Avatar Component
  * Displays user or club avatar with intelligent fallback hierarchy:
  *
@@ -43,8 +64,8 @@ export type AvatarSize = 'sm' | 'md' | 'lg';
   `,
 })
 export class AvatarComponent {
-  readonly user = input<User | null>(null);
-  readonly club = input<any | null>(null); // TODO: Replace with ClubDto
+  readonly user = input<User | AvatarUser | null>(null);
+  readonly club = input<AvatarClub | null>(null);
   readonly size = input<AvatarSize>('md');
 
   #imageError: WritableSignal<boolean> = signal<boolean>(false);

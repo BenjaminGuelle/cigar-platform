@@ -1,0 +1,52 @@
+<ui-modal
+  [isOpen]="isOpen()"
+  size="sm"
+  position="center"
+  (close)="onCancel()"
+>
+  <!-- Header -->
+  <div class="mb-6">
+    <h2 class="text-xl font-display text-smoke-50 mb-2">
+      {{ title() }}
+    </h2>
+    <p class="text-sm text-smoke-400">
+      {{ message() }}
+    </p>
+  </div>
+
+  <!-- Reason Input (optional) -->
+  @if (showReasonInput()) {
+    <div class="mb-6">
+      <label class="block text-sm font-medium text-smoke-300 mb-2">
+        {{ reasonLabel() }}
+      </label>
+      <textarea
+        [(ngModel)]="reason"
+        [placeholder]="reasonPlaceholder()"
+        rows="3"
+        class="w-full px-4 py-3 bg-smoke-800 border border-smoke-700 rounded-lg text-smoke-100 placeholder-smoke-500 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent resize-none"
+      ></textarea>
+    </div>
+  }
+
+  <!-- Actions -->
+  <div class="flex items-center gap-3">
+    <ui-button
+      (click)="onCancel()"
+      variant="secondary"
+      class="flex-1"
+      [disabled]="loading()"
+    >
+      {{ cancelLabel() }}
+    </ui-button>
+    <ui-button
+      (click)="onConfirm()"
+      [variant]="getConfirmButtonVariant()"
+      [loading]="loading()"
+      [disabled]="loading()"
+      class="flex-1"
+    >
+      {{ confirmLabel() }}
+    </ui-button>
+  </div>
+</ui-modal>

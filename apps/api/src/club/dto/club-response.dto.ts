@@ -2,6 +2,21 @@ import { Expose } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ClubVisibility, ClubRole } from '@cigar-platform/prisma-client';
 
+/**
+ * Club User Status
+ * Represents the current user's relationship with the club
+ */
+export enum ClubUserStatus {
+  /** User is an active member of the club */
+  MEMBER = 'member',
+  /** User has a pending join request */
+  PENDING = 'pending',
+  /** User's join request was rejected (can re-apply) */
+  REJECTED = 'rejected',
+  /** User is banned from the club */
+  BANNED = 'banned',
+}
+
 export class ClubResponseDto {
   @Expose()
   @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000' })
@@ -66,6 +81,22 @@ export class ClubResponseDto {
   @Expose()
   @ApiProperty({ example: 42, description: 'Total number of members in the club' })
   memberCount: number;
+
+  @Expose()
+  @ApiPropertyOptional({
+    enum: ClubUserStatus,
+    example: ClubUserStatus.MEMBER,
+    description: 'Current user\'s status in relation to this club (member, pending, banned, or null if no relationship)',
+  })
+  currentUserStatus?: ClubUserStatus;
+
+  @Expose()
+  @ApiPropertyOptional({
+    enum: ClubRole,
+    example: ClubRole.member,
+    description: 'Current user\'s role in this club (only present if currentUserStatus is MEMBER)',
+  })
+  currentUserRole?: ClubRole;
 }
 
 /**

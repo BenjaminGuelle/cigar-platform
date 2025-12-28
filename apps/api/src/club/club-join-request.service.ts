@@ -1,7 +1,8 @@
-import { Injectable, Logger, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../app/prisma.service';
 import { ClubJoinRequest, Prisma } from '../../../../generated/prisma';
 import { JoinRequestStatus, ClubRole } from '@cigar-platform/prisma-client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import {
   CreateJoinRequestDto,
   UpdateJoinRequestDto,
@@ -46,78 +47,146 @@ export class ClubJoinRequestService {
     userId: string,
     createDto: CreateJoinRequestDto
   ): Promise<ClubJoinRequest | { autoApproved: true; memberId: string }> {
-    // Check if club exists
-    const club = await this.prisma.club.findUnique({
-      where: { id: clubId },
-    });
+    this.logger.log(`[JOIN REQUEST START] clubId=${clubId}, userId=${userId}`);
 
-    if (!club) {
-      throw new ClubNotFoundException(clubId);
-    }
+    try {
+      // Check if club exists
+      this.logger.log(`[JOIN REQUEST] Checking if club exists: ${clubId}`);
+      const club = await this.prisma.club.findUnique({
+        where: { id: clubId },
+      });
 
-    // Check if user is banned
-    const isBanned = await this.clubMemberService.isBanned(clubId, userId);
-    if (isBanned) {
-      throw new UserBannedException(userId, clubId);
-    }
+      if (!club) {
+        this.logger.warn(`[JOIN REQUEST] Club not found: ${clubId}`);
+        throw new ClubNotFoundException(clubId);
+      }
+      this.logger.log(`[JOIN REQUEST] Club found: ${club.name} (autoApprove=${club.autoApproveMembers})`);
 
-    // Check if user is already a member
-    const existingMember = await this.prisma.clubMember.findUnique({
-      where: {
-        clubId_userId: {
+      // Check if user is banned
+      this.logger.log(`[JOIN REQUEST] Checking if user is banned: ${userId}`);
+      const isBanned = await this.clubMemberService.isBanned(clubId, userId);
+      if (isBanned) {
+        this.logger.warn(`[JOIN REQUEST] User is banned: ${userId} from club ${clubId}`);
+        throw new UserBannedException(userId, clubId);
+      }
+      this.logger.log(`[JOIN REQUEST] User is not banned`);
+
+      // Check if user is already a member
+      this.logger.log(`[JOIN REQUEST] Checking if user is already a member`);
+      const existingMember = await this.prisma.clubMember.findUnique({
+        where: {
+          clubId_userId: {
+            clubId,
+            userId,
+          },
+        },
+      });
+
+      if (existingMember) {
+        this.logger.warn(`[JOIN REQUEST] User is already a member: ${userId} in club ${clubId}`);
+        throw new MemberAlreadyExistsException(userId, clubId);
+      }
+      this.logger.log(`[JOIN REQUEST] User is not a member yet`);
+
+      // Check if there's already a request (PENDING or REJECTED)
+      this.logger.log(`[JOIN REQUEST] Checking for existing join request`);
+      const existingRequest = await this.prisma.clubJoinRequest.findFirst({
+        where: {
           clubId,
           userId,
         },
-      },
-    });
-
-    if (existingMember) {
-      throw new MemberAlreadyExistsException(userId, clubId);
-    }
-
-    // Check if there's already a pending request
-    const existingRequest = await this.prisma.clubJoinRequest.findFirst({
-      where: {
-        clubId,
-        userId,
-        status: JoinRequestStatus.PENDING,
-      },
-    });
-
-    if (existingRequest) {
-      throw new ForbiddenException('You already have a pending join request for this club');
-    }
-
-    // Check if club is full
-    if (club.maxMembers) {
-      const memberCount = await this.prisma.clubMember.count({
-        where: { clubId },
       });
 
-      if (memberCount >= club.maxMembers) {
-        throw new ForbiddenException('Club has reached maximum member capacity');
+      if (existingRequest) {
+        if (existingRequest.status === JoinRequestStatus.PENDING) {
+          // User already has a PENDING request → 409 Conflict
+          this.logger.warn(`[JOIN REQUEST] Pending request already exists: ${existingRequest.id}`);
+          throw new ConflictException('Vous avez déjà postulé à ce club');
+        } else if (existingRequest.status === JoinRequestStatus.REJECTED || existingRequest.status === JoinRequestStatus.APPROVED) {
+          // User was REJECTED or APPROVED before (but is no longer a member) → Allow re-apply by deleting old request
+          this.logger.log(`[JOIN REQUEST] Found ${existingRequest.status} request ${existingRequest.id}, deleting to allow re-apply`);
+          await this.prisma.clubJoinRequest.delete({
+            where: { id: existingRequest.id },
+          });
+          this.logger.log(`[JOIN REQUEST] Deleted old ${existingRequest.status} request, user can re-apply`);
+        }
       }
-    }
+      this.logger.log(`[JOIN REQUEST] No blocking request found, proceeding`);
 
-    // Contextual logic: Auto-approve if enabled
-    if (club.autoApproveMembers) {
-      const member = await this.clubMemberService.addMember(clubId, userId, ClubRole.member);
-      this.logger.log(`Join request auto-approved for user ${userId} in club ${clubId}`);
-      return { autoApproved: true, memberId: member.id };
-    }
+      // Check if club is full
+      if (club.maxMembers) {
+        this.logger.log(`[JOIN REQUEST] Checking club capacity (max=${club.maxMembers})`);
+        const memberCount = await this.prisma.clubMember.count({
+          where: { clubId },
+        });
 
-    // Otherwise, create a pending join request
-    const joinRequest = await this.prisma.clubJoinRequest.create({
-      data: {
+        if (memberCount >= club.maxMembers) {
+          this.logger.warn(`[JOIN REQUEST] Club is full: ${memberCount}/${club.maxMembers}`);
+          throw new ForbiddenException('Club has reached maximum member capacity');
+        }
+        this.logger.log(`[JOIN REQUEST] Club has space: ${memberCount}/${club.maxMembers}`);
+      }
+
+      // Contextual logic: Auto-approve if enabled
+      if (club.autoApproveMembers) {
+        this.logger.log(`[JOIN REQUEST] Auto-approving member (autoApproveMembers=true)`);
+        try {
+          const member = await this.clubMemberService.addMember(clubId, userId, ClubRole.member);
+          this.logger.log(`[JOIN REQUEST SUCCESS] Auto-approved: ${member.id} for user ${userId} in club ${clubId}`);
+          return { autoApproved: true, memberId: member.id };
+        } catch (error) {
+          console.error('[JOIN REQUEST ERROR] Failed to auto-approve member:', {
+            clubId,
+            userId,
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+          });
+          throw error;
+        }
+      }
+
+      // Otherwise, create a pending join request
+      this.logger.log(`[JOIN REQUEST] Creating pending join request (autoApproveMembers=false)`);
+      try {
+        const joinRequest = await this.prisma.clubJoinRequest.create({
+          data: {
+            clubId,
+            userId,
+            message: createDto.message ?? null,
+            status: JoinRequestStatus.PENDING,
+          },
+        });
+
+        this.logger.log(`[JOIN REQUEST SUCCESS] Created pending request: ${joinRequest.id} for user ${userId} in club ${clubId}`);
+        return joinRequest;
+      } catch (error) {
+        // Handle unique constraint violation (P2002) - user already has a pending request
+        // Check error.code directly for robustness (works even if error type is not properly detected)
+        if ((error as any)?.code === 'P2002') {
+          this.logger.warn(`[JOIN REQUEST] Duplicate request attempt for user ${userId} in club ${clubId}`);
+          throw new ConflictException('Vous avez déjà postulé à ce club');
+        }
+
+        console.error('[JOIN REQUEST ERROR] Failed to create pending request:', {
+          clubId,
+          userId,
+          message: createDto.message,
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+        throw error;
+      }
+    } catch (error) {
+      // Log the complete error details
+      console.error('[JOIN REQUEST FATAL ERROR]', {
         clubId,
         userId,
-        message: createDto.message ?? null,
-        status: JoinRequestStatus.PENDING,
-      },
-    });
-
-    this.logger.log(`Join request created: ${joinRequest.id} for user ${userId} in club ${clubId}`);
-    return joinRequest;
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : undefined,
+      });
+      throw error;
+    }
   }
 
   /**

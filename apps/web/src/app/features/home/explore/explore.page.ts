@@ -2,7 +2,6 @@ import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ClubsService } from '@cigar-platform/types/lib/clubs/clubs.service';
 import type { ClubResponseDto } from '@cigar-platform/types';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import {
@@ -13,6 +12,7 @@ import {
   ClubCardComponent,
 } from '@cigar-platform/shared/ui';
 import { SearchModalService } from '../../../core/services';
+import { injectClubStore } from '../../../core/stores/club.store';
 
 /**
  * Explore Page - Technical Fallback Only
@@ -58,23 +58,25 @@ type ExploreFilter = 'clubs' | 'users' | 'cigars' | 'events';
   styleUrls: ['./explore.page.css'],
 })
 export class ExplorePage implements OnInit {
-  #clubsService = inject(ClubsService);
   #router = inject(Router);
   #searchModal = inject(SearchModalService);
+  #clubStore = injectClubStore();
 
   // State - Entity filter (MVP: clubs only)
   #entityFilter = signal<ExploreFilter>('clubs');
   readonly entityFilter = this.#entityFilter.asReadonly();
 
-  // State - Clubs
+  // State - Clubs (using club store query for automatic cache invalidation)
   searchControl = new FormControl('');
-  #allClubs = signal<ClubResponseDto[]>([]);
   #searchQuery = signal<string>('');
-  loading = signal<boolean>(true);
+
+  // Use club store's publicClubs query (auto-invalidates on auth changes)
+  readonly publicClubsQuery = this.#clubStore.publicClubs;
+  readonly loading = this.publicClubsQuery.loading;
 
   // Computed - Smart search (name, description, visibility)
   filteredClubs = computed(() => {
-    const clubs = this.#allClubs();
+    const clubs = this.publicClubsQuery.data() ?? [];
     const query = this.#searchQuery().toLowerCase().trim();
 
     if (!query) {
@@ -109,9 +111,6 @@ export class ExplorePage implements OnInit {
       .subscribe((value) => {
         this.#searchQuery.set(value || '');
       });
-
-    // Load initial data based on entity filter
-    void this.loadData();
   }
 
   ngOnInit(): void {
@@ -126,54 +125,7 @@ export class ExplorePage implements OnInit {
    */
   setEntityFilter(filter: ExploreFilter): void {
     this.#entityFilter.set(filter);
-    void this.loadData();
-  }
-
-  /**
-   * Load data based on current entity filter
-   * MVP: Only clubs
-   * Future: users, cigars, events
-   */
-  async loadData(): Promise<void> {
-    const entity = this.#entityFilter();
-
-    switch (entity) {
-      case 'clubs':
-        await this.loadClubs();
-        break;
-      case 'users':
-        // TODO: Implement when users discovery is ready
-        console.log('[ExplorePage] Users discovery not yet implemented');
-        break;
-      case 'cigars':
-        // TODO: Implement when cigars discovery is ready
-        console.log('[ExplorePage] Cigars discovery not yet implemented');
-        break;
-      case 'events':
-        // TODO: Implement when events discovery is ready
-        console.log('[ExplorePage] Events discovery not yet implemented');
-        break;
-    }
-  }
-
-  /**
-   * Load clubs (MVP implementation)
-   */
-  async loadClubs(): Promise<void> {
-    this.loading.set(true);
-    try {
-      const response: any = await this.#clubsService.clubControllerFindAll({
-        limit: 100,
-      });
-
-      if (response?.data) {
-        this.#allClubs.set(response.data);
-      }
-    } catch (error) {
-      console.error('[ExplorePage] Failed to load clubs:', error);
-    } finally {
-      this.loading.set(false);
-    }
+    // Future: Add queries for users, cigars, events
   }
 
   /**

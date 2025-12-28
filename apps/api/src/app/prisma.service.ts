@@ -1,32 +1,43 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '../../../../generated/prisma';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { Pool } from 'pg';
+
+// Declaration merging: PrismaService has all PrismaClient properties via Proxy
+export interface PrismaService extends PrismaClient {}
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
-  private pool: Pool;
+export class PrismaService implements OnModuleInit, OnModuleDestroy {
+  public readonly client: PrismaClient;
 
   constructor() {
+    console.log('🔥🔥🔥 [PRISMA 6.1.0] PrismaService initializing...');
+
     const connectionString = process.env['DATABASE_URL'];
 
     if (!connectionString) {
       throw new Error('DATABASE_URL environment variable is not set');
     }
 
-    const pool = new Pool({ connectionString });
-    const adapter = new PrismaPg(pool);
+    // Prisma 6.x: Direct client without adapter
+    this.client = new PrismaClient();
 
-    super({ adapter });
-    this.pool = pool;
+    // Proxy pattern: delegate all calls to this.client
+    return new Proxy(this, {
+      get: (target, prop) => {
+        // If the property exists on PrismaService, return it
+        if (prop in target) {
+          return target[prop as keyof PrismaService];
+        }
+        // Otherwise, delegate to the Prisma client
+        return (target.client as any)[prop];
+      },
+    }) as PrismaService;
   }
 
   async onModuleInit() {
-    await this.$connect();
+    await this.client.$connect();
   }
 
   async onModuleDestroy() {
-    await this.$disconnect();
-    await this.pool.end();
+    await this.client.$disconnect();
   }
 }

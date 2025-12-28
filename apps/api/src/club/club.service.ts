@@ -5,6 +5,7 @@ import {
   CreateClubDto,
   UpdateClubDto,
   ClubResponseDto,
+  ClubUserStatus,
   FilterClubDto,
   PaginatedClubResponseDto,
 } from './dto';
@@ -168,7 +169,7 @@ export class ClubService {
     };
   }
 
-  async findOne(id: string): Promise<ClubResponseDto> {
+  async findOne(id: string, currentUserId?: string): Promise<ClubResponseDto> {
     const club = await this.prisma.club.findUnique({
       where: { id },
       select: {
@@ -199,7 +200,67 @@ export class ClubService {
       throw new ClubNotFoundException(id);
     }
 
-    return this.mapToResponse(club, club._count.members);
+    // Get current user's status if authenticated
+    // Priority order: BANNED > MEMBER > PENDING > REJECTED > NONE
+    let currentUserStatus: ClubUserStatus | undefined = undefined;
+    let currentUserRole: ClubRole | undefined = undefined;
+
+    if (currentUserId) {
+      // 1. Check if user is banned (highest priority - blocks all actions)
+      const ban = await this.prisma.clubBan.findUnique({
+        where: {
+          clubId_userId: {
+            clubId: id,
+            userId: currentUserId,
+          },
+        },
+      });
+
+      if (ban) {
+        currentUserStatus = ClubUserStatus.BANNED;
+      } else {
+        // 2. Check if user is a member
+        const membership = await this.prisma.clubMember.findUnique({
+          where: {
+            clubId_userId: {
+              clubId: id,
+              userId: currentUserId,
+            },
+          },
+          select: {
+            role: true,
+          },
+        });
+
+        if (membership) {
+          currentUserStatus = ClubUserStatus.MEMBER;
+          currentUserRole = membership.role;
+        } else {
+          // 3. Check if user has a join request (PENDING or REJECTED)
+          const joinRequest = await this.prisma.clubJoinRequest.findFirst({
+            where: {
+              clubId: id,
+              userId: currentUserId,
+            },
+            orderBy: {
+              createdAt: 'desc', // Get most recent request
+            },
+          });
+
+          if (joinRequest) {
+            if (joinRequest.status === 'PENDING') {
+              currentUserStatus = ClubUserStatus.PENDING;
+            } else if (joinRequest.status === 'REJECTED') {
+              currentUserStatus = ClubUserStatus.REJECTED;
+            }
+            // If APPROVED, user should be a member (handled above)
+          }
+          // If no relationship found, currentUserStatus stays undefined (NONE)
+        }
+      }
+    }
+
+    return this.mapToResponse(club, club._count.members, currentUserStatus, currentUserRole);
   }
 
   async update(
@@ -332,7 +393,12 @@ export class ClubService {
     }));
   }
 
-  private mapToResponse(club: Club, memberCount: number = 0): ClubResponseDto {
+  private mapToResponse(
+    club: Club,
+    memberCount: number = 0,
+    currentUserStatus?: ClubUserStatus,
+    currentUserRole?: ClubRole,
+  ): ClubResponseDto {
     return {
       id: club.id,
       name: club.name,
@@ -350,6 +416,8 @@ export class ClubService {
       createdAt: club.createdAt,
       updatedAt: club.updatedAt,
       memberCount,
+      currentUserStatus,
+      currentUserRole,
     };
   }
 }

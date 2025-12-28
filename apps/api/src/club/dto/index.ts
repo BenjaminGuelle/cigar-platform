@@ -7,6 +7,8 @@ export * from './member-management.dto';
 export * from './paginated-club-response.dto';
 export * from './paginated-member-response.dto';
 export * from './paginated-join-request-response.dto';
+export * from './paginated-ban-response.dto';
 export * from './join-by-code-response.dto';
 export * from './club-member-response.dto';
 export * from './club-join-request-response.dto';
+export * from './club-ban-response.dto';

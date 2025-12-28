@@ -21,6 +21,7 @@ import type {
 import type {
   BanMemberDto,
   ClubControllerFindAllParams,
+  ClubControllerGetBannedMembersParams,
   ClubControllerGetJoinRequestsParams,
   ClubControllerGetMembersParams,
   ClubResponseDto,
@@ -28,6 +29,7 @@ import type {
   CreateJoinRequestDto,
   JoinByCodeDto,
   JoinByCodeResponseDto,
+  PaginatedBanResponseDto,
   PaginatedClubResponseDto,
   PaginatedJoinRequestResponseDto,
   PaginatedMemberResponseDto,
@@ -225,6 +227,20 @@ export class ClubsService {
       );
     }
   /**
+ * @summary Get banned members from club
+ */
+ clubControllerGetBannedMembers<TData = PaginatedBanResponseDto>(
+    id: string,
+    params?: DeepNonNullable<ClubControllerGetBannedMembersParams>,
+ ) {
+      return customInstance<TData>(
+      {url: `/api/clubs/${id}/bans`, method: 'GET',
+        params
+    },
+      this.http,
+      );
+    }
+  /**
  * @summary Join a club or create join request
  */
  clubControllerJoinClub<TData = void>(
@@ -311,6 +327,7 @@ export type ClubControllerTransferOwnershipClientResult = NonNullable<void>
 export type ClubControllerRemoveMemberClientResult = NonNullable<void>
 export type ClubControllerBanMemberClientResult = NonNullable<void>
 export type ClubControllerUnbanMemberClientResult = NonNullable<void>
+export type ClubControllerGetBannedMembersClientResult = NonNullable<PaginatedBanResponseDto>
 export type ClubControllerJoinClubClientResult = NonNullable<void>
 export type ClubControllerJoinByCodeClientResult = NonNullable<JoinByCodeResponseDto>
 export type ClubControllerGetJoinRequestsClientResult = NonNullable<PaginatedJoinRequestResponseDto>

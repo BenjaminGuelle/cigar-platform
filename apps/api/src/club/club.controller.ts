@@ -17,6 +17,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { ClubService } from './club.service';
 import { ClubMemberService } from './club-member.service';
@@ -35,6 +36,7 @@ import {
   PaginatedClubResponseDto,
   PaginatedMemberResponseDto,
   PaginatedJoinRequestResponseDto,
+  PaginatedBanResponseDto,
   JoinByCodeResponseDto,
 } from './dto';
 import { ClubRole } from '@cigar-platform/prisma-client';
@@ -125,8 +127,11 @@ export class ClubController {
     status: 401,
     description: 'Unauthorized',
   })
-  async findOne(@Param('id') id: string): Promise<ClubResponseDto> {
-    return this.clubService.findOne(id);
+  async findOne(
+    @Param('id') id: string,
+    @CurrentUser('id') currentUserId?: string,
+  ): Promise<ClubResponseDto> {
+    return this.clubService.findOne(id, currentUserId);
   }
 
   @Patch(':id')
@@ -313,6 +318,39 @@ export class ClubController {
     @Param('userId') userId: string
   ) {
     return this.clubMemberService.unbanMember(clubId, userId);
+  }
+
+  @Get(':id/bans')
+  @UseGuards(ClubRolesGuard)
+  @ClubRoles(ClubRole.owner, ClubRole.admin)
+  @ApiOperation({ summary: 'Get banned members from club' })
+  @ApiParam({ name: 'id', description: 'Club UUID' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page',
+    example: 20,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Banned members retrieved successfully',
+    type: PaginatedBanResponseDto,
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden - Only owners and admins' })
+  async getBannedMembers(
+    @Param('id') clubId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number
+  ) {
+    return this.clubMemberService.getBannedMembers(clubId, { page, limit });
   }
 
   // ==================== JOIN REQUESTS ====================

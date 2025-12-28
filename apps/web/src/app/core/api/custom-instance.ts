@@ -37,7 +37,13 @@ export const customInstance = <T>(
     delete finalHeaders['Content-Type'];
   }
 
-  const unwrapResponse = (response: ApiResponse<T>): T => response.data;
+  const unwrapResponse = (response: ApiResponse<T> | null | undefined): T => {
+    // Handle empty responses (204 No Content, void from DELETE/PUT/PATCH)
+    if (!response || response === null || response === undefined) {
+      return undefined as T;
+    }
+    return response.data;
+  };
 
   switch (method) {
     case 'GET':
