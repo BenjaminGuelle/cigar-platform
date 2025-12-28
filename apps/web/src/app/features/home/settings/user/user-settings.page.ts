@@ -22,6 +22,13 @@ import { UserDto } from '@cigar-platform/types';
 import { ConfirmationModalComponent } from '../../../../shared/components/confirmation-modal/confirmation-modal.component';
 
 /**
+ * User Profile Form Value Interface
+ */
+interface UserProfileFormValue {
+  displayName: string;
+}
+
+/**
  * User Settings Page
  *
  * Route: /settings (when context = solo)
@@ -68,8 +75,8 @@ export class UserSettingsPage {
 
   // Avatar upload state
   #selectedAvatarPreview: WritableSignal<string | null> = signal<string | null>(null);
-  #originalFormValue = signal<any>(null);
-  #currentFormValue = signal<any>(null);
+  #originalFormValue = signal<UserProfileFormValue | null>(null);
+  #currentFormValue = signal<UserProfileFormValue | null>(null);
 
   readonly selectedAvatarPreview = this.#selectedAvatarPreview.asReadonly();
 

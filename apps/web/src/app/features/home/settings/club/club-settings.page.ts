@@ -19,6 +19,19 @@ import {
 import { ConfirmationModalComponent } from '../../../../shared/components/confirmation-modal/confirmation-modal.component';
 
 /**
+ * Club Settings Form Value Interface
+ */
+interface ClubSettingsFormValue {
+  name: string;
+  description: string | null;
+  visibility: 'PUBLIC' | 'PRIVATE';
+  isPublicDirectory: boolean;
+  autoApproveMembers: boolean;
+  allowMemberInvites: boolean;
+  maxMembers: number | null;
+}
+
+/**
  * Club Settings Page (Internal)
  *
  * Route: /settings (when context = club)
@@ -89,8 +102,8 @@ export class ClubSettingsPage {
   readonly showArchiveConfirm = signal<boolean>(false);
 
   // State
-  #originalFormValue = signal<any>(null);
-  #currentFormValue = signal<any>(null);
+  #originalFormValue = signal<ClubSettingsFormValue | null>(null);
+  #currentFormValue = signal<ClubSettingsFormValue | null>(null);
 
   // Computed
   isOwner = computed(() => {

@@ -4,6 +4,7 @@ import { PrismaService } from '../../app/prisma.service';
 import { Role, ClubRole } from '@cigar-platform/prisma-client';
 import { ClubMember } from '../../../../../generated/prisma';
 import { CLUB_ROLES_KEY } from '../decorators/club-roles.decorator';
+import { AuthenticatedRequest, RequestDbUser } from '../../auth/types/request-user.type';
 
 @Injectable()
 export class ClubRolesGuard implements CanActivate {
@@ -18,8 +19,8 @@ export class ClubRolesGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    const request: any = context.switchToHttp().getRequest();
-    const user: any = request.user?.dbUser;
+    const request: AuthenticatedRequest = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const user: RequestDbUser | undefined = request.user?.dbUser;
     const clubId: string = request.params.id || request.params.clubId || request.body?.clubId;
 
     if (!user || !clubId) {

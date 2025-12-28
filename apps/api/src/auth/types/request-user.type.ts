@@ -1,3 +1,4 @@
+import { Request } from 'express';
 import { User } from '@supabase/supabase-js';
 import { Role } from '@cigar-platform/prisma-client';
 
@@ -47,6 +48,6 @@ export interface RequestUser extends User {
 /**
  * Express Request with authenticated user
  */
-export interface AuthenticatedRequest extends Express.Request {
+export interface AuthenticatedRequest extends Request {
   user: RequestUser;
 }

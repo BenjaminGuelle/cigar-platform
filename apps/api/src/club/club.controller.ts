@@ -136,6 +136,7 @@ export class ClubController {
 
   @Patch(':id')
   @UseGuards(ClubRolesGuard)
+  @ClubRoles(ClubRole.owner, ClubRole.admin)
   @ApiOperation({ summary: 'Update a club' })
   @ApiParam({
     name: 'id',
@@ -149,7 +150,7 @@ export class ClubController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - Only club admins or project admins/moderators can update',
+    description: 'Forbidden - Only club owners and admins can update',
   })
   @ApiResponse({
     status: 404,
@@ -172,6 +173,7 @@ export class ClubController {
 
   @Delete(':id')
   @UseGuards(ClubRolesGuard)
+  @ClubRoles(ClubRole.owner)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a club' })
   @ApiParam({
@@ -185,7 +187,7 @@ export class ClubController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - Only club admins or project admins/moderators can delete',
+    description: 'Forbidden - Only club owner can delete',
   })
   @ApiResponse({
     status: 404,

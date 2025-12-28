@@ -25,6 +25,7 @@ import {
   UserDto,
 } from './dto';
 import { UpdateProfileDto } from '../users/dto/update-profile.dto';
+import { RequestUser } from './types/request-user.type';
 
 /**
  * Controller handling authentication endpoints
@@ -82,7 +83,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Sign out the current user' })
   @ApiResponse({ status: 204, description: 'User successfully signed out' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async signOut(@CurrentUser() user: any): Promise<void> {
+  async signOut(@CurrentUser() user: RequestUser): Promise<void> {
     return this.authService.signOut(user.id);
   }
 
@@ -102,7 +103,7 @@ export class AuthController {
     type: UserDto,
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getProfile(@CurrentUser() user: any): Promise<UserDto> {
+  async getProfile(@CurrentUser() user: RequestUser): Promise<UserDto> {
     // Use dbUser directly from JwtAuthGuard (already contains all user data)
     return this.authService.buildUserDto(user.dbUser, user.authProvider);
   }
@@ -125,7 +126,7 @@ export class AuthController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async updateProfile(
-    @CurrentUser() user: any,
+    @CurrentUser() user: RequestUser,
     @Body() dto: UpdateProfileDto
   ): Promise<UserDto> {
     // Pass full dbUser to ensure user exists in DB (upsert)

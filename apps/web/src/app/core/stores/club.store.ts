@@ -242,6 +242,9 @@ export function injectClubStore(): ClubStore {
     onSuccess: (newClub: ClubResponseDto) => {
       // Invalidate public clubs to include new club
       publicClubs.invalidate();
+
+      // Invalidate my-clubs to refresh user's club list in ContextStore
+      queryCache.invalidateQueriesMatching(['clubs', 'my-clubs']);
     },
 
     onError: (error: Error) => {
@@ -280,6 +283,9 @@ export function injectClubStore(): ClubStore {
     onSuccess: (_, clubId) => {
       // Invalidate public clubs
       publicClubs.invalidate();
+
+      // Invalidate my-clubs to refresh user's club list in ContextStore
+      queryCache.invalidateQueriesMatching(['clubs', 'my-clubs']);
     },
 
     onError: (error: Error) => {
@@ -320,6 +326,9 @@ export function injectClubStore(): ClubStore {
 
       // Invalidate members queries (background refresh)
       queryCache.invalidateQueriesMatching(['clubs', 'members']);
+
+      // Invalidate my-clubs to refresh user's club list in ContextStore
+      queryCache.invalidateQueriesMatching(['clubs', 'my-clubs']);
     },
 
     onError: (error: Error) => {
@@ -334,6 +343,9 @@ export function injectClubStore(): ClubStore {
     onSuccess: () => {
       // Invalidate public clubs list (in case they just joined a club)
       publicClubs.invalidate();
+
+      // Invalidate my-clubs to refresh user's club list in ContextStore
+      queryCache.invalidateQueriesMatching(['clubs', 'my-clubs']);
     },
 
     onError: (error: Error) => {

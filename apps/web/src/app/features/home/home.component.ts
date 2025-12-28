@@ -2,7 +2,7 @@ import { Component, inject, Signal, signal, WritableSignal, computed } from '@an
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { AuthService, SearchModalService } from '../../core/services';
-import { ContextStore } from '../../core/stores/context.store';
+import { ContextStore, type ClubWithRole } from '../../core/stores/context.store';
 import type { UserWithAuth } from '@cigar-platform/types';
 import {
   BottomTabBarComponent,
@@ -119,7 +119,7 @@ export class HomeComponent {
     this.contextSwitcherOpen.set(false);
   }
 
-  onContextSelected(event: { type: 'solo' | 'club'; id: string | null; club?: any }): void {
+  onContextSelected(event: { type: 'solo' | 'club'; id: string | null; club?: ClubWithRole }): void {
     if (event.type === 'solo') {
       this.contextStore.switchToSolo();
     } else if (event.type === 'club' && event.club) {

@@ -5,6 +5,7 @@ import { ModalComponent, InputComponent, ButtonComponent, IconDirective } from '
 import { ClubsService } from '@cigar-platform/types/lib/clubs/clubs.service';
 import type { ClubResponseDto } from '@cigar-platform/types';
 import { ContextStore, type ClubWithRole } from '../../../core/stores/context.store';
+import { injectClubStore } from '../../../core/stores/club.store';
 import { FormService, ToastService } from '../../../core/services';
 import clsx from 'clsx';
 
@@ -29,6 +30,7 @@ type ModalTab = 'create' | 'join';
 })
 export class CreateJoinClubModalComponent {
   #clubsService = inject(ClubsService);
+  #clubStore = injectClubStore();
   #contextStore = inject(ContextStore);
   #formService = inject(FormService);
   #toastService = inject(ToastService);
@@ -41,8 +43,10 @@ export class CreateJoinClubModalComponent {
 
   readonly activeTab: WritableSignal<ModalTab> = signal<ModalTab>('create');
   readonly clubType: WritableSignal<'private' | 'public'> = signal<'private' | 'public'>('private');
-  readonly isCreating: WritableSignal<boolean> = signal<boolean>(false);
   readonly isJoining: WritableSignal<boolean> = signal<boolean>(false);
+
+  // Use store mutation loading state for isCreating
+  readonly isCreating = this.#clubStore.createClub.loading;
 
   // Create Club Form Group (typed)
   readonly createClubForm: FormGroup<{
@@ -115,56 +119,54 @@ export class CreateJoinClubModalComponent {
       return;
     }
 
-    this.isCreating.set(true);
-    console.log('[CreateJoinClubModal] isCreating set to true');
+    console.log('[CreateJoinClubModal] Using store mutation...');
 
-    try {
-      const { name, description, isPublicDirectory, autoApproveMembers, allowMemberInvites, maxMembers } =
-        this.createClubForm.getRawValue();
+    const { name, description, isPublicDirectory, autoApproveMembers, allowMemberInvites, maxMembers } =
+      this.createClubForm.getRawValue();
 
-      const visibility = (this.clubType() === 'public' ? 'PUBLIC' : 'PRIVATE') as 'PUBLIC' | 'PRIVATE';
+    const visibility = (this.clubType() === 'public' ? 'PUBLIC' : 'PRIVATE') as 'PUBLIC' | 'PRIVATE';
 
-      const createClubDto = {
-        name,
-        description: description || undefined,
-        visibility,
-        // Settings (only for PUBLIC clubs, but backend handles defaults)
-        isPublicDirectory,
-        autoApproveMembers,
-        allowMemberInvites,
-        maxMembers: maxMembers || undefined,
-      };
+    const createClubDto = {
+      name,
+      description: description || undefined,
+      visibility,
+      // Settings (only for PUBLIC clubs, but backend handles defaults)
+      isPublicDirectory,
+      autoApproveMembers,
+      allowMemberInvites,
+      maxMembers: maxMembers || undefined,
+    };
 
-      console.log('[CreateJoinClubModal] DTO prepared:', createClubDto);
-      console.log('[CreateJoinClubModal] Calling API...');
+    console.log('[CreateJoinClubModal] DTO prepared:', createClubDto);
 
-      const club = await this.#clubsService.clubControllerCreate(createClubDto) as ClubResponseDto;
+    // Use store mutation (handles cache invalidation automatically)
+    const club = await this.#clubStore.createClub.mutate(createClubDto);
 
-      console.log('[CreateJoinClubModal] API response (club):', club);
+    console.log('[CreateJoinClubModal] Mutation result:', club);
 
-      if (club?.id) {
-        console.log('[CreateJoinClubModal] Success! Club created:', club);
-        this.#toastService.success('Club créé avec succès !');
-
-        // Reload user clubs from backend
-        await this.#contextStore.loadUserClubs();
-
-        // Switch to new club context (user is owner)
-        this.#contextStore.switchToClub(club, 'owner');
-
-        this.clubCreated.emit();
-        this.resetForms();
-        this.close.emit();
-      } else {
-        console.log('[CreateJoinClubModal] Invalid response:', club);
-        throw new Error('Invalid response from server');
-      }
-    } catch (error) {
-      console.error('[CreateJoinClubModal] Error creating club:', error);
+    // Component handles UX only
+    if (this.#clubStore.createClub.error()) {
+      console.error('[CreateJoinClubModal] Error creating club:', this.#clubStore.createClub.error());
       this.#toastService.error('Impossible de créer le club');
-    } finally {
-      console.log('[CreateJoinClubModal] Finally block - setting isCreating to false');
-      this.isCreating.set(false);
+      return;
+    }
+
+    if (club?.id) {
+      console.log('[CreateJoinClubModal] Success! Club created:', club);
+      this.#toastService.success('Club créé avec succès !');
+
+      // Reload user clubs to get fresh data (store already invalidated cache)
+      await this.#contextStore.loadUserClubs();
+
+      // Switch to new club context (user is owner)
+      this.#contextStore.switchToClub(club, 'owner');
+
+      this.clubCreated.emit();
+      this.resetForms();
+      this.close.emit();
+    } else {
+      console.log('[CreateJoinClubModal] Invalid response:', club);
+      this.#toastService.error('Impossible de créer le club');
     }
   }
 
