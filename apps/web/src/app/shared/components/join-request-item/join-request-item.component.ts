@@ -1,7 +1,8 @@
 import { Component, ChangeDetectionStrategy, input, output, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import type { ClubJoinRequestResponseDto } from '@cigar-platform/types';
-import { ButtonComponent } from '@cigar-platform/shared/ui';
+import { AvatarComponent, type AvatarUser, ButtonComponent, IconDirective } from '@cigar-platform/shared/ui';
 
 /**
  * Join Request Item Component
@@ -34,51 +35,61 @@ import { ButtonComponent } from '@cigar-platform/shared/ui';
   selector: 'app-join-request-item',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, ButtonComponent],
+  imports: [CommonModule, RouterLink, AvatarComponent, ButtonComponent, IconDirective],
   template: `
     <div class="flex items-center justify-between py-3 px-4 hover:bg-white/[0.02] transition-colors group">
-      <!-- Left: User info + Message + Date -->
-      <div class="flex flex-col gap-0.5 flex-1 min-w-0">
-        <!-- User ID + Badge -->
-        <div class="flex items-center gap-3">
-          <span class="text-sm font-medium text-white">
-            Utilisateur {{ request().userId.substring(0, 8) }}...
-          </span>
-          <span class="text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded-full border font-medium bg-orange-500/10 border-orange-500/20 text-orange-400">
-            En attente
-          </span>
-        </div>
+      <!-- Left: Avatar + User info + Message + Date -->
+      <div class="flex items-center gap-4 flex-1 min-w-0">
+        <a
+          [routerLink]="['/user', request().user.id]"
+          class="flex items-center gap-4 group/link">
+          <ui-avatar
+            [user]="avatarUser()"
+            size="sm" />
 
-        <!-- Message (if provided) -->
-        @if (request().message) {
-          <p class="text-xs text-smoke-400 italic line-clamp-1">
-            "{{ request().message }}"
-          </p>
-        }
+          <div class="flex flex-col gap-0.5">
+            <!-- Name -->
+            <span class="text-sm font-medium text-white group-hover/link:text-gold-400 group-hover/link:underline transition-colors">
+              {{ request().user.displayName }}
+            </span>
 
-        <!-- Date -->
-        <span class="text-xs text-smoke-300">
-          Demandé le {{ formatDate(request().createdAt) }}
-        </span>
+            <!-- Message (if provided) -->
+            @if (request().message) {
+              <p class="text-xs text-smoke-400 italic line-clamp-1">
+                "{{ request().message }}"
+              </p>
+            }
+
+            <!-- Date -->
+            <span class="text-xs text-smoke-300">
+              Demandé le {{ formatDate(request().createdAt) }}
+            </span>
+          </div>
+        </a>
       </div>
 
-      <!-- Right: Action buttons -->
+      <!-- Right: Action buttons (Icon only) -->
       <div class="flex items-center gap-2 ml-4 shrink-0">
+        <!-- Approve button -->
         <ui-button
           (clicked)="approve.emit(request())"
-          variant="primary"
-          size="sm"
+          variant="success"
+          size="icon"
+          icon="check"
           [loading]="isApproving()"
           [disabled]="isProcessing()">
-          Approuver
+          <span class="sr-only">Approuver</span>
         </ui-button>
+        <!-- Reject button -->
         <ui-button
           (clicked)="reject.emit(request())"
-          variant="secondary"
-          size="sm"
+          variant="ghost"
+          size="icon"
+          icon="x"
+          customClass="!text-red-500 hover:!text-red-400 hover:bg-red-500/10"
           [loading]="isRejecting()"
           [disabled]="isProcessing()">
-          Rejeter
+          <span class="sr-only">Rejeter</span>
         </ui-button>
       </div>
     </div>
@@ -93,6 +104,13 @@ export class JoinRequestItemComponent {
   // Outputs
   readonly approve = output<ClubJoinRequestResponseDto>();
   readonly reject = output<ClubJoinRequestResponseDto>();
+
+  // Computed: User for Avatar component (type-safe)
+  readonly avatarUser = computed((): AvatarUser => ({
+    id: this.request().user.id,
+    displayName: this.request().user.displayName,
+    avatarUrl: this.request().user.avatarUrl,
+  }));
 
   // Computed - Loading states for each button
   readonly isApproving = computed(() => {

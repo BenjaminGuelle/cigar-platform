@@ -18,7 +18,8 @@ export type ButtonVariant =
   | 'outline'
   | 'ghost'
   | 'link'
-  | 'destructive';
+  | 'destructive'
+  | 'success';
 
 export type ButtonType = 'button' | 'submit' | 'reset';
 export type IconPos = 'left' | 'right' | undefined;
@@ -26,7 +27,7 @@ export type IconPos = 'left' | 'right' | undefined;
 export type ButtonSize = 'sm' | 'md' | 'lg' | 'icon';
 
 const CLASSES = {
-  base: 'inline-flex items-center justify-center gap-2 font-semibold cursor-pointer transition-all duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 focus-visible:ring-offset-2 focus-visible:ring-offset-smoke-900 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]',
+  base: 'inline-flex items-center justify-center gap-2 font-semibold cursor-pointer transition-all duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 focus-visible:ring-offset-2 focus-visible:ring-offset-smoke-900 disabled:cursor-not-allowed disabled:opacity-60 active:scale-95',
   variant: {
     primary:
       'bg-gold-500 text-smoke-950 hover:bg-gold-600 hover:shadow-lg hover:shadow-gold-500/20 hover:-translate-y-0.5 shadow-md shadow-gold-500/10 transition-all duration-200',
@@ -37,12 +38,14 @@ const CLASSES = {
     link: 'text-gold-500 underline-offset-4 hover:underline hover:text-gold-400 transition-colors duration-200',
     destructive:
       'bg-error-600 text-white hover:bg-error-700 hover:shadow-lg hover:shadow-error-500/20 hover:-translate-y-0.5 shadow-md shadow-error-500/10 transition-all duration-200',
+    success:
+      'text-green-500 hover:text-green-400 hover:bg-green-500/10 transition-all duration-200',
   },
   size: {
     sm: 'h-9 px-3 py-1.5 text-sm rounded-md',
     md: 'h-10 px-4 py-2.5 text-base rounded-lg',
     lg: 'h-11 px-6 py-3 text-lg rounded-lg',
-    icon: 'h-10 w-10 rounded-full p-2',
+    icon: 'h-10 w-10 rounded-full flex items-center justify-center',
   },
 };
 
@@ -153,6 +156,7 @@ export class ButtonComponent {
       CLASSES.base,
       CLASSES.variant[this.variant()],
       CLASSES.size[this.size()],
+      this.size() === 'icon' ? '!gap-0' : '',
       this.fullWidth() && 'w-full',
       this.customClass()
     );

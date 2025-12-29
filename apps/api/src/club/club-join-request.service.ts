@@ -315,6 +315,15 @@ export class ClubJoinRequestService {
     const [requests, total] = await Promise.all([
       this.prisma.clubJoinRequest.findMany({
         where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              displayName: true,
+              avatarUrl: true,
+            },
+          },
+        },
         orderBy: [
           { status: 'asc' }, // PENDING first
           { createdAt: 'desc' }, // newest first
@@ -334,6 +343,11 @@ export class ClubJoinRequestService {
         message: request.message,
         createdAt: request.createdAt,
         updatedAt: request.updatedAt,
+        user: {
+          id: request.user.id,
+          displayName: request.user.displayName,
+          avatarUrl: request.user.avatarUrl,
+        },
       })),
       meta: {
         total,
@@ -363,6 +377,15 @@ export class ClubJoinRequestService {
     const [requests, total] = await Promise.all([
       this.prisma.clubJoinRequest.findMany({
         where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              displayName: true,
+              avatarUrl: true,
+            },
+          },
+        },
         orderBy: [
           { status: 'asc' }, // PENDING first
           { createdAt: 'desc' }, // newest first
@@ -382,6 +405,11 @@ export class ClubJoinRequestService {
         message: request.message,
         createdAt: request.createdAt,
         updatedAt: request.updatedAt,
+        user: {
+          id: request.user.id,
+          displayName: request.user.displayName,
+          avatarUrl: request.user.avatarUrl,
+        },
       })),
       meta: {
         total,

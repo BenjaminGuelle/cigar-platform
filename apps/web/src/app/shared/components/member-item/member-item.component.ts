@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy, input, output, computed, signal, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import type { ClubMemberResponseDto } from '@cigar-platform/types';
 import { AvatarComponent, type AvatarUser, ButtonComponent, IconDirective } from '@cigar-platform/shared/ui';
 import { ManageMemberMenuComponent } from '../manage-member-menu/manage-member-menu.component';
@@ -39,32 +40,36 @@ import { ManageMemberMenuComponent } from '../manage-member-menu/manage-member-m
   selector: 'app-member-item',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, AvatarComponent, ButtonComponent, IconDirective, ManageMemberMenuComponent],
+  imports: [CommonModule, RouterLink, AvatarComponent, ButtonComponent, IconDirective, ManageMemberMenuComponent],
   template: `
     <div class="flex items-center justify-between py-3 px-4 hover:bg-white/[0.02] transition-colors group">
       <!-- Left: Avatar + Name/Badge + Date -->
       <div class="flex items-center gap-4">
-        <ui-avatar
-          [user]="avatarUser()"
-          size="sm" />
+        <a
+          [routerLink]="['/user', member().user.id]"
+          class="flex items-center gap-4 group/link">
+          <ui-avatar
+            [user]="avatarUser()"
+            size="sm" />
 
-        <div class="flex flex-col gap-0.5">
-          <!-- Name + Badge on same line -->
-          <div class="flex items-center gap-3">
-            <span class="text-sm font-medium text-white">
-              {{ member().user.displayName }}
-            </span>
-            <span
-              [class]="roleClass()"
-              class="text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded-full border font-medium">
-              {{ roleLabel() }}
+          <div class="flex flex-col gap-0.5">
+            <!-- Name + Badge on same line -->
+            <div class="flex items-center gap-3">
+              <span class="text-sm font-medium text-white group-hover/link:text-gold-400 group-hover/link:underline transition-colors">
+                {{ member().user.displayName }}
+              </span>
+              <span
+                [class]="roleClass()"
+                class="text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded-full border font-medium">
+                {{ roleLabel() }}
+              </span>
+            </div>
+            <!-- Date -->
+            <span class="text-xs text-smoke-300">
+              Membre depuis {{ formatDate(member().joinedAt) }}
             </span>
           </div>
-          <!-- Date -->
-          <span class="text-xs text-smoke-300">
-            Membre depuis {{ formatDate(member().joinedAt) }}
-          </span>
-        </div>
+        </a>
       </div>
 
       <!-- Right: Manage Button (centered vertically) -->

@@ -409,6 +409,8 @@ export interface ClubJoinRequestResponseDto {
   message: string | null;
   createdAt: string;
   updatedAt: string;
+  /** User who requested to join */
+  user: MemberUserDto;
 }
 
 export interface PaginatedJoinRequestResponseDto {
