@@ -22,6 +22,8 @@ import type {
   ClubResponseDto,
   UpdateProfileDto,
   UserPublicProfileDto,
+  UsersControllerCheckUsernameAvailability200,
+  UsersControllerCheckUsernameAvailabilityParams,
   UsersControllerGetUserClubsParams,
   UsersControllerUploadAvatar200,
   UsersControllerUploadAvatarBody
@@ -95,9 +97,24 @@ if(usersControllerUploadAvatarBody.avatar !== undefined) {
       this.http,
       );
     }
+  /**
+ * @summary Check if username is available
+ */
+ usersControllerCheckUsernameAvailability<TData = UsersControllerCheckUsernameAvailability200>(
+    username: string,
+    params?: DeepNonNullable<UsersControllerCheckUsernameAvailabilityParams>,
+ ) {
+      return customInstance<TData>(
+      {url: `/api/users/check-username/${username}`, method: 'GET',
+        params
+    },
+      this.http,
+      );
+    }
   };
 
 export type UsersControllerGetPublicProfileClientResult = NonNullable<UserPublicProfileDto>
 export type UsersControllerGetUserClubsClientResult = NonNullable<ClubResponseDto[]>
 export type UsersControllerUpdateProfileClientResult = NonNullable<void>
 export type UsersControllerUploadAvatarClientResult = NonNullable<UsersControllerUploadAvatar200>
+export type UsersControllerCheckUsernameAvailabilityClientResult = NonNullable<UsersControllerCheckUsernameAvailability200>

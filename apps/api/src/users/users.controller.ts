@@ -225,4 +225,39 @@ export class UsersController {
       );
     }
   }
+
+  /**
+   * Check if username is available
+   * GET /users/check-username/:username
+   * Public endpoint - no authentication required
+   */
+  @Get('check-username/:username')
+  @ApiOperation({ summary: 'Check if username is available' })
+  @ApiParam({ name: 'username', description: 'Username to check' })
+  @ApiQuery({
+    name: 'currentUserId',
+    required: false,
+    description: 'Current user ID to exclude from check (when updating own profile)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Username availability status',
+    schema: {
+      type: 'object',
+      properties: {
+        available: { type: 'boolean' },
+      },
+    },
+  })
+  @HttpCode(HttpStatus.OK)
+  async checkUsernameAvailability(
+    @Param('username') username: string,
+    @Query('currentUserId') currentUserId?: string
+  ): Promise<{ available: boolean }> {
+    const available = await this.usersService.isUsernameAvailable(
+      username,
+      currentUserId
+    );
+    return { available };
+  }
 }

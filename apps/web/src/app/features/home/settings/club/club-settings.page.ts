@@ -115,6 +115,14 @@ export class ClubSettingsPage {
     return this.contextStore.context().clubRole === 'owner';
   });
 
+  // Club link computed
+  readonly clubSlug = computed(() => this.club()?.slug ?? '');
+  readonly clubUrl = computed(() => {
+    const club = this.club();
+    if (!club) return '';
+    return `${window.location.origin}/club/${club.id}`;
+  });
+
   // Track if form has unsaved changes (reactive!)
   hasUnsavedChanges = computed<boolean>(() => {
     const original = this.#originalFormValue();
@@ -431,5 +439,20 @@ export class ClubSettingsPage {
 
     // Navigate to home
     void this.#router.navigate(['/']);
+  }
+
+  /**
+   * Copy club profile link to clipboard
+   */
+  async copyClubLink(): Promise<void> {
+    const url = this.clubUrl();
+    if (!url) return;
+
+    try {
+      await navigator.clipboard.writeText(url);
+      this.#toastService.success('Lien copié dans le presse-papier');
+    } catch {
+      this.#toastService.error('Impossible de copier le lien');
+    }
   }
 }

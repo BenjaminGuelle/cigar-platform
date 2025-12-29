@@ -20,7 +20,7 @@ export class UsersService {
   ) {}
 
   /**
-   * Update user profile (displayName, avatarUrl, bio, shareEvaluationsPublicly)
+   * Update user profile (displayName, username, avatarUrl, bio, visibility, shareEvaluationsPublicly)
    * @param userId - ID of the user to update
    * @param updateProfileDto - Profile update data
    * @returns Updated user
@@ -40,6 +40,17 @@ export class UsersService {
       throw new UserNotFoundException(userId);
     }
 
+    // Check username uniqueness if being updated
+    if (updateProfileDto.username && updateProfileDto.username !== user.username) {
+      const existingUser = await this.prismaService.user.findUnique({
+        where: { username: updateProfileDto.username },
+      });
+
+      if (existingUser) {
+        throw new Error(`Le nom d'utilisateur @${updateProfileDto.username} est déjà utilisé`);
+      }
+    }
+
     // Update user profile
     const updatedUser = await this.prismaService.user.update({
       where: { id: userId },
@@ -47,11 +58,17 @@ export class UsersService {
         ...(updateProfileDto.displayName && {
           displayName: updateProfileDto.displayName,
         }),
+        ...(updateProfileDto.username && {
+          username: updateProfileDto.username,
+        }),
         ...(updateProfileDto.avatarUrl !== undefined && {
           avatarUrl: updateProfileDto.avatarUrl,
         }),
         ...(updateProfileDto.bio !== undefined && {
           bio: updateProfileDto.bio,
+        }),
+        ...(updateProfileDto.visibility !== undefined && {
+          visibility: updateProfileDto.visibility,
         }),
         ...(updateProfileDto.shareEvaluationsPublicly !== undefined && {
           shareEvaluationsPublicly: updateProfileDto.shareEvaluationsPublicly,
@@ -133,6 +150,8 @@ export class UsersService {
       select: {
         id: true,
         displayName: true,
+        username: true,
+        visibility: true,
         avatarUrl: true,
         bio: true,
         createdAt: true,
@@ -176,6 +195,8 @@ export class UsersService {
     return {
       id: user.id,
       displayName: user.displayName,
+      username: user.username,
+      visibility: user.visibility,
       avatarUrl: user.avatarUrl,
       bio: user.bio,
       createdAt: user.createdAt,
@@ -227,6 +248,7 @@ export class UsersService {
     return memberships.map((membership) => ({
       id: membership.club.id,
       name: membership.club.name,
+      slug: membership.club.slug,
       description: membership.club.description,
       imageUrl: membership.club.imageUrl,
       coverUrl: membership.club.coverUrl,
@@ -242,5 +264,26 @@ export class UsersService {
       updatedAt: membership.club.updatedAt,
       memberCount: membership.club._count.members,
     }));
+  }
+
+  /**
+   * Check if username is available
+   * @param username - Username to check
+   * @param currentUserId - Optional current user ID (to exclude from check when updating own profile)
+   * @returns true if username is available, false if taken
+   */
+  async isUsernameAvailable(
+    username: string,
+    currentUserId?: string
+  ): Promise<boolean> {
+    const existingUser = await this.prismaService.user.findUnique({
+      where: { username },
+      select: { id: true },
+    });
+
+    // Username is available if:
+    // 1. No user found with this username
+    // 2. OR the user found is the current user (updating their own profile)
+    return !existingUser || existingUser.id === currentUserId;
   }
 }

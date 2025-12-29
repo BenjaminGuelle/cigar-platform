@@ -66,9 +66,24 @@ export class UserProfilePage {
 
   // Computed profile fields with safe fallbacks
   readonly displayName = computed(() => this.profile()?.displayName ?? '');
+  readonly username = computed(() => this.profile()?.username ?? '');
+  readonly visibility = computed(() => this.profile()?.visibility ?? 'PUBLIC');
   readonly avatarUrl = computed(() => this.profile()?.avatarUrl ?? null);
   readonly bio = computed(() => this.profile()?.bio ?? null);
   readonly createdAt = computed(() => this.profile()?.createdAt ?? null);
+
+  // Privacy-aware display name
+  // PUBLIC: show displayName (with @username as subtitle)
+  // PRIVATE: show only @username
+  readonly primaryName = computed(() => {
+    const visibility = this.visibility();
+    const displayName = this.displayName();
+    const username = this.username();
+
+    return visibility === 'PRIVATE' ? `@${username}` : displayName;
+  });
+
+  readonly shouldShowUsername = computed(() => this.visibility() === 'PUBLIC');
 
   // Stats computed
   readonly evaluationCount = computed(() => this.profile()?.stats.evaluationCount ?? 0);

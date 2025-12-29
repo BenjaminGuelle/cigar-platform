@@ -7,12 +7,14 @@
   } @else if (club(); as club) {
     <!-- Club Profile -->
     <div>
-      <!-- Page Header -->
-      <ui-page-header
-        [title]="club.name"
-        [description]="club.description?.toString() ?? ''"
-        [useDisplayFont]="true"
-      />
+      <!-- Page Header with Slug -->
+      <div class="mb-6 md:mb-8">
+        <h1 class="heading-display mb-2">{{ club.name }}</h1>
+        <p class="caption text-smoke-400 mb-4">#{{ clubSlug() }}</p>
+        @if (club.description) {
+          <p class="text-smoke-200">{{ club.description }}</p>
+        }
+      </div>
 
       <!-- Cover Image (if exists) -->
       @if (club.coverUrl) {

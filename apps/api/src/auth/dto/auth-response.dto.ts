@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
 import type { User } from '@cigar-platform/prisma-client';
-import { Role } from '@cigar-platform/prisma-client';
+import { Role, UserVisibility } from '@cigar-platform/prisma-client';
 import type { AuthProvider } from '@cigar-platform/types';
 import type { Session } from '@supabase/supabase-js';
 
@@ -23,6 +23,10 @@ export class UserDto implements User {
   displayName: string;
 
   @Expose()
+  @ApiProperty({ example: 'john_doe' })
+  username: string;
+
+  @Expose()
   @ApiPropertyOptional({
     type: String,
     example: 'https://example.com/avatar.jpg',
@@ -35,6 +39,10 @@ export class UserDto implements User {
     example: 'Passionate cigar enthusiast from Paris',
   })
   bio: string | null;
+
+  @Expose()
+  @ApiProperty({ enum: UserVisibility, example: UserVisibility.PUBLIC })
+  visibility: UserVisibility;
 
   @Expose()
   @ApiProperty({ example: true })

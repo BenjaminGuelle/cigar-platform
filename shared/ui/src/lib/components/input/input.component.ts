@@ -88,6 +88,7 @@ export class InputComponent {
   readonly autofocus = input(false, { transform: booleanAttribute });
   readonly maxlength = input<number | null>(null);
   readonly minlength = input<number | null>(null);
+  readonly prefix = input<string>('');
   readonly prefixIcon = input(false, { transform: booleanAttribute });
   readonly suffixIcon = input(false, { transform: booleanAttribute });
   readonly autocomplete = input<AutocompleteValue>('off');
@@ -97,6 +98,7 @@ export class InputComponent {
 
   readonly #forceShowError: WritableSignal<boolean> = signal<boolean>(false);
   readonly #controlTouched: WritableSignal<boolean> = signal<boolean>(false);
+  readonly #controlDirty: WritableSignal<boolean> = signal<boolean>(false);
   readonly #controlInvalid: WritableSignal<boolean> = signal<boolean>(false);
   readonly #controlErrors: WritableSignal<ValidationErrors | null> = signal<ValidationErrors | null>(null);
 
@@ -106,9 +108,11 @@ export class InputComponent {
   readonly showError: Signal<boolean> = computed<boolean>(() => {
     const isInvalid: boolean = this.#controlInvalid();
     const isTouched: boolean = this.#controlTouched();
+    const isDirty: boolean = this.#controlDirty();
     const isForced: boolean = this.#forceShowError();
 
-    return isInvalid && (isTouched || isForced);
+    // Show errors immediately when user starts typing (dirty) OR after blur (touched) OR forced
+    return isInvalid && (isDirty || isTouched || isForced);
   });
 
   readonly errorMessage: Signal<string> = computed<string>(() => {
@@ -170,6 +174,7 @@ export class InputComponent {
     return clsx(
       CLASSES.base,
       CLASSES.size[this.size()],
+      this.prefix() && 'pl-8', // Add padding for text prefix
       this.prefixIcon() && CLASSES.icon.prefix,
       this.suffixIcon() && CLASSES.icon.suffix,
       this.showError() ? CLASSES.state.error : CLASSES.state.valid,
@@ -205,6 +210,7 @@ export class InputComponent {
 
   #updateSignals(ctrl: FormControl): void {
     this.#controlTouched.set(ctrl.touched);
+    this.#controlDirty.set(ctrl.dirty);
     this.#controlInvalid.set(ctrl.invalid);
     this.#controlErrors.set(ctrl.errors);
   }

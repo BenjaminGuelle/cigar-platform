@@ -27,6 +27,10 @@ export class ClubResponseDto {
   name: string;
 
   @Expose()
+  @ApiProperty({ example: 'cigar_lovers_paris' })
+  slug: string;
+
+  @Expose()
   @ApiPropertyOptional({ type: String, example: 'A club for cigar enthusiasts in Paris' })
   description: string | null;
 

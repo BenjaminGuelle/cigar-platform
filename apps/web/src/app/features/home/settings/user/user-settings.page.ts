@@ -22,14 +22,15 @@ import {
 } from '@cigar-platform/shared/ui';
 import { UserDto } from '@cigar-platform/types';
 import { ConfirmationModalComponent } from '../../../../shared/components/confirmation-modal/confirmation-modal.component';
+import { usernameAvailabilityValidator } from '../../../../core/validators/username-availability.validator';
 
 /**
- * User Profile Form Value Interface
+ * User Profile Form Value Interface (text fields only - switches are standalone)
  */
 interface UserProfileFormValue {
   displayName: string;
+  username: string;
   bio: string | null;
-  shareEvaluationsPublicly: boolean;
 }
 
 /**
@@ -77,15 +78,39 @@ export class UserSettingsPage {
   readonly userStore: UserStore = injectUserStore();
   readonly currentUser: Signal<UserDto | null> = this.userStore.currentUser.data;
 
+  // Profile link computed
+  readonly username = computed(() => this.currentUser()?.username ?? '');
+
+  // Username error messages
+  readonly usernameErrorMessages = {
+    pattern: () => 'Uniquement minuscules, chiffres, points (.) et underscores (_)',
+    minlength: () => 'Minimum 3 caractères',
+    maxlength: () => 'Maximum 30 caractères',
+    usernameTaken: () => 'Ce nom d\'utilisateur est déjà pris',
+  };
+  readonly profileUrl = computed(() => {
+    const user = this.currentUser();
+    if (!user) return '';
+    return `${window.location.origin}/user/${user.id}`;
+  });
+
   // ViewChildren for form components
   inputs = viewChildren(InputComponent);
 
-  // Form state
+  // Form state (text fields only - switches are standalone)
   #originalFormValue = signal<UserProfileFormValue | null>(null);
   #currentFormValue = signal<UserProfileFormValue | null>(null);
 
   #logoutLoading: WritableSignal<boolean> = signal<boolean>(false);
   readonly logoutLoading = this.#logoutLoading.asReadonly();
+
+  // Standalone switches with auto-save (not part of main form)
+  readonly visibilitySwitch: FormControl<boolean> = this.#fb.nonNullable.control<boolean>(true);
+  readonly shareEvaluationsSwitch: FormControl<boolean> = this.#fb.nonNullable.control<boolean>(true);
+
+  // Switch loading states
+  readonly #visibilityLoading = signal<boolean>(false);
+  readonly #shareEvaluationsLoading = signal<boolean>(false);
 
   // Confirmation modals
   readonly showLogoutConfirm = signal<boolean>(false);
@@ -107,7 +132,7 @@ export class UserSettingsPage {
     }
   });
 
-  // Track if form has unsaved changes (reactive!)
+  // Track if form has unsaved changes (text fields only - switches auto-save)
   hasUnsavedChanges = computed<boolean>(() => {
     const original = this.#originalFormValue();
     const current = this.#currentFormValue();
@@ -116,38 +141,73 @@ export class UserSettingsPage {
 
     return (
       original.displayName !== current.displayName ||
-      original.bio !== current.bio ||
-      original.shareEvaluationsPublicly !== current.shareEvaluationsPublicly
+      original.username !== current.username ||
+      original.bio !== current.bio
     );
   });
 
+  // Profile form (text fields only - switches are standalone)
   profileForm: FormGroup<{
     displayName: FormControl<string>;
+    username: FormControl<string>;
     bio: FormControl<string | null>;
-    shareEvaluationsPublicly: FormControl<boolean>;
   }> = this.#fb.nonNullable.group({
     displayName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
+    username: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(30), Validators.pattern(/^[a-z0-9._]{3,30}$/)]],
     bio: this.#fb.control<string | null>(null, [Validators.maxLength(500)]),
-    shareEvaluationsPublicly: [true],
   });
 
   constructor() {
-    // Sync form with user data
+    // Add async validator to username control
+    const userId = this.currentUser()?.id;
+    this.profileForm.controls.username.setAsyncValidators([
+      usernameAvailabilityValidator(userId, 500),
+    ]);
+
+    // Sync text form fields with user data
     effect(() => {
       const user: UserDto | null = this.currentUser();
       if (user) {
         this.profileForm.patchValue({
           displayName: user.displayName,
+          username: user.username ?? '',
           bio: user.bio ?? null,
-          shareEvaluationsPublicly: user.shareEvaluationsPublicly ?? true,
-        });
+        }, { emitEvent: false });
         const formValue = this.profileForm.getRawValue();
         this.#originalFormValue.set(formValue);
         this.#currentFormValue.set(formValue);
       }
     });
 
-    // Track form changes reactively
+    // Sync standalone switches with user data (no emitEvent to avoid triggering save on init)
+    effect(() => {
+      const user: UserDto | null = this.currentUser();
+      if (user) {
+        const visibility = user.visibility ?? 'PUBLIC';
+        this.visibilitySwitch.setValue(visibility === 'PUBLIC', { emitEvent: false });
+        this.shareEvaluationsSwitch.setValue(user.shareEvaluationsPublicly ?? true, { emitEvent: false });
+      }
+    });
+
+    // Auto-save visibility switch on change
+    effect((onCleanup) => {
+      const subscription = this.visibilitySwitch.valueChanges.subscribe((isPublic) => {
+        this.onVisibilityToggle(isPublic);
+      });
+
+      onCleanup(() => subscription.unsubscribe());
+    });
+
+    // Auto-save shareEvaluations switch on change
+    effect((onCleanup) => {
+      const subscription = this.shareEvaluationsSwitch.valueChanges.subscribe((sharePublicly) => {
+        this.onShareEvaluationsToggle(sharePublicly);
+      });
+
+      onCleanup(() => subscription.unsubscribe());
+    });
+
+    // Track form changes reactively (text fields only)
     effect((onCleanup) => {
       const subscription = this.profileForm.valueChanges.subscribe(() => {
         this.#currentFormValue.set(this.profileForm.getRawValue());
@@ -188,24 +248,75 @@ export class UserSettingsPage {
     this.#toastService.success('Avatar mis à jour avec succès');
   }
 
+  /**
+   * Auto-save visibility switch
+   * Triggers immediate API call on toggle
+   */
+  async onVisibilityToggle(isPublic: boolean): Promise<void> {
+    this.#visibilityLoading.set(true);
+
+    const visibility = isPublic ? 'PUBLIC' : 'PRIVATE';
+    const result: UserDto | null = await this.userStore.updateProfile.mutate({ visibility });
+
+    this.#visibilityLoading.set(false);
+
+    if (result) {
+      this.#toastService.success(`Profil ${isPublic ? 'public' : 'privé'}`);
+    } else if (this.userStore.updateProfile.error()) {
+      this.#toastService.error('Échec de la mise à jour de la visibilité');
+      // Revert switch on error
+      const user = this.currentUser();
+      if (user) {
+        this.visibilitySwitch.setValue(user.visibility === 'PUBLIC', { emitEvent: false });
+      }
+    }
+  }
+
+  /**
+   * Auto-save shareEvaluations switch
+   * Triggers immediate API call on toggle
+   */
+  async onShareEvaluationsToggle(sharePublicly: boolean): Promise<void> {
+    this.#shareEvaluationsLoading.set(true);
+
+    const result: UserDto | null = await this.userStore.updateProfile.mutate({ shareEvaluationsPublicly: sharePublicly });
+
+    this.#shareEvaluationsLoading.set(false);
+
+    if (result) {
+      this.#toastService.success(sharePublicly ? 'Évaluations partagées publiquement' : 'Évaluations privées');
+    } else if (this.userStore.updateProfile.error()) {
+      this.#toastService.error('Échec de la mise à jour du partage des évaluations');
+      // Revert switch on error
+      const user = this.currentUser();
+      if (user) {
+        this.shareEvaluationsSwitch.setValue(user.shareEvaluationsPublicly ?? true, { emitEvent: false });
+      }
+    }
+  }
+
+  /**
+   * Update profile (text fields only - switches auto-save)
+   */
   async onUpdateProfile(): Promise<void> {
     this.#formService.triggerValidation(this.profileForm);
 
     // Force show errors on all UI components
     this.inputs().forEach((input) => input.forceShowError());
 
-    if (this.profileForm.invalid) {
+    // Block submission if form has errors OR async validation is pending
+    if (this.profileForm.invalid || this.profileForm.pending) {
       return;
     }
 
     this.userStore.updateProfile.reset();
 
-    const { displayName, bio, shareEvaluationsPublicly } = this.profileForm.getRawValue();
+    const { displayName, username, bio } = this.profileForm.getRawValue();
 
     const result: UserDto | null = await this.userStore.updateProfile.mutate({
       displayName,
+      username,
       bio: bio ?? undefined,
-      shareEvaluationsPublicly,
     });
 
     if (result) {
@@ -236,5 +347,20 @@ export class UserSettingsPage {
 
     this.#logoutLoading.set(true);
     this.#authService.signOut().pipe(take(1)).subscribe();
+  }
+
+  /**
+   * Copy profile link to clipboard
+   */
+  async copyProfileLink(): Promise<void> {
+    const url = this.profileUrl();
+    if (!url) return;
+
+    try {
+      await navigator.clipboard.writeText(url);
+      this.#toastService.success('Lien copié dans le presse-papier');
+    } catch {
+      this.#toastService.error('Impossible de copier le lien');
+    }
   }
 }

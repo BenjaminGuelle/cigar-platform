@@ -17,6 +17,15 @@ export interface SignUpDto {
   displayName: string;
 }
 
+export type UserDtoVisibility = typeof UserDtoVisibility[keyof typeof UserDtoVisibility];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UserDtoVisibility = {
+  PUBLIC: 'PUBLIC',
+  PRIVATE: 'PRIVATE',
+} as const;
+
 export type UserDtoRole = typeof UserDtoRole[keyof typeof UserDtoRole];
 
 
@@ -44,8 +53,10 @@ export interface UserDto {
   id: string;
   email: string;
   displayName: string;
+  username: string;
   avatarUrl?: string;
   bio?: string;
+  visibility: UserDtoVisibility;
   shareEvaluationsPublicly: boolean;
   role: UserDtoRole;
   createdAt: string;
@@ -71,6 +82,18 @@ export interface SignInDto {
   password: string;
 }
 
+/**
+ * Profile visibility - PUBLIC: displayName visible | PRIVATE: only @username visible
+ */
+export type UpdateProfileDtoVisibility = typeof UpdateProfileDtoVisibility[keyof typeof UpdateProfileDtoVisibility];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UpdateProfileDtoVisibility = {
+  PUBLIC: 'PUBLIC',
+  PRIVATE: 'PRIVATE',
+} as const;
+
 export interface UpdateProfileDto {
   /** Display name of the user */
   displayName?: string;
@@ -80,6 +103,15 @@ export interface UpdateProfileDto {
   bio?: string;
   /** Share evaluations publicly on user profile */
   shareEvaluationsPublicly?: boolean;
+  /**
+   * Username (unique identifier) - lowercase, alphanumeric + dots + underscores only
+   * @minLength 3
+   * @maxLength 30
+   * @pattern ^[a-z0-9._]{3,30}$
+   */
+  username?: string;
+  /** Profile visibility - PUBLIC: displayName visible | PRIVATE: only @username visible */
+  visibility?: UpdateProfileDtoVisibility;
 }
 
 /**
@@ -161,6 +193,7 @@ export const ClubResponseDtoCurrentUserRole = {
 export interface ClubResponseDto {
   id: string;
   name: string;
+  slug: string;
   description?: string;
   imageUrl?: string;
   coverUrl?: string;
@@ -412,9 +445,20 @@ export interface UserStatsDto {
   clubCount: number;
 }
 
+export type UserPublicProfileDtoVisibility = typeof UserPublicProfileDtoVisibility[keyof typeof UserPublicProfileDtoVisibility];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UserPublicProfileDtoVisibility = {
+  PUBLIC: 'PUBLIC',
+  PRIVATE: 'PRIVATE',
+} as const;
+
 export interface UserPublicProfileDto {
   id: string;
   displayName: string;
+  username: string;
+  visibility: UserPublicProfileDtoVisibility;
   avatarUrl?: string;
   bio?: string;
   createdAt: string;
@@ -511,5 +555,16 @@ export type UsersControllerUploadAvatarBody = {
 
 export type UsersControllerUploadAvatar200 = {
   avatarUrl?: string;
+};
+
+export type UsersControllerCheckUsernameAvailabilityParams = {
+/**
+ * Current user ID to exclude from check (when updating own profile)
+ */
+currentUserId?: string;
+};
+
+export type UsersControllerCheckUsernameAvailability200 = {
+  available?: boolean;
 };
 

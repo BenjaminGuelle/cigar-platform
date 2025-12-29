@@ -5,20 +5,38 @@
       description="Gérez votre profil et vos préférences"
     />
 
-    <!-- Public Profile Link -->
+    <!-- Public Profile Link & Share -->
     @if (currentUser()) {
-      <a
-        [routerLink]="['/user', currentUser()!.id]"
-        class="group flex items-center gap-2 -mt-2 mb-2"
-      >
-        <i
-          name="eye"
-          class="w-4 h-4 text-gold-500 group-hover:scale-110 transition-transform duration-200"
-        ></i>
-        <span class="text-sm font-medium text-gold-500 hover:text-gold-400 transition-colors">
-          Voir mon profil public
-        </span>
-      </a>
+      <div class="flex flex-col gap-2 -mt-2 mb-2">
+        <div class="flex items-center gap-3">
+          <a
+            [routerLink]="['/user', currentUser()!.id]"
+            class="group flex items-center gap-2"
+          >
+            <i
+              name="eye"
+              class="w-4 h-4 text-gold-500 group-hover:scale-110 transition-transform duration-200"
+            ></i>
+            <span class="text-sm font-medium text-gold-500 hover:text-gold-400 transition-colors">
+              Voir mon profil public
+            </span>
+          </a>
+          <button
+            type="button"
+            (click)="copyProfileLink()"
+            class="group flex items-center gap-2 px-3 py-1.5 rounded-md bg-smoke-800 hover:bg-smoke-700 transition-colors"
+          >
+            <i
+              name="book-copy"
+              class="w-4 h-4 text-smoke-400 group-hover:text-gold-500 transition-colors"
+            ></i>
+            <span class="text-sm font-medium text-smoke-400 group-hover:text-gold-500 transition-colors">
+              Partager mon profil
+            </span>
+          </button>
+        </div>
+        <p class="caption text-smoke-400">@{{ username() }}</p>
+      </div>
     }
 
     <!-- Profil Section -->
@@ -46,6 +64,19 @@
             autocomplete="name"
           />
 
+          <ui-input
+            inputId="username"
+            type="text"
+            label="Nom d'utilisateur"
+            placeholder="votre_pseudo"
+            prefix="@"
+            hint="Uniquement minuscules, chiffres, points (.) et underscores (_)"
+            [control]="profileForm.controls.username"
+            [required]="true"
+            [errorMessages]="usernameErrorMessages"
+            autocomplete="username"
+          />
+
           <!-- Bio -->
           <div>
             <label class="block text-sm font-medium text-smoke-100 mb-2">
@@ -69,45 +100,53 @@
               </p>
             }
           </div>
+
+          <!-- Action Buttons (text fields only) -->
+          <div class="flex justify-end gap-3 pt-4">
+            @if (hasUnsavedChanges()) {
+              <ui-button
+                type="button"
+                variant="ghost"
+                size="md"
+                [disabled]="userStore.updateProfile.loading()"
+                (click)="onCancelChanges()"
+              >
+                Annuler
+              </ui-button>
+            }
+            <ui-button
+              type="submit"
+              variant="outline"
+              size="md"
+              [loading]="userStore.updateProfile.loading()"
+              [disabled]="!hasUnsavedChanges() || profileForm.invalid || userStore.updateProfile.loading()"
+            >
+              Enregistrer
+            </ui-button>
+          </div>
         </form>
     </ui-page-section>
 
-    <!-- Confidentialité Section -->
+    <!-- Confidentialité Section (auto-save switches) -->
     <ui-page-section title="Confidentialité">
-      <ui-switch
-        switchId="share-evaluations"
-        switchPosition="right"
-        label="Partager mes dégustations publiquement"
-        description="Rendre mes évaluations de cigares visibles sur mon profil public"
-        [control]="profileForm.controls.shareEvaluationsPublicly"
-      />
-    </ui-page-section>
+      <div class="space-y-6 md:space-y-8">
+        <ui-switch
+          switchId="visibility-public"
+          switchPosition="right"
+          label="Profil public"
+          description="Afficher mon nom et @username sur mon profil. Si désactivé, seul @username sera visible"
+          [control]="visibilitySwitch"
+        />
 
-    <!-- Action Buttons -->
-    <form [formGroup]="profileForm" (ngSubmit)="onUpdateProfile()">
-      <div class="flex justify-end gap-3">
-        @if (hasUnsavedChanges()) {
-          <ui-button
-            type="button"
-            variant="ghost"
-            size="md"
-            [disabled]="userStore.updateProfile.loading()"
-            (click)="onCancelChanges()"
-          >
-            Annuler
-          </ui-button>
-        }
-        <ui-button
-          type="submit"
-          variant="outline"
-          size="md"
-          [loading]="userStore.updateProfile.loading()"
-          [disabled]="!hasUnsavedChanges() || profileForm.invalid || userStore.updateProfile.loading()"
-        >
-          Enregistrer
-        </ui-button>
+        <ui-switch
+          switchId="share-evaluations"
+          switchPosition="right"
+          label="Partager mes dégustations publiquement"
+          description="Rendre mes évaluations de cigares visibles sur mon profil public"
+          [control]="shareEvaluationsSwitch"
+        />
       </div>
-    </form>
+    </ui-page-section>
 
     <!-- Compte Section -->
     <ui-page-section title="Compte">

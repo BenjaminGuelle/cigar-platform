@@ -15,10 +15,15 @@
 
   <!-- Profile Content -->
   @if (profile() && !profileLoading()) {
-    <!-- Header: Avatar + DisplayName (Desktop: same line) -->
+    <!-- Header: Avatar + DisplayName/Username (Desktop: same line) -->
     <div class="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6">
       <ui-avatar [user]="user()" size="lg" />
-      <h1 class="heading-display">{{ displayName() }}</h1>
+      <div class="flex flex-col gap-1">
+        <h1 class="heading-display">{{ primaryName() }}</h1>
+        @if (shouldShowUsername()) {
+          <p class="caption text-smoke-400">@{{ username() }}</p>
+        }
+      </div>
     </div>
 
     <!-- Info: Member Since + Bio -->

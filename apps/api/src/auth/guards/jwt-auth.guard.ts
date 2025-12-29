@@ -75,6 +75,10 @@ export class JwtAuthGuard implements CanActivate {
           `Auto-creating user ${supabaseUser.email} from OAuth/Supabase`
         );
 
+        // Generate temporary username from email
+        // Note: updateProfile in auth.service.ts will generate proper unique username on first save
+        const tempUsername = supabaseUser.email!.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 30);
+
         dbUser = await this.prismaService.user.create({
           data: {
             id: supabaseUser.id,
@@ -84,6 +88,7 @@ export class JwtAuthGuard implements CanActivate {
               supabaseUser.user_metadata?.name ||
               supabaseUser.email?.split('@')[0] ||
               'User',
+            username: tempUsername,
             avatarUrl: supabaseUser.user_metadata?.avatar_url || null,
           },
         });

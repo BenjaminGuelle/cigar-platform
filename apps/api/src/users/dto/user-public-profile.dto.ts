@@ -1,5 +1,6 @@
 import { Expose, Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { UserVisibility } from '@cigar-platform/prisma-client';
 
 /**
  * User Stats DTO
@@ -42,6 +43,14 @@ export class UserPublicProfileDto {
   @Expose()
   @ApiProperty({ example: 'Johnny Cigars 🔥' })
   displayName: string;
+
+  @Expose()
+  @ApiProperty({ example: 'johnny_cigars' })
+  username: string;
+
+  @Expose()
+  @ApiProperty({ enum: UserVisibility, example: UserVisibility.PUBLIC })
+  visibility: UserVisibility;
 
   @Expose()
   @ApiPropertyOptional({

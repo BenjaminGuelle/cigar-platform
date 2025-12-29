@@ -7,8 +7,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ============================================
@@ -35,6 +36,12 @@ enum ClubVisibility {
   PRIVATE  // Invitation/demande uniquement
 }
 
+// User visibility (for profile display)
+enum UserVisibility {
+  PUBLIC   // displayName visible, @username en sous-titre
+  PRIVATE  // Seulement @username visible, displayName masqué
+}
+
 // Join request status
 enum JoinRequestStatus {
   PENDING
@@ -50,14 +57,16 @@ model User {
   id          String   @id @default(uuid()) @db.Uuid
   email       String   @unique
   displayName String
+  username    String   @unique // @username - identité unique (3-30 chars, a-z0-9._)
   avatarUrl   String?
   bio         String?  @db.Text
 
   // Privacy settings
-  shareEvaluationsPublicly Boolean @default(true)
+  visibility               UserVisibility @default(PUBLIC) // PUBLIC: displayName visible | PRIVATE: only @username
+  shareEvaluationsPublicly Boolean        @default(true)
 
-  role        Role     @default(USER)
-  createdAt   DateTime @default(now())
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
 
   // Relations
   clubMemberships  ClubMember[]
@@ -69,12 +78,14 @@ model User {
   bannedFromClubs  ClubBan[]         @relation("BannedFromClubs")
   bannedMembers    ClubBan[]         @relation("BannedMembers")
 
+  @@index([username])
   @@map("users")
 }
 
 model Club {
   id          String   @id @default(uuid()) @db.Uuid
   name        String
+  slug        String   @unique // #slug - identité unique du club (3-30 chars, a-z0-9._)
   description String?
   imageUrl    String?
   coverUrl    String?
@@ -104,6 +115,7 @@ model Club {
   joinRequests  ClubJoinRequest[]
   bannedMembers ClubBan[]
 
+  @@index([slug])
   @@map("clubs")
 }
 

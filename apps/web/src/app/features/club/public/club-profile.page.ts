@@ -7,7 +7,6 @@ import { map } from 'rxjs/operators';
 import { injectClubStore } from '../../../core/stores/club.store';
 import { ToastService } from '../../../core/services';
 import {
-  PageHeaderComponent,
   PageSectionComponent,
   ButtonComponent,
   ModalComponent,
@@ -40,7 +39,6 @@ import {
   imports: [
     CommonModule,
     FormsModule,
-    PageHeaderComponent,
     PageSectionComponent,
     ButtonComponent,
     ModalComponent,
@@ -74,6 +72,11 @@ export class ClubProfilePage {
   // Invite code modal
   readonly showInviteCodeModal = signal<boolean>(false);
   readonly inviteCode = signal<string>('');
+
+  readonly clubSlug = computed(() => {
+    const club = this.club();
+    return club?.slug ?? '';
+  });
 
   readonly memberCount = computed(() => {
     const club = this.club();

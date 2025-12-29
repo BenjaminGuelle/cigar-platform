@@ -31,6 +31,7 @@ export type IconName =
   | 'filter'
   | 'plus'
   | 'minus'
+  | 'book-copy'
   // Social
   | 'heart'
   | 'star'

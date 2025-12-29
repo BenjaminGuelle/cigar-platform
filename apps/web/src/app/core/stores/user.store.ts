@@ -136,7 +136,9 @@ export function injectUserStore(): UserStore {
         const optimisticUser: UserDto = {
           ...previousUser,
           ...(variables.displayName !== undefined && { displayName: variables.displayName }),
+          ...(variables.username !== undefined && { username: variables.username }),
           ...(variables.bio !== undefined && { bio: variables.bio }),
+          ...(variables.visibility !== undefined && { visibility: variables.visibility }),
           ...(variables.shareEvaluationsPublicly !== undefined && { shareEvaluationsPublicly: variables.shareEvaluationsPublicly }),
         };
         currentUser.setData(optimisticUser);

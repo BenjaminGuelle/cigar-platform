@@ -34,7 +34,7 @@ const CLASSES = {
     state: {
       enabled: {
         on: 'bg-gold-500',
-        off: 'bg-smoke-700',
+        off: 'bg-smoke-800 border-2 border-smoke-500',
       },
       disabled: 'bg-smoke-800 cursor-not-allowed opacity-50',
       focus: 'peer-focus:ring-2 peer-focus:ring-gold-500/20 peer-focus:ring-offset-2 peer-focus:ring-offset-smoke-900',
@@ -42,7 +42,7 @@ const CLASSES = {
   },
   // Switch thumb (circle that slides)
   thumb: {
-    base: 'absolute top-0.5 bg-white rounded-full transition-transform duration-200 shadow-md',
+    base: 'absolute top-1/2 -translate-y-1/2 bg-white rounded-full transition-all duration-200 shadow-md',
     size: {
       sm: 'w-4 h-4',
       md: 'w-5 h-5',

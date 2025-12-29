@@ -29,20 +29,38 @@
         [description]="'Gérez les paramètres de ' + (club()?.name || 'votre club')"
       />
 
-      <!-- Public Club Page Link -->
+      <!-- Public Club Page Link & Share -->
       @if (club()) {
-        <a
-          [routerLink]="['/club', club()!.id]"
-          class="group flex items-center gap-2 -mt-2 mb-2"
-        >
-          <i
-            name="eye"
-            class="w-4 h-4 text-gold-500 group-hover:scale-110 transition-transform duration-200"
-          ></i>
-          <span class="text-sm font-medium text-gold-500 hover:text-gold-400 transition-colors">
-            Voir la page du club
-          </span>
-        </a>
+        <div class="flex flex-col gap-2 -mt-2 mb-2">
+          <div class="flex items-center gap-3">
+            <a
+              [routerLink]="['/club', club()!.id]"
+              class="group flex items-center gap-2"
+            >
+              <i
+                name="eye"
+                class="w-4 h-4 text-gold-500 group-hover:scale-110 transition-transform duration-200"
+              ></i>
+              <span class="text-sm font-medium text-gold-500 hover:text-gold-400 transition-colors">
+                Voir la page du club
+              </span>
+            </a>
+            <button
+              type="button"
+              (click)="copyClubLink()"
+              class="group flex items-center gap-2 px-3 py-1.5 rounded-md bg-smoke-800 hover:bg-smoke-700 transition-colors"
+            >
+              <i
+                name="book-copy"
+                class="w-4 h-4 text-smoke-400 group-hover:text-gold-500 transition-colors"
+              ></i>
+              <span class="text-sm font-medium text-smoke-400 group-hover:text-gold-500 transition-colors">
+                Partager le club
+              </span>
+            </button>
+          </div>
+          <p class="caption text-smoke-400">#{{ clubSlug() }}</p>
+        </div>
       }
 
       <!-- Avatar Section (Admin & Owner only) -->

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { Session } from '@supabase/supabase-js';
-import { User, Role } from '@cigar-platform/prisma-client';
+import { User, Role, UserVisibility } from '@cigar-platform/prisma-client';
 import { SupabaseService } from './supabase.service';
 import { PrismaService } from '../app/prisma.service';
 import {
@@ -17,6 +17,11 @@ import {
   UserNotFoundException,
   AccountCreationFailedException,
 } from '../common/exceptions';
+import {
+  generateUniqueUsername,
+  usernameFromEmail,
+  slugify,
+} from '../common/utils/username.utils';
 
 /**
  * Service handling authentication business logic
@@ -58,12 +63,17 @@ export class AuthService {
       throw new EmailConfirmationRequiredException();
     }
 
+    // Generate unique username from displayName (or email fallback)
+    const username = await this.generateUsername(dto.displayName || dto.email);
+
     // Create user in Prisma database
     const user = await this.prismaService.user.create({
       data: {
         id: data.user.id,
         email: dto.email,
         displayName: dto.displayName,
+        username,
+        visibility: UserVisibility.PUBLIC, // Default to PUBLIC
       },
     });
 
@@ -136,27 +146,58 @@ export class AuthService {
     dbUser: any,
     dto: UpdateProfileDto
   ): Promise<UserDto> {
+    // Generate username only if updating it (or for create path)
+    const username = dto.username
+      ? dto.username
+      : await this.generateUsername(dto.displayName || dbUser.displayName || dbUser.email);
+
     // Upsert: create user if doesn't exist (OAuth with custom claims case)
     const user = await this.prismaService.user.upsert({
       where: { id: dbUser.id },
       update: {
         ...(dto.displayName && { displayName: dto.displayName }),
+        ...(dto.username !== undefined && { username: dto.username }),
         ...(dto.avatarUrl !== undefined && { avatarUrl: dto.avatarUrl }),
         ...(dto.bio !== undefined && { bio: dto.bio }),
+        ...(dto.visibility !== undefined && { visibility: dto.visibility }),
         ...(dto.shareEvaluationsPublicly !== undefined && { shareEvaluationsPublicly: dto.shareEvaluationsPublicly }),
       },
       create: {
         id: dbUser.id,
         email: dbUser.email,
         displayName: dto.displayName || dbUser.displayName,
+        username, // Auto-generated for OAuth users
         avatarUrl: dto.avatarUrl !== undefined ? dto.avatarUrl : dbUser.avatarUrl,
         bio: dto.bio,
+        visibility: dto.visibility ?? UserVisibility.PUBLIC, // Default to PUBLIC
         shareEvaluationsPublicly: dto.shareEvaluationsPublicly ?? true,
         role: Role.USER, // Default role for OAuth users (platform role != club role)
       },
     });
 
     return this.mapUserToDto(user);
+  }
+
+  /**
+   * Generate unique username from base text
+   * Checks database for existing usernames to avoid collisions
+   */
+  private async generateUsername(baseText: string): Promise<string> {
+    const baseSlug = slugify(baseText) || usernameFromEmail(baseText);
+
+    // Get all existing usernames that start with the base
+    const existingUsers = await this.prismaService.user.findMany({
+      where: {
+        username: {
+          startsWith: baseSlug.substring(0, Math.min(baseSlug.length, 20)),
+        },
+      },
+      select: { username: true },
+    });
+
+    const existingUsernames = existingUsers.map((u) => u.username);
+
+    return generateUniqueUsername(baseText, existingUsernames, 'user');
   }
 
   /**
@@ -167,8 +208,10 @@ export class AuthService {
       id: user.id,
       email: user.email,
       displayName: user.displayName,
+      username: user.username,
       avatarUrl: user.avatarUrl,
       bio: user.bio,
+      visibility: user.visibility as unknown as UserDto['visibility'],
       shareEvaluationsPublicly: user.shareEvaluationsPublicly,
       role: user.role as unknown as UserDto['role'],
       createdAt: user.createdAt,
@@ -184,8 +227,10 @@ export class AuthService {
       id: user.id,
       email: user.email,
       displayName: user.displayName,
+      username: user.username,
       avatarUrl: user.avatarUrl,
       bio: user.bio ?? null,
+      visibility: user.visibility ?? UserVisibility.PUBLIC,
       shareEvaluationsPublicly: user.shareEvaluationsPublicly ?? true,
       role: user.role as unknown as UserDto['role'],
       createdAt: user.createdAt instanceof Date ? user.createdAt : new Date(user.createdAt),

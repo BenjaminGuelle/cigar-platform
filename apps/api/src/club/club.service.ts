@@ -16,6 +16,10 @@ import {
   ClubNotFoundException,
   ClubAlreadyExistsException,
 } from './exceptions';
+import {
+  generateUniqueUsername,
+  slugify,
+} from '../common/utils/username.utils';
 
 
 @Injectable()
@@ -45,6 +49,9 @@ export class ClubService {
       throw new ClubAlreadyExistsException(createClubDto.name);
     }
 
+    // Generate unique slug from club name before transaction
+    const slug = await this.generateSlug(createClubDto.name);
+
     try {
       // Use transaction to create club and club member atomically
       const club = await this.prisma.$transaction(async (tx) => {
@@ -58,6 +65,7 @@ export class ClubService {
         const newClub = await tx.club.create({
           data: {
             name: createClubDto.name,
+            slug,
             description: createClubDto.description ?? null,
             imageUrl: createClubDto.imageUrl ?? null,
             coverUrl: createClubDto.coverUrl ?? null,
@@ -109,6 +117,28 @@ export class ClubService {
     return code;
   }
 
+  /**
+   * Generate unique slug from club name
+   * Checks database for existing slugs to avoid collisions
+   */
+  private async generateSlug(clubName: string): Promise<string> {
+    const baseSlug = slugify(clubName);
+
+    // Get all existing slugs that start with the base
+    const existingClubs = await this.prisma.club.findMany({
+      where: {
+        slug: {
+          startsWith: baseSlug.substring(0, Math.min(baseSlug.length, 20)),
+        },
+      },
+      select: { slug: true },
+    });
+
+    const existingSlugs = existingClubs.map((c) => c.slug);
+
+    return generateUniqueUsername(clubName, existingSlugs, 'club');
+  }
+
   async findAll(
     filter: FilterClubDto
   ): Promise<PaginatedClubResponseDto> {
@@ -140,6 +170,7 @@ export class ClubService {
         select: {
           id: true,
           name: true,
+          slug: true,
           description: true,
           imageUrl: true,
           coverUrl: true,
@@ -179,6 +210,7 @@ export class ClubService {
       select: {
         id: true,
         name: true,
+        slug: true,
         description: true,
         imageUrl: true,
         coverUrl: true,
@@ -299,11 +331,17 @@ export class ClubService {
       }
     }
 
+    // Regenerate slug if name is being updated
+    const slug = updateClubDto.name
+      ? await this.generateSlug(updateClubDto.name)
+      : undefined;
+
     try {
       const club = await this.prisma.club.update({
         where: { id },
         data: {
           name: updateClubDto.name,
+          ...(slug && { slug }),
           description: updateClubDto.description,
           imageUrl: updateClubDto.imageUrl,
           coverUrl: updateClubDto.coverUrl,
@@ -316,6 +354,7 @@ export class ClubService {
         select: {
           id: true,
           name: true,
+          slug: true,
           description: true,
           imageUrl: true,
           coverUrl: true,
@@ -451,6 +490,7 @@ export class ClubService {
     return {
       id: club.id,
       name: club.name,
+      slug: club.slug,
       description: club.description,
       imageUrl: club.imageUrl,
       coverUrl: club.coverUrl,
