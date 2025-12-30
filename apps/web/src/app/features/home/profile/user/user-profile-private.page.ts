@@ -3,9 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { injectUserStore, UserStore } from '../../../../core/stores';
 import {
-  AvatarComponent,
   IconDirective,
-  PageHeaderComponent,
   PageSectionComponent,
 } from '@cigar-platform/shared/ui';
 import { UserDto } from '@cigar-platform/types';
@@ -35,8 +33,6 @@ import { UserDto } from '@cigar-platform/types';
     CommonModule,
     RouterLink,
     IconDirective,
-    AvatarComponent,
-    PageHeaderComponent,
     PageSectionComponent,
   ],
   templateUrl: './user-profile-private.page.html',
@@ -64,4 +60,20 @@ export class UserProfilePrivatePage {
     if (!user) return '';
     return `${window.location.origin}/user/@${user.username}`;
   });
+
+  /**
+   * Copy profile link to clipboard
+   */
+  async copyProfileLink(): Promise<void> {
+    const url = this.profileUrl();
+    if (!url) return;
+
+    try {
+      await navigator.clipboard.writeText(url);
+      // TODO: Add toast notification
+      console.log('Lien copié dans le presse-papier');
+    } catch {
+      console.error('Impossible de copier le lien');
+    }
+  }
 }

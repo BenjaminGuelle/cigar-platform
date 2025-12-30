@@ -4,9 +4,7 @@ import { RouterLink } from '@angular/router';
 import { ContextStore } from '../../../../core/stores/context.store';
 import { injectClubStore } from '../../../../core/stores/club.store';
 import {
-  AvatarComponent,
   IconDirective,
-  PageHeaderComponent,
   PageSectionComponent,
 } from '@cigar-platform/shared/ui';
 import type { ClubResponseDto } from '@cigar-platform/types';
@@ -37,8 +35,6 @@ import type { ClubResponseDto } from '@cigar-platform/types';
     CommonModule,
     RouterLink,
     IconDirective,
-    AvatarComponent,
-    PageHeaderComponent,
     PageSectionComponent,
   ],
   templateUrl: './club-profile-private.page.html',
@@ -65,17 +61,6 @@ export class ClubProfilePrivatePage {
   readonly slug = computed(() => this.club()?.slug ?? '');
   readonly memberCount = computed(() => this.club()?.memberCount ?? 0);
 
-  // Club adapted for Avatar component (converts undefined to null)
-  readonly clubForAvatar = computed(() => {
-    const club = this.club();
-    if (!club) return null;
-    return {
-      id: club.id,
-      name: club.name,
-      imageUrl: club.imageUrl ?? null,
-    };
-  });
-
   // Stats (TODO: Implement real stats when backend ready)
   readonly eventsCount = computed(() => 0);
   readonly tastingsCount = computed(() => 0);
@@ -101,5 +86,21 @@ export class ClubProfilePrivatePage {
         this.clubId.set('');
       }
     });
+  }
+
+  /**
+   * Copy club profile link to clipboard
+   */
+  async copyClubLink(): Promise<void> {
+    const url = this.profileUrl();
+    if (!url) return;
+
+    try {
+      await navigator.clipboard.writeText(url);
+      // TODO: Add toast notification
+      console.log('Lien copié dans le presse-papier');
+    } catch {
+      console.error('Impossible de copier le lien');
+    }
   }
 }

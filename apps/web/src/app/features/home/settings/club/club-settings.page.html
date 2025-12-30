@@ -22,50 +22,28 @@
       <div class="animate-spin rounded-full h-12 w-12 border-2 border-gold-500 border-t-transparent"></div>
     </div>
   } @else {
+    <!-- Page Header with Back Button -->
+    <div class="space-y-2">
+      <div class="flex items-center gap-3">
+        <a
+          routerLink="/profile"
+          class="p-2 -ml-2 rounded-lg hover:bg-smoke-800 transition-colors group"
+          title="Retour au profil"
+        >
+          <i name="arrow-left" class="w-5 h-5 text-smoke-400 group-hover:text-gold-500 transition-colors"></i>
+        </a>
+        <h1 class="text-xl md:text-2xl font-semibold text-smoke-50">Paramètres du club</h1>
+      </div>
+      <p class="text-sm text-smoke-400">Gérez les paramètres de {{ club()?.name || 'votre club' }}</p>
+    </div>
+
     <!-- Settings Form -->
     <div class="space-y-8">
-      <ui-page-header
-        title="Paramètres du club"
-        [description]="'Gérez les paramètres de ' + (club()?.name || 'votre club')"
-      />
-
-      <!-- Public Club Page Link & Share -->
-      @if (club()) {
-        <div class="flex flex-col gap-2 -mt-2 mb-2">
-          <div class="flex items-center gap-3">
-            <a
-              [routerLink]="['/club', club()!.slug]"
-              class="group flex items-center gap-2"
-            >
-              <i
-                name="eye"
-                class="w-4 h-4 text-gold-500 group-hover:scale-110 transition-transform duration-200"
-              ></i>
-              <span class="text-sm font-medium text-gold-500 hover:text-gold-400 transition-colors">
-                Voir la page du club
-              </span>
-            </a>
-            <button
-              type="button"
-              (click)="copyClubLink()"
-              class="group flex items-center gap-2 px-3 py-1.5 rounded-md bg-smoke-800 hover:bg-smoke-700 transition-colors"
-            >
-              <i
-                name="book-copy"
-                class="w-4 h-4 text-smoke-400 group-hover:text-gold-500 transition-colors"
-              ></i>
-              <span class="text-sm font-medium text-smoke-400 group-hover:text-gold-500 transition-colors">
-                Partager le club
-              </span>
-            </button>
-          </div>
-          <p class="caption text-smoke-400">#{{ clubSlug() }}</p>
-        </div>
-      }
 
       <!-- Avatar Section (Admin & Owner only) -->
       @if (contextStore.canManageClub()) {
-        <ui-page-section title="Avatar du club">
+        <div class="space-y-4">
+          <h2 class="text-base md:text-lg font-medium text-smoke-50">Avatar du club</h2>
           <ui-avatar-upload
             type="club"
             [imageUrl]="club()?.imageUrl ?? null"
@@ -74,13 +52,14 @@
             size="md"
             (fileSelected)="onAvatarFileSelected($event)"
           />
-        </ui-page-section>
+        </div>
       }
 
       <form [formGroup]="clubForm" (ngSubmit)="onUpdateClub()" class="space-y-8">
         <!-- Club Information Section (Admin & Owner only) -->
         @if (contextStore.canManageClub()) {
-          <ui-page-section title="Informations du club">
+          <div class="space-y-4">
+            <h2 class="text-base md:text-lg font-medium text-smoke-50">Informations du club</h2>
             <div class="space-y-6 md:space-y-8">
               <!-- Name (Owner only) -->
               <ui-input
@@ -111,12 +90,13 @@
                 }
               </div>
             </div>
-          </ui-page-section>
+          </div>
         }
 
         <!-- Privacy & Access Section (Owner only) -->
         @if (contextStore.canEditCriticalSettings()) {
-          <ui-page-section title="Confidentialité & Accès">
+          <div class="space-y-4">
+            <h2 class="text-base md:text-lg font-medium text-smoke-50">Confidentialité & Accès</h2>
             <div class="space-y-6 md:space-y-8">
               <!-- Visibility -->
               <ui-select
@@ -165,7 +145,7 @@
               [minlength]="1"
             />
           </div>
-        </ui-page-section>
+          </div>
         }
 
         <!-- Action Buttons (Admin & Owner only) -->
@@ -196,7 +176,8 @@
       </form>
 
       <!-- Danger Zone -->
-      <ui-page-section title="Zone de danger">
+      <div class="space-y-4">
+        <h2 class="text-base md:text-lg font-medium text-smoke-50">Zone de danger</h2>
         <div class="space-y-4">
           <!-- Archive Club (Owner Only) -->
           @if (isOwner()) {
@@ -254,7 +235,7 @@
             </div>
           </div>
         </div>
-      </ui-page-section>
+      </div>
     </div>
   }
 </div>

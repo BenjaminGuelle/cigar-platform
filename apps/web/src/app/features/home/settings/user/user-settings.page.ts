@@ -15,8 +15,6 @@ import {
   ButtonComponent,
   InputComponent,
   AvatarUploadComponent,
-  PageHeaderComponent,
-  PageSectionComponent,
   SwitchComponent,
   IconDirective,
 } from '@cigar-platform/shared/ui';
@@ -61,8 +59,6 @@ interface UserProfileFormValue {
     ButtonComponent,
     InputComponent,
     AvatarUploadComponent,
-    PageHeaderComponent,
-    PageSectionComponent,
     SwitchComponent,
     ConfirmationModalComponent,
   ],

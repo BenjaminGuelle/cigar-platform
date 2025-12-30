@@ -8,8 +8,6 @@ import { injectClubStore } from '../../../../core/stores/club.store';
 import { FormService, ToastService, AuthService } from '../../../../core/services';
 import type { ClubResponseDto, UpdateClubDto } from '@cigar-platform/types';
 import {
-  PageHeaderComponent,
-  PageSectionComponent,
   ButtonComponent,
   InputComponent,
   CheckboxComponent,
@@ -62,8 +60,6 @@ interface ClubSettingsFormValue {
     RouterLink,
     LucideAngularModule,
     IconDirective,
-    PageHeaderComponent,
-    PageSectionComponent,
     ButtonComponent,
     InputComponent,
     CheckboxComponent,

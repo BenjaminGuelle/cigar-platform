@@ -1,46 +1,22 @@
 <div class="mx-auto max-w-4xl space-y-6 md:space-y-8 px-4 md:px-6 py-6 md:py-8">
-    <!-- Page Header -->
-    <ui-page-header
-      title="Paramètres"
-      description="Gérez votre profil et vos préférences"
-    />
-
-    <!-- Public Profile Link & Share -->
-    @if (currentUser()) {
-      <div class="flex flex-col gap-2 -mt-2 mb-2">
-        <div class="flex items-center gap-3">
-          <a
-            [routerLink]="['/user', '@' + currentUser()!.username]"
-            class="group flex items-center gap-2"
-          >
-            <i
-              name="eye"
-              class="w-4 h-4 text-gold-500 group-hover:scale-110 transition-transform duration-200"
-            ></i>
-            <span class="text-sm font-medium text-gold-500 hover:text-gold-400 transition-colors">
-              Voir mon profil public
-            </span>
-          </a>
-          <button
-            type="button"
-            (click)="copyProfileLink()"
-            class="group flex items-center gap-2 px-3 py-1.5 rounded-md bg-smoke-800 hover:bg-smoke-700 transition-colors"
-          >
-            <i
-              name="book-copy"
-              class="w-4 h-4 text-smoke-400 group-hover:text-gold-500 transition-colors"
-            ></i>
-            <span class="text-sm font-medium text-smoke-400 group-hover:text-gold-500 transition-colors">
-              Partager mon profil
-            </span>
-          </button>
-        </div>
-        <p class="caption text-smoke-400">@{{ username() }}</p>
+    <!-- Page Header with Back Button -->
+    <div class="space-y-2">
+      <div class="flex items-center gap-3">
+        <a
+          routerLink="/profile"
+          class="p-2 -ml-2 rounded-lg hover:bg-smoke-800 transition-colors group"
+          title="Retour au profil"
+        >
+          <i name="arrow-left" class="w-5 h-5 text-smoke-400 group-hover:text-gold-500 transition-colors"></i>
+        </a>
+        <h1 class="text-xl md:text-2xl font-semibold text-smoke-50">Paramètres</h1>
       </div>
-    }
+      <p class="text-sm text-smoke-400">Gérez votre profil et vos préférences</p>
+    </div>
 
     <!-- Profil Section -->
-    <ui-page-section title="Profil">
+    <div class="space-y-4">
+      <h2 class="text-base md:text-lg font-medium text-smoke-50">Profil</h2>
       <!-- Avatar Upload -->
       <div class="mb-8">
         <ui-avatar-upload
@@ -125,10 +101,11 @@
             </ui-button>
           </div>
         </form>
-    </ui-page-section>
+    </div>
 
     <!-- Confidentialité Section (auto-save switches) -->
-    <ui-page-section title="Confidentialité">
+    <div class="space-y-4">
+      <h2 class="text-base md:text-lg font-medium text-smoke-50">Confidentialité</h2>
       <div class="space-y-6 md:space-y-8">
         <ui-switch
           switchId="visibility-public"
@@ -146,10 +123,11 @@
           [control]="shareEvaluationsSwitch"
         />
       </div>
-    </ui-page-section>
+    </div>
 
     <!-- Compte Section -->
-    <ui-page-section title="Compte">
+    <div class="space-y-4">
+      <h2 class="text-base md:text-lg font-medium text-smoke-50">Compte</h2>
       <div class="space-y-6 md:space-y-8">
         <!-- Email -->
         <div class="flex items-center justify-between border-b border-smoke-800 pb-6">
@@ -188,15 +166,16 @@
           </ui-button>
         </div>
       </div>
-    </ui-page-section>
+    </div>
 
     <!-- À propos Section -->
-    <ui-page-section title="À propos" [bordered]="false">
+    <div class="space-y-4">
+      <h2 class="text-base md:text-lg font-medium text-smoke-50">À propos</h2>
       <div class="space-y-2">
         <p class="body">Cigar & Club - Application de gestion de clubs de dégustation</p>
         <p class="caption">Version 1.0.0</p>
       </div>
-    </ui-page-section>
+    </div>
   </div>
 
   <!-- Logout Confirmation Modal -->
