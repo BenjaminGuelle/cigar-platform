@@ -15,7 +15,7 @@ import {
 /**
  * Club Public Profile Page
  *
- * Route: /club/:id
+ * Route: /club/:slug (Prestige URL with slug)
  * Accessible: Without membership
  *
  * Features:
@@ -32,6 +32,7 @@ import {
  * - Template in separate .html file
  * - Computed signals (no `!` assertions)
  * - Clean separation of concerns
+ * - Uses slug from URL (supports #slug or slug)
  */
 @Component({
   selector: 'app-club-profile',
@@ -52,13 +53,14 @@ export class ClubProfilePage {
   #toastService = inject(ToastService);
 
   // Route params (toSignal pattern - no subscribe)
-  readonly clubId = toSignal(
-    this.#route.paramMap.pipe(map((p) => p.get('id') ?? '')),
+  // Slug from URL (with or without #)
+  readonly clubSlugParam = toSignal(
+    this.#route.paramMap.pipe(map((p) => p.get('slug') ?? '')),
     { initialValue: '' }
   );
 
-  // Reactive query with getter pattern
-  readonly clubQuery = this.#clubStore.getClubById(() => this.clubId());
+  // Reactive query with getter pattern (backend supports slug)
+  readonly clubQuery = this.#clubStore.getClubById(() => this.clubSlugParam());
 
   // Computed states - extract signals from query
   readonly loading = this.clubQuery.loading;

@@ -115,12 +115,12 @@ export class ClubSettingsPage {
     return this.contextStore.context().clubRole === 'owner';
   });
 
-  // Club link computed
+  // Club link computed (Prestige URL with slug)
   readonly clubSlug = computed(() => this.club()?.slug ?? '');
   readonly clubUrl = computed(() => {
     const club = this.club();
     if (!club) return '';
-    return `${window.location.origin}/club/${club.id}`;
+    return `${window.location.origin}/club/${club.slug}`;
   });
 
   // Track if form has unsaved changes (reactive!)

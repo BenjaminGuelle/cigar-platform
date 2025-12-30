@@ -10,7 +10,7 @@
       <div class="flex flex-col gap-2 -mt-2 mb-2">
         <div class="flex items-center gap-3">
           <a
-            [routerLink]="['/user', currentUser()!.id]"
+            [routerLink]="['/user', '@' + currentUser()!.username]"
             class="group flex items-center gap-2"
           >
             <i

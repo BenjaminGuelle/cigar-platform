@@ -20,6 +20,7 @@ import {
   generateUniqueUsername,
   slugify,
 } from '../common/utils/username.utils';
+import { isUuid, normalizeSlug } from '../common/utils/identifier.util';
 
 
 @Injectable()
@@ -204,9 +205,20 @@ export class ClubService {
     };
   }
 
-  async findOne(id: string, currentUserId?: string): Promise<ClubResponseDto> {
+  /**
+   * Find club by ID or slug
+   * Supports both UUID and slug lookups
+   * @param identifier - Club ID (UUID) or slug (with or without #)
+   * @param currentUserId - Current user ID (optional)
+   * @returns Club response DTO
+   */
+  async findOne(identifier: string, currentUserId?: string): Promise<ClubResponseDto> {
+    // Determine if identifier is UUID or slug
+    const isId = isUuid(identifier);
+    const slug = isId ? null : normalizeSlug(identifier);
+
     const club = await this.prisma.club.findUnique({
-      where: { id },
+      where: isId ? { id: identifier } : { slug: slug! },
       select: {
         id: true,
         name: true,
@@ -233,7 +245,7 @@ export class ClubService {
     });
 
     if (!club) {
-      throw new ClubNotFoundException(id);
+      throw new ClubNotFoundException(identifier);
     }
 
     // Get current user's status if authenticated
@@ -246,7 +258,7 @@ export class ClubService {
       const ban = await this.prisma.clubBan.findUnique({
         where: {
           clubId_userId: {
-            clubId: id,
+            clubId: club.id,
             userId: currentUserId,
           },
         },
@@ -259,7 +271,7 @@ export class ClubService {
         const membership = await this.prisma.clubMember.findUnique({
           where: {
             clubId_userId: {
-              clubId: id,
+              clubId: club.id,
               userId: currentUserId,
             },
           },
@@ -275,7 +287,7 @@ export class ClubService {
           // 3. Check if user has a join request (PENDING or REJECTED)
           const joinRequest = await this.prisma.clubJoinRequest.findFirst({
             where: {
-              clubId: id,
+              clubId: club.id,
               userId: currentUserId,
             },
             orderBy: {

@@ -1,163 +1,79 @@
 import { Injectable, inject } from '@angular/core';
-import { ClubsService } from '@cigar-platform/types/lib/clubs/clubs.service';
-import type { ClubResponseDto } from '@cigar-platform/types';
-
-/**
- * Search Entity Types
- * MVP: clubs only
- * Future: users, events, cigars
- */
-export type SearchEntityType = 'club' | 'user' | 'event' | 'cigar';
-
-/**
- * Club Search Result
- */
-export interface ClubSearchResult {
-  id: string;
-  name: string;
-  description: string | null;
-  visibility: 'PUBLIC' | 'PRIVATE';
-  memberCount: number;
-  imageUrl?: string | null | undefined;
-}
-
-/**
- * Grouped Search Results
- * Extensible for future entity types
- */
-export interface SearchResults {
-  clubs: ClubSearchResult[];
-  users: unknown[]; // future
-  events: unknown[]; // future
-  cigars: unknown[]; // future
-}
-
-/**
- * Search Filters
- */
-export interface SearchFilters {
-  entityType?: SearchEntityType;
-  limit?: number;
-}
+import { SearchService } from '@cigar-platform/types/lib/search/search.service';
+import type { SearchResultDto } from '@cigar-platform/types';
 
 /**
  * Global Search Service
  *
- * Stateless service for search operations
- * Works with TanStack Query (injectQuery) for caching and reactivity
+ * Stateless service for omnisearch operations
+ * Uses backend /api/search endpoint with prefix-based filtering
  *
  * Features:
  * - Promise-based (query layer compatible)
- * - Client-side smart filtering
- * - Extensible architecture (MVP: clubs only)
+ * - Server-side search (brands, cigars, clubs, users)
+ * - Prefix filtering (@username, #slug)
+ * - Performance optimized (<100ms backend target)
  * - Type-safe
  *
  * Architecture:
  * - No state, pure functions
  * - Returns Promises for injectQuery
  * - Debouncing handled by component
+ *
+ * Search Prefixes:
+ * - @username → Search users only
+ * - #slug → Search clubs only
+ * - No prefix → Global search (brands, cigars, PUBLIC clubs, users)
  */
 @Injectable({
   providedIn: 'root',
 })
 export class GlobalSearchService {
-  #clubsService = inject(ClubsService);
+  #searchService = inject(SearchService);
 
   /**
-   * Search clubs
-   * Promise-based for query layer integration
+   * Universal search using backend /api/search endpoint
    *
-   * @param query - Search query string
-   * @param limit - Max results (default 20)
-   * @returns Promise of club search results
+   * Supports prefix-based filtering:
+   * - @username → Search users only
+   * - #slug → Search clubs only
+   * - No prefix → Global search (brands, cigars, PUBLIC clubs, users)
+   *
+   * @param query - Search query string (with optional prefix)
+   * @returns Promise of search results
    */
-  async searchClubs(query: string, limit: number = 20): Promise<ClubSearchResult[]> {
+  async search(query: string): Promise<SearchResultDto> {
     // Empty query returns empty results
     if (!query || query.trim().length === 0) {
-      return [];
+      return {
+        query: '',
+        searchType: 'global',
+        brands: [],
+        cigars: [],
+        clubs: [],
+        users: [],
+        total: 0,
+        duration: 0,
+      };
     }
-
-    const trimmedQuery = query.trim().toLowerCase();
 
     try {
-      const response = await this.#clubsService.clubControllerFindAll({
-        limit: 100, // Fetch more for client-side filtering
-        page: 1,
-      });
-
-      const clubs: ClubResponseDto[] = response?.data ?? [];
-
-      // Client-side smart filtering
-      // TODO: Move to server-side when API supports search
-      const filtered = clubs.filter((club) => {
-        const name = club.name.toLowerCase();
-        const description = club.description ? String(club.description).toLowerCase() : '';
-        const visibility = club.visibility.toLowerCase();
-
-        // Match name or description (includes or starts with)
-        const matchesName = name.includes(trimmedQuery);
-        const matchesDescription = description.includes(trimmedQuery);
-
-        // Visibility keywords with prefix matching
-        // User can type "p", "pu", "pub", "publi", "public" to find PUBLIC clubs
-        const publicKeywords = ['public', 'publique'];
-        const privateKeywords = ['privé', 'prive', 'private'];
-
-        const matchesPublicKeyword = publicKeywords.some((kw) => {
-          // Check if keyword starts with query OR query is contained in keyword
-          return kw.startsWith(trimmedQuery) || trimmedQuery.includes(kw);
-        });
-
-        const matchesPrivateKeyword = privateKeywords.some((kw) => {
-          // Check if keyword starts with query OR query is contained in keyword
-          return kw.startsWith(trimmedQuery) || trimmedQuery.includes(kw);
-        });
-
-        const matchesVisibility =
-          (matchesPublicKeyword && visibility === 'public') ||
-          (matchesPrivateKeyword && visibility === 'private');
-
-        return matchesName || matchesDescription || matchesVisibility;
-      });
-
-      // Limit results
-      const limited = filtered.slice(0, limit);
-
-      // Map to ClubSearchResult
-      return limited.map((club) => ({
-        id: club.id,
-        name: club.name,
-        description: club.description ? String(club.description) : null,
-        visibility: club.visibility,
-        memberCount: club.memberCount,
-        imageUrl: club.imageUrl ? String(club.imageUrl) : null,
-      }));
+      // Call backend omnisearch endpoint
+      const result = await this.#searchService.searchControllerSearch({ q: query });
+      return result;
     } catch (error) {
       // Error handling - return empty results
-      return [];
+      console.error('[GlobalSearchService] Search failed:', error);
+      return {
+        query,
+        searchType: 'global',
+        brands: [],
+        cigars: [],
+        clubs: [],
+        users: [],
+        total: 0,
+        duration: 0,
+      };
     }
-  }
-
-  /**
-   * Search all entities (grouped results)
-   * MVP: Clubs only
-   * Future: users, events, cigars
-   *
-   * @param query - Search query string
-   * @param filters - Optional filters
-   * @returns Promise of grouped search results
-   */
-  async search(query: string, filters?: SearchFilters): Promise<SearchResults> {
-    const limit = filters?.limit ?? 20;
-
-    // MVP: Search clubs only
-    const clubs = await this.searchClubs(query, limit);
-
-    return {
-      clubs,
-      users: [], // future
-      events: [], // future
-      cigars: [], // future
-    };
   }
 }

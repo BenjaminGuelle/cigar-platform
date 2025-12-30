@@ -11,6 +11,9 @@ export class MemberUserDto {
   @ApiProperty({ example: 'John Doe' })
   displayName: string;
 
+  @ApiProperty({ example: 'johndoe' })
+  username: string;
+
   @ApiProperty({ type: String, example: 'https://example.com/avatar.jpg', nullable: true })
   avatarUrl: string | null;
 }

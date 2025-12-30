@@ -115,12 +115,16 @@ export class ClubController {
     return this.clubService.findMyClubs(userId);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get a club by ID' })
+  @Get(':identifier')
+  @ApiOperation({ summary: 'Get a club by ID or slug' })
   @ApiParam({
-    name: 'id',
-    description: 'Club UUID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
+    name: 'identifier',
+    description: 'Club ID (UUID) or slug (with or without #)',
+    examples: {
+      uuid: { value: '123e4567-e89b-12d3-a456-426614174000' },
+      slug: { value: 'cuban-cigars' },
+      slugWithHash: { value: '#cuban-cigars' },
+    },
   })
   @ApiResponse({
     status: 200,
@@ -136,10 +140,10 @@ export class ClubController {
     description: 'Unauthorized',
   })
   async findOne(
-    @Param('id') id: string,
+    @Param('identifier') identifier: string,
     @CurrentUser('id') currentUserId?: string,
   ): Promise<ClubResponseDto> {
-    return this.clubService.findOne(id, currentUserId);
+    return this.clubService.findOne(identifier, currentUserId);
   }
 
   @Patch(':id')

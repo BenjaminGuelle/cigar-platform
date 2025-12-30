@@ -19,34 +19,33 @@ import { IconDirective } from '../../directives/icon';
 import { SearchResultGroupComponent } from '../search-result-group';
 import { SearchResultItemComponent, type SearchResultIconBadge } from '../search-result-item';
 import { ModalComponent } from '../modal';
+import type { SearchResultDto } from '@cigar-platform/types';
 import clsx from 'clsx';
 
 /**
- * Club Search Result Item
- * Extended with display formatting for UI
+ * Unified Search Result Item for UI
+ * Flattened list for keyboard navigation
  */
-export interface ClubSearchResultItem {
+export interface SearchResultItem {
   id: string;
+  type: 'brand' | 'cigar' | 'club' | 'user';
   name: string;
-  description: string | null;
-  visibility: 'PUBLIC' | 'PRIVATE';
-  memberCount: number;
-  avatarUrl: string | null;
-  // Computed for display
   subtitle: string;
-  iconBadge: SearchResultIconBadge;
+  avatarUrl: string | null | undefined;
+  iconBadge?: SearchResultIconBadge;
 }
 
 /**
  * Global Search Modal Component
  *
- * Intelligent search modal accessible from anywhere in the app
+ * Intelligent omnisearch modal accessible from anywhere in the app
  * Command Palette / Spotlight inspired
  *
  * Features:
  * - Single search input (debounced)
- * - Grouped results by entity type
+ * - Grouped results by entity type (brands, cigars, clubs, users)
  * - Keyboard navigation (↑↓ Enter Esc)
+ * - Prefix-based filtering (@username, #slug)
  * - Non-destructive (preserves context)
  * - Popover style on desktop (from search icon)
  * - Full-screen on mobile
@@ -59,12 +58,9 @@ export interface ClubSearchResultItem {
  *
  * Architecture:
  * - Uses shared ModalComponent (position: right)
- * - Receives search results from parent
+ * - Receives search results from parent (SearchResultDto)
  * - Emits navigation events
  * - Stateless (controlled component)
- *
- * MVP: Clubs only
- * Future: Users, Events, Cigars
  */
 
 @Component({
@@ -88,25 +84,147 @@ export class GlobalSearchModalComponent {
   // Inputs
   readonly isOpen = input<boolean>(false);
   readonly loading = input<boolean>(false);
-  readonly clubResults = input<ClubSearchResultItem[]>([]);
+  readonly searchResults = input<SearchResultDto>({
+    query: '',
+    searchType: 'global',
+    brands: [],
+    cigars: [],
+    clubs: [],
+    users: [],
+    total: 0,
+    duration: 0,
+  });
 
   // Outputs
   readonly close = output<void>();
   readonly searchQueryChanged = output<string>();
-  readonly resultClicked = output<{ id: string; type: 'club' }>();
+  readonly resultClicked = output<{ id: string; type: 'brand' | 'cigar' | 'club' | 'user' }>();
 
   // Internal State
   readonly searchControl = new FormControl('');
   readonly #activeResultIndex: WritableSignal<number> = signal<number>(-1);
 
-  // Computed
+  // Computed - Flatten all results for keyboard navigation
+  readonly allResults: Signal<SearchResultItem[]> = computed<SearchResultItem[]>(() => {
+    const results = this.searchResults();
+    const items: SearchResultItem[] = [];
+
+    // Add brands
+    (results.brands ?? []).forEach((brand) => {
+      items.push({
+        id: brand.id,
+        type: 'brand',
+        name: brand.name,
+        subtitle: brand.metadata ?? brand.country,
+        avatarUrl: brand.imageUrl,
+      });
+    });
+
+    // Add cigars
+    (results.cigars ?? []).forEach((cigar) => {
+      items.push({
+        id: cigar.id,
+        type: 'cigar',
+        name: cigar.name,
+        subtitle: cigar.metadata ?? '',
+        avatarUrl: cigar.imageUrl,
+      });
+    });
+
+    // Add clubs
+    (results.clubs ?? []).forEach((club) => {
+      items.push({
+        id: club.id,
+        type: 'club',
+        name: club.name,
+        subtitle: club.metadata ?? '',
+        avatarUrl: club.imageUrl,
+        iconBadge: club.visibility === 'PUBLIC' ? ('public' as const) : ('private' as const),
+      });
+    });
+
+    // Add users
+    (results.users ?? []).forEach((user) => {
+      items.push({
+        id: user.id,
+        type: 'user',
+        name: user.name,
+        subtitle: `@${user.username}`,
+        avatarUrl: user.imageUrl,
+      });
+    });
+
+    return items;
+  });
+
   readonly hasResults: Signal<boolean> = computed<boolean>(() => {
-    return this.clubResults().length > 0;
+    return this.allResults().length > 0;
   });
 
   readonly showEmpty: Signal<boolean> = computed<boolean>(() => {
     const query = this.searchControl.value?.trim() || '';
     return query.length > 0 && !this.loading() && !this.hasResults();
+  });
+
+  readonly hasExactCigarMatch: Signal<boolean> = computed<boolean>(() => {
+    const results = this.searchResults();
+    const query = results.query.toLowerCase().trim();
+    return (results.cigars ?? []).some(cigar =>
+      cigar.name.toLowerCase() === query
+    );
+  });
+
+  // Computed - Limited results for global view (3 max per section)
+  readonly limitedBrands = computed(() => {
+    const results = this.searchResults();
+    const isGlobal = results.searchType === 'global';
+    const brands = results.brands ?? [];
+    return isGlobal ? brands.slice(0, 3) : brands;
+  });
+
+  readonly hasMoreBrands = computed(() => {
+    const results = this.searchResults();
+    const isGlobal = results.searchType === 'global';
+    return isGlobal && (results.brands ?? []).length > 3;
+  });
+
+  readonly limitedCigars = computed(() => {
+    const results = this.searchResults();
+    const isGlobal = results.searchType === 'global';
+    const cigars = results.cigars ?? [];
+    return isGlobal ? cigars.slice(0, 3) : cigars;
+  });
+
+  readonly hasMoreCigars = computed(() => {
+    const results = this.searchResults();
+    const isGlobal = results.searchType === 'global';
+    return isGlobal && (results.cigars ?? []).length > 3;
+  });
+
+  readonly limitedClubs = computed(() => {
+    const results = this.searchResults();
+    const isGlobal = results.searchType === 'global';
+    const clubs = results.clubs ?? [];
+    return isGlobal ? clubs.slice(0, 3) : clubs;
+  });
+
+  readonly hasMoreClubs = computed(() => {
+    const results = this.searchResults();
+    const isGlobal = results.searchType === 'global';
+    return isGlobal && (results.clubs ?? []).length > 3;
+  });
+
+  readonly limitedUsers = computed(() => {
+    const results = this.searchResults();
+    const isGlobal = results.searchType === 'global';
+    const users = results.users ?? [];
+    return isGlobal ? users.slice(0, 3) : users;
+  });
+
+  readonly hasMoreUsers = computed(() => {
+    const results = this.searchResults();
+    const isGlobal = results.searchType === 'global';
+    return isGlobal && (results.users ?? []).length > 3;
   });
 
   constructor() {
@@ -131,7 +249,7 @@ export class GlobalSearchModalComponent {
 
     // Reset active index when results change
     effect(() => {
-      const results = this.clubResults();
+      const results = this.allResults();
       if (results.length > 0) {
         this.#activeResultIndex.set(0);
       } else {
@@ -147,7 +265,7 @@ export class GlobalSearchModalComponent {
   handleKeyboard(event: KeyboardEvent): void {
     if (!this.isOpen()) return;
 
-    const results = this.clubResults();
+    const results = this.allResults();
     const currentIndex = this.#activeResultIndex();
 
     switch (event.key) {
@@ -192,15 +310,52 @@ export class GlobalSearchModalComponent {
   /**
    * Handle result click
    */
-  handleResultClick(result: ClubSearchResultItem): void {
-    this.resultClicked.emit({ id: result.id, type: 'club' });
+  handleResultClick(result: SearchResultItem): void {
+    this.resultClicked.emit({ id: result.id, type: result.type });
     this.handleClose();
   }
 
   /**
-   * Check if result is active (keyboard navigation)
+   * Handle create cigar action
+   * Triggered when user clicks the "Add to database" virtual item
    */
-  isResultActive(index: number): boolean {
-    return this.#activeResultIndex() === index;
+  handleCreateCigar(): void {
+    const query = this.searchResults().query;
+    // TODO: Emit event to parent to open create cigar modal with pre-filled name
+    console.log('[GlobalSearchModal] Create cigar requested:', query);
+    this.handleClose();
+  }
+
+  /**
+   * Handle "See all" click - filters search to specific category
+   * Simulates prefix by updating search query
+   */
+  handleSeeAll(type: 'brand' | 'cigar' | 'club' | 'user'): void {
+    const currentQuery = this.searchResults().query;
+    const prefix = type === 'user' ? '@' : type === 'club' ? '#' : '';
+
+    // Update search control to trigger new search with prefix
+    // For brands/cigars, no prefix exists, so just keep the query as-is
+    // The backend will filter by searchType
+    if (prefix) {
+      this.searchControl.setValue(prefix + currentQuery);
+    }
+  }
+
+  /**
+   * Check if result is active (keyboard navigation)
+   * Maps flattened index to actual group position
+   */
+  isResultActive(type: string, localIndex: number): boolean {
+    const results = this.allResults();
+    const globalIndex = this.#activeResultIndex();
+
+    // Find the result at the global active index
+    const activeResult = results[globalIndex];
+    if (!activeResult) return false;
+
+    // Check if this result type and local index matches the active one
+    const sameTypeResults = results.filter(r => r.type === type);
+    return activeResult.type === type && sameTypeResults[localIndex]?.id === activeResult.id;
   }
 }

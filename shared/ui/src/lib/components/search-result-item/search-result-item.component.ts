@@ -32,19 +32,21 @@ import clsx from 'clsx';
  */
 
 export type SearchResultIconBadge = 'public' | 'private' | 'user' | 'event' | 'cigar';
-export type SearchResultEntityType = 'club' | 'user' | 'event' | 'cigar';
+export type SearchResultEntityType = 'brand' | 'cigar' | 'club' | 'user' | 'event';
 
 const CLASSES = {
   container: {
-    base: 'group relative flex items-center gap-3 px-4 py-3 border-b border-smoke-700/30 transition-all duration-150 cursor-pointer',
+    base: 'group relative flex items-center gap-3 px-4 py-2 border-b border-smoke-700/30 transition-all duration-150 cursor-pointer',
     hover: 'hover:bg-smoke-700/30',
     active: 'bg-smoke-700/50 border-gold-500/30',
     last: 'border-b-0',
   },
   avatar: {
-    container: 'flex-shrink-0 w-10 h-10 rounded-full bg-smoke-700 flex items-center justify-center overflow-hidden',
+    container: 'flex-shrink-0 w-8 h-8 rounded-full bg-smoke-700 flex items-center justify-center overflow-hidden',
+    containerGold: 'flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-gold-500 to-gold-700 flex items-center justify-center overflow-hidden',
     image: 'w-full h-full object-cover',
-    icon: 'w-5 h-5 text-smoke-400',
+    icon: 'w-4 h-4 text-smoke-400',
+    iconGold: 'w-4 h-4 text-smoke-900',
   },
   content: {
     container: 'flex-1 min-w-0',
@@ -70,7 +72,7 @@ const CLASSES = {
       [attr.aria-selected]="isActive()"
     >
       <!-- Avatar / Icon -->
-      <div [class]="CLASSES.avatar.container">
+      <div [class]="avatarContainerClasses()">
         @if (avatarUrl()) {
           <img
             [src]="avatarUrl()"
@@ -80,7 +82,7 @@ const CLASSES = {
         } @else {
           <i
             [name]="entityIcon()"
-            [class]="CLASSES.avatar.icon"
+            [class]="avatarIconClasses()"
           ></i>
         }
       </div>
@@ -110,7 +112,7 @@ export class SearchResultItemComponent {
   // Inputs
   readonly title = input.required<string>();
   readonly subtitle = input<string>('');
-  readonly iconBadge = input<SearchResultIconBadge>('public');
+  readonly iconBadge = input<SearchResultIconBadge | undefined>(undefined);
   readonly isActive = input<boolean>(false);
   readonly avatarUrl = input<string | null>(null);
   readonly entityType = input<SearchResultEntityType>('club');
@@ -125,10 +127,11 @@ export class SearchResultItemComponent {
   readonly entityIcon: Signal<IconName> = computed<IconName>(() => {
     const type = this.entityType();
     const iconMap: Record<SearchResultEntityType, IconName> = {
+      brand: 'star',
+      cigar: 'flame',
       club: 'users',
       user: 'user',
       event: 'calendar',
-      cigar: 'flame',
     };
     return iconMap[type];
   });
@@ -147,6 +150,18 @@ export class SearchResultItemComponent {
       CLASSES.badge.container,
       badge === 'public' ? CLASSES.badge.public : CLASSES.badge.private
     );
+  });
+
+  readonly avatarContainerClasses: Signal<string> = computed<string>(() => {
+    const type = this.entityType();
+    const isPremium = type === 'brand' || type === 'cigar';
+    return isPremium ? CLASSES.avatar.containerGold : CLASSES.avatar.container;
+  });
+
+  readonly avatarIconClasses: Signal<string> = computed<string>(() => {
+    const type = this.entityType();
+    const isPremium = type === 'brand' || type === 'cigar';
+    return isPremium ? CLASSES.avatar.iconGold : CLASSES.avatar.icon;
   });
 
   // Event handler

@@ -1,6 +1,7 @@
-import { Component, inject, Signal, signal, WritableSignal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, Signal, signal, WritableSignal, computed, effect, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet } from '@angular/router';
+import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { AuthService, SearchModalService } from '../../core/services';
 import { ContextStore, type ClubWithRole } from '../../core/stores/context.store';
 import type { UserWithAuth } from '@cigar-platform/types';
@@ -13,6 +14,7 @@ import {
   DesktopTopTabItemComponent,
   ContextSwitcherComponent,
   FabMenuComponent,
+  ComingSoonModalComponent,
   type FabMenuItem,
 } from '@cigar-platform/shared/ui';
 import { CreateJoinClubModalComponent } from '../../shared/components/create-join-club-modal';
@@ -42,6 +44,7 @@ import { GlobalSearchComponent } from '../../shared/components/global-search';
     CreateContentModalComponent,
     FabMenuComponent,
     GlobalSearchComponent,
+    ComingSoonModalComponent,
   ],
   templateUrl: './home.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -49,6 +52,7 @@ import { GlobalSearchComponent } from '../../shared/components/global-search';
 export class HomeComponent {
   #authService = inject(AuthService);
   #searchModal = inject(SearchModalService);
+  #router = inject(Router);
 
   // Expose contextStore for template access to permission methods
   readonly contextStore = inject(ContextStore);
@@ -68,6 +72,10 @@ export class HomeComponent {
 
   // Create content modal state
   readonly createContentModalOpen: WritableSignal<boolean> = signal<boolean>(false);
+
+  // Coming Soon modal state
+  readonly comingSoonModalOpen: WritableSignal<boolean> = signal<boolean>(false);
+  readonly comingSoonFeature: WritableSignal<string> = signal<string>('');
 
   // FAB menu state
   readonly fabMenuOpen: WritableSignal<boolean> = signal<boolean>(false);
@@ -106,6 +114,13 @@ export class HomeComponent {
         this.contextStore.hydrateClubContext(context.clubId);
       }
     });
+
+    // Close search modal on navigation (mobile bottom tab clicks)
+    this.#router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe(() => {
+        this.#searchModal.close();
+      });
   }
 
   onSignOut(): void {
@@ -158,6 +173,8 @@ export class HomeComponent {
   }
 
   onFabMenuToggle(): void {
+    // Close search modal when opening FAB menu (mobile bottom tab)
+    this.#searchModal.close();
     this.fabMenuOpen.update(open => !open);
   }
 
@@ -175,10 +192,26 @@ export class HomeComponent {
   }
 
   onSearchOpen(): void {
-    this.#searchModal.open();
+    // Toggle search modal (open if closed, close if open)
+    if (this.searchModalOpen()) {
+      this.#searchModal.close();
+    } else {
+      this.#searchModal.open();
+    }
   }
 
   onSearchClose(): void {
     this.#searchModal.close();
+  }
+
+  onComingSoonOpen(featureName: string): void {
+    // Close search modal when opening coming soon modal (mobile bottom tab)
+    this.#searchModal.close();
+    this.comingSoonFeature.set(featureName);
+    this.comingSoonModalOpen.set(true);
+  }
+
+  onComingSoonClose(): void {
+    this.comingSoonModalOpen.set(false);
   }
 }

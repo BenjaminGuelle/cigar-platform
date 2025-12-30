@@ -86,7 +86,7 @@
           @for (club of clubs(); track club.id) {
             <div
               class="group flex-shrink-0 cursor-pointer"
-              (click)="navigateToClub(club.id)"
+              (click)="navigateToClub(club.slug)"
               [uiTooltip]="club.name"
               [tooltipPosition]="'bottom'"
             >

@@ -5,6 +5,7 @@ export * from './lib/components/avatar-upload';
 export * from './lib/components/button';
 export * from './lib/components/checkbox';
 export * from './lib/components/club-card';
+export * from './lib/components/coming-soon-modal';
 export * from './lib/components/fab-menu';
 export * from './lib/components/global-search-modal';
 export * from './lib/components/input';

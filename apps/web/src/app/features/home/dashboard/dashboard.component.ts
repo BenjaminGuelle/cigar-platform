@@ -1,17 +1,36 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ContextSwitcherComponent } from '../../../shared/components/context-switcher/context-switcher.component';
+import { DashboardUserPage } from './user/dashboard-user.page';
+import { DashboardClubPage } from './club/dashboard-club.page';
 
+/**
+ * Dashboard Context Page (Shell)
+ *
+ * Route: /dashboard
+ * Architecture: Context-driven routing shell
+ *
+ * Pattern:
+ * - Zero business logic (pure shell)
+ * - Uses generic ContextSwitcherComponent
+ * - Switches between DashboardUserPage and DashboardClubPage
+ * - Based on ContextStore.context()
+ *
+ * The context selects the page.
+ * The page never decides the context.
+ */
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [
+    ContextSwitcherComponent,
+    DashboardUserPage,
+    DashboardClubPage,
+  ],
   template: `
-    <div class="mx-auto max-w-5xl">
-      <div class="rounded-xl border border-smoke-700 bg-smoke-800 p-8 text-center shadow-xl shadow-smoke-950/50 md:p-12">
-        <h2 class="mb-4 text-2xl font-bold text-smoke-50 md:text-4xl">Bienvenue sur Cigar & Club</h2>
-        <p class="text-lg text-smoke-300 md:text-xl">Votre application de gestion de club de cigares</p>
-      </div>
-    </div>
+    <app-context-switcher>
+      <app-dashboard-user solo />
+      <app-dashboard-club club />
+    </app-context-switcher>
   `,
 })
 export class DashboardComponent {}

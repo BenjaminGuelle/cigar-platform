@@ -60,14 +60,21 @@ import { IconDirective } from '../../directives/icon';
           <ng-content />
         </div>
 
-        <!-- Search Button -->
+        <!-- Notifications Button -->
         <button
           type="button"
-          (click)="searchClick.emit()"
-          class="flex items-center justify-center w-10 h-10 rounded-lg text-smoke-400 hover:text-gold-500 hover:bg-smoke-800/50 transition-all duration-150 active:scale-95 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 focus:ring-offset-smoke-900"
-          aria-label="Rechercher"
+          (click)="notificationsClick.emit()"
+          class="flex items-center justify-center w-10 h-10 rounded-lg text-smoke-400 hover:text-gold-500 hover:bg-smoke-800/50 transition-all duration-150 active:scale-95 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 focus:ring-offset-smoke-900 relative"
+          aria-label="Notifications"
         >
-          <i name="search" class="w-5 h-5"></i>
+          <i name="bell" class="w-5 h-5"></i>
+          @if (notificationsBadge() && notificationsBadge()! > 0) {
+            <span
+              class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-error-500 px-1 text-xs font-bold text-white"
+            >
+              {{ notificationsBadge()! > 99 ? '99+' : notificationsBadge() }}
+            </span>
+          }
         </button>
 
         <!-- FAB Menu (contextual quick actions) -->
@@ -93,9 +100,12 @@ export class MobileHeaderComponent {
   readonly fabMenuOpen = input<boolean>(false);
   readonly fabMenuItems = input<FabMenuItem[]>([]);
 
+  // Notifications
+  readonly notificationsBadge = input<number>(0);
+
   // Events
   readonly contextClick = output<void>();
-  readonly searchClick = output<void>();
+  readonly notificationsClick = output<void>();
   readonly fabMenuToggle = output<void>();
   readonly fabMenuClose = output<void>();
   readonly fabMenuItemClicked = output<string>();

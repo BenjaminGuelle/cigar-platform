@@ -18,28 +18,28 @@ datasource db {
 
 // Global platform roles
 enum Role {
-  SUPER_ADMIN  // Platform super admin (full control, accès /admin)
-  MODERATOR    // Platform moderator (modération contenu global)
-  USER         // Standard user (default)
+  SUPER_ADMIN // Platform super admin (full control, accès /admin)
+  MODERATOR // Platform moderator (modération contenu global)
+  USER // Standard user (default)
 }
 
 // Club-specific roles
 enum ClubRole {
-  owner   // Club owner (créateur, droits maximum)
-  admin   // Club admin (peut gérer membres, events)
-  member  // Club member (peut voir et participer)
+  owner // Club owner (créateur, droits maximum)
+  admin // Club admin (peut gérer membres, events)
+  member // Club member (peut voir et participer)
 }
 
 // Club visibility
 enum ClubVisibility {
-  PUBLIC   // Visible dans /explore, rejoignable selon autoApprove
-  PRIVATE  // Invitation/demande uniquement
+  PUBLIC // Visible dans /explore, rejoignable selon autoApprove
+  PRIVATE // Invitation/demande uniquement
 }
 
 // User visibility (for profile display)
 enum UserVisibility {
-  PUBLIC   // displayName visible, @username en sous-titre
-  PRIVATE  // Seulement @username visible, displayName masqué
+  PUBLIC // displayName visible, @username en sous-titre
+  PRIVATE // Seulement @username visible, displayName masqué
 }
 
 // Join request status
@@ -49,17 +49,31 @@ enum JoinRequestStatus {
   REJECTED
 }
 
+// Cigar verification status
+enum CigarStatus {
+  PENDING // En attente de validation (user-submitted)
+  VERIFIED // Validé par un modérateur
+  REJECTED // Rejeté (doublon, erreur)
+}
+
+// Tasting visibility
+enum TastingVisibility {
+  PUBLIC // Visible par tous
+  PRIVATE // Visible uniquement par l'auteur
+  CLUB_ONLY // Visible uniquement par les membres des clubs partagés
+}
+
 // ============================================
 // MODELS
 // ============================================
 
 model User {
-  id          String   @id @default(uuid()) @db.Uuid
-  email       String   @unique
+  id          String  @id @default(uuid()) @db.Uuid
+  email       String  @unique
   displayName String
-  username    String   @unique // @username - identité unique (3-30 chars, a-z0-9._)
+  username    String  @unique // @username - identité unique (3-30 chars, a-z0-9._)
   avatarUrl   String?
-  bio         String?  @db.Text
+  bio         String? @db.Text
 
   // Privacy settings
   visibility               UserVisibility @default(PUBLIC) // PUBLIC: displayName visible | PRIVATE: only @username
@@ -71,21 +85,23 @@ model User {
   // Relations
   clubMemberships  ClubMember[]
   createdClubs     Club[]            @relation("CreatedClubs")
-  evaluations      Evaluation[]
+  tastings         Tasting[]
+  createdBrands    Brand[]           @relation("CreatedBrands")
   createdCigars    Cigar[]           @relation("CreatedCigars")
   createdEvents    Event[]           @relation("CreatedEvents")
   clubJoinRequests ClubJoinRequest[]
   bannedFromClubs  ClubBan[]         @relation("BannedFromClubs")
   bannedMembers    ClubBan[]         @relation("BannedMembers")
+  verifiedCigars   Cigar[]           @relation("VerifiedCigars")
 
   @@index([username])
   @@map("users")
 }
 
 model Club {
-  id          String   @id @default(uuid()) @db.Uuid
+  id          String  @id @default(uuid()) @db.Uuid
   name        String
-  slug        String   @unique // #slug - identité unique du club (3-30 chars, a-z0-9._)
+  slug        String  @unique // #slug - identité unique du club (3-30 chars, a-z0-9._)
   description String?
   imageUrl    String?
   coverUrl    String?
@@ -114,6 +130,7 @@ model Club {
   events        Event[]
   joinRequests  ClubJoinRequest[]
   bannedMembers ClubBan[]
+  tastings      TastingOnClub[]
 
   @@index([slug])
   @@map("clubs")
@@ -185,92 +202,158 @@ model Event {
   createdAt   DateTime @default(now())
 
   // Relations
-  club        Club         @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  cigar       Cigar?       @relation(fields: [cigarId], references: [id], onDelete: SetNull)
-  creator     User         @relation("CreatedEvents", fields: [createdBy], references: [id], onDelete: Cascade)
-  evaluations Evaluation[]
+  club     Club      @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  cigar    Cigar?    @relation(fields: [cigarId], references: [id], onDelete: SetNull)
+  creator  User      @relation("CreatedEvents", fields: [createdBy], references: [id], onDelete: Cascade)
+  tastings Tasting[]
 
   @@index([clubId])
   @@map("events")
 }
 
-model Cigar {
-  id        String   @id @default(uuid()) @db.Uuid
-  brand     String
-  name      String
-  origin    String?
-  wrapper   String?
-  createdBy String   @db.Uuid
-  createdAt DateTime @default(now())
+model Brand {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  slug        String   @unique // URL-friendly identifier
+  logoUrl     String? // SVG logo (Gold for premium brands)
+  country     String? // Country of origin
+  description String?  @db.Text
+  createdBy   String   @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
-  creator     User         @relation("CreatedCigars", fields: [createdBy], references: [id], onDelete: Cascade)
-  evaluations Evaluation[]
-  events      Event[]
+  creator User    @relation("CreatedBrands", fields: [createdBy], references: [id], onDelete: Cascade)
+  cigars  Cigar[]
 
-  @@unique([brand, name])
-  @@index([brand, name])
+  @@index([slug])
+  @@index([name])
+  @@map("brands")
+}
+
+model Cigar {
+  id      String @id @default(uuid()) @db.Uuid
+  brandId String @db.Uuid
+  name    String
+  slug    String @unique // URL-friendly identifier (brand-name)
+
+  // Technical specifications
+  vitola    String? // Format (Robusto, Toro, Churchill, etc.)
+  length    Float? // Length in mm
+  ringGauge Int? // Ring gauge (diameter in 64ths of an inch)
+  wrapper   String? // Wrapper type
+  origin    String? // Country of origin
+  strength  Int? // 1-5 (light to full)
+
+  // Verification workflow
+  status          CigarStatus @default(PENDING)
+  isVerified      Boolean     @default(false)
+  verifiedBy      String?     @db.Uuid
+  verifiedAt      DateTime?
+  rejectionReason String?     @db.Text
+
+  // Metadata
+  createdBy String   @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  brand    Brand     @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  creator  User      @relation("CreatedCigars", fields: [createdBy], references: [id], onDelete: Cascade)
+  verifier User?     @relation("VerifiedCigars", fields: [verifiedBy], references: [id], onDelete: SetNull)
+  tastings Tasting[]
+  events   Event[]
+
+  @@unique([brandId, name])
+  @@index([slug])
+  @@index([brandId])
+  @@index([status])
   @@map("cigars")
 }
 
-model Evaluation {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
-  cigarId   String   @db.Uuid
-  eventId   String?  @db.Uuid
-  rating    Int // 1-5
-  photoUrl  String?
-  date      DateTime
-  duration  Int? // minutes
-  comment   String?  @db.Text
+model Tasting {
+  id      String  @id @default(uuid()) @db.Uuid
+  userId  String  @db.Uuid
+  cigarId String  @db.Uuid
+  eventId String? @db.Uuid
+
+  // Core evaluation
+  rating   Float // 1-5 (allows decimals like 3.5)
+  pleasure Int // 1-10 (plaisir ressenti)
+
+  // Metadata
+  photoUrl String? // Photo principale de la dégustation
+  date     DateTime
+  duration Int? // Durée en minutes
+  comment  String?  @db.Text // Commentaire global
+
+  // Privacy
+  visibility TastingVisibility @default(PUBLIC)
+
+  // Timestamps
   createdAt DateTime @default(now())
-
-  // Présentation (avant allumage)
-  capeAspects String[] // Multi-select: ['tight', 'oily', ...]
-  capeColor   String? // Single select
-  touch       String? // Single select
-
-  // Tirage à cru
-  coldTastes String[] // Multi-select
-  coldAromas String[] // Multi-select
-  coldNotes  String?  @db.Text
-
-  // 1er tiers
-  firstTastes   String[] // Multi-select
-  firstAromas   String[] // Multi-select
-  firstStrength Int? // 1-5
-  firstNotes    String?  @db.Text
-
-  // 2e tiers
-  secondTastes   String[] // Multi-select
-  secondAromas   String[] // Multi-select
-  secondStrength Int? // 1-5
-  secondNotes    String?  @db.Text
-
-  // 3e tiers
-  thirdTastes   String[] // Multi-select
-  thirdAromas   String[] // Multi-select
-  thirdStrength Int? // 1-5
-  thirdNotes    String?  @db.Text
-
-  // Bilan global
-  startImpressions String[] // Multi-select
-  finalImpressions String[] // Multi-select
-  persistence      String? // Single select
-  draw             String? // Single select
-  terroir          String? // Single select
-  balance          String? // Single select
-  moment           String? // Single select
-  ashNature        String? // Single select
-  situation        String? // Single select
+  updatedAt DateTime @updatedAt
 
   // Relations
-  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cigar Cigar  @relation(fields: [cigarId], references: [id], onDelete: Cascade)
-  event Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cigar        Cigar           @relation(fields: [cigarId], references: [id], onDelete: Cascade)
+  event        Event?          @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  observations Observation[] // Multiple observations (1 par phase: début/milieu/fin)
+  sharedClubs  TastingOnClub[] // Clubs où la dégustation est partagée
 
   @@index([userId])
-  @@index([eventId])
   @@index([cigarId])
-  @@map("evaluations")
+  @@index([eventId])
+  @@index([visibility])
+  @@map("tastings")
+}
+
+model Observation {
+  id        String @id @default(uuid()) @db.Uuid
+  tastingId String @db.Uuid
+
+  // Phase (pour le Tercio - 3 tiers du cigare)
+  phase String // 'début' | 'milieu' | 'fin' | 'cru' (tirage à cru)
+
+  // Mesures objectives (1-5)
+  intensity  Int? // Intensité des arômes (1-5)
+  combustion Int? // Qualité de combustion (1-5)
+
+  // Arômes détectés (simple array pour MVP)
+  aromas String[] // ['bois', 'café', 'cuir', 'épices', ...]
+
+  // Notes libres
+  notes String? @db.Text
+
+  // Profil organoleptique (JSON pour flexibilité)
+  // Contient les données détaillées de la fiche papier (57 champs)
+  // Structure: { tastes: [], presentation: {}, draw: {}, balance: {}, etc. }
+  organoleptique Json?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  tasting Tasting @relation(fields: [tastingId], references: [id], onDelete: Cascade)
+
+  @@index([tastingId])
+  @@index([phase])
+  @@map("observations")
+}
+
+model TastingOnClub {
+  id        String   @id @default(uuid()) @db.Uuid
+  tastingId String   @db.Uuid
+  clubId    String   @db.Uuid
+  sharedAt  DateTime @default(now())
+
+  // Relations
+  tasting Tasting @relation(fields: [tastingId], references: [id], onDelete: Cascade)
+  club    Club    @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@unique([tastingId, clubId])
+  @@index([tastingId])
+  @@index([clubId])
+  @@map("tasting_on_club")
 }

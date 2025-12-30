@@ -320,6 +320,7 @@ export class ClubJoinRequestService {
             select: {
               id: true,
               displayName: true,
+              username: true,
               avatarUrl: true,
             },
           },
@@ -346,6 +347,7 @@ export class ClubJoinRequestService {
         user: {
           id: request.user.id,
           displayName: request.user.displayName,
+          username: request.user.username,
           avatarUrl: request.user.avatarUrl,
         },
       })),
@@ -382,6 +384,7 @@ export class ClubJoinRequestService {
             select: {
               id: true,
               displayName: true,
+              username: true,
               avatarUrl: true,
             },
           },
@@ -408,6 +411,7 @@ export class ClubJoinRequestService {
         user: {
           id: request.user.id,
           displayName: request.user.displayName,
+          username: request.user.username,
           avatarUrl: request.user.avatarUrl,
         },
       })),

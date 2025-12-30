@@ -8,6 +8,7 @@ import { PrismaService } from './prisma.service';
 import { AuthModule } from '../auth/auth.module';
 import { ClubModule } from '../club/club.module';
 import { UsersModule } from '../users/users.module';
+import { SearchModule } from '../search/search.module';
 
 @Global()
 @Module({
@@ -25,6 +26,7 @@ import { UsersModule } from '../users/users.module';
     AuthModule,
     ClubModule,
     UsersModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [

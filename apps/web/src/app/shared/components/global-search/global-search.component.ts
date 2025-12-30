@@ -1,28 +1,27 @@
-import { Component, input, output, signal, effect, inject, WritableSignal, Signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, input, output, signal, computed, effect, inject, WritableSignal, Signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { injectQuery } from '../../../core/query';
-import { GlobalSearchService, type ClubSearchResult } from '../../../core/services/global-search.service';
+import { injectSearchStore } from '../../../core/stores/search.store';
 import { AuthService } from '../../../core/services/auth.service';
-import {
-  GlobalSearchModalComponent,
-  type ClubSearchResultItem,
-} from '@cigar-platform/shared/ui';
+import { GlobalSearchModalComponent } from '@cigar-platform/shared/ui';
+import type { SearchResultDto } from '@cigar-platform/types';
 
 /**
  * Global Search Component (Smart Wrapper)
  *
  * Smart component that wraps GlobalSearchModal (dumb component)
- * Handles:
- * - Search query management with debouncing (300ms)
- * - Data fetching and caching (query layer)
- * - Data transformation
- * - Navigation logic
  *
- * Architecture:
- * - Controlled by parent (isOpen input)
- * - Uses custom injectQuery for caching/reactivity
- * - Debounced search with signals
+ * ALL STARS Architecture ⭐
+ * - Uses search.store (not service)
+ * - Reactive with getter functions
+ * - Query layer for caching
+ * - Debounced search (300ms)
+ *
+ * Features:
+ * - Omnisearch with prefix filtering (@username, #slug)
+ * - Grouped results (brands, cigars, clubs, users)
+ * - Keyboard navigation
+ * - Smart caching (5 min stale time)
  *
  * @example
  * ```html
@@ -40,7 +39,7 @@ import {
     <ui-global-search-modal
       [isOpen]="isOpen()"
       [loading]="isLoading()"
-      [clubResults]="clubResults()"
+      [searchResults]="searchResults()"
       (close)="handleClose()"
       (searchQueryChanged)="handleSearchQueryChange($event)"
       (resultClicked)="handleResultClick($event)"
@@ -49,7 +48,7 @@ import {
 })
 export class GlobalSearchComponent {
   #router = inject(Router);
-  #searchService = inject(GlobalSearchService);
+  #searchStore = injectSearchStore();
   #authService = inject(AuthService);
 
   // Inputs
@@ -62,36 +61,22 @@ export class GlobalSearchComponent {
   readonly #searchQuery: WritableSignal<string> = signal<string>('');
   readonly #debouncedQuery: WritableSignal<string> = signal<string>('');
 
-  // Query with manual refetch (no auto-caching per query, we refetch on demand)
-  readonly #searchResults = injectQuery<ClubSearchResult[]>(() => ({
-    queryKey: ['clubs', 'search'], // Fixed queryKey (not dependent on search term)
-    queryFn: () => {
-      const query = this.#debouncedQuery();
-      if (!query || query.trim().length === 0) {
-        return Promise.resolve([]);
-      }
-      return this.#searchService.searchClubs(query, 20);
-    },
-    enabled: false, // Disable auto-fetch, we'll trigger manually
-  }));
+  // Query using store pattern (reactive with getter)
+  readonly #omnisearchQuery = this.#searchStore.search(() => this.#debouncedQuery());
 
   // Computed
-  readonly isLoading: Signal<boolean> = this.#searchResults.loading;
-
-  readonly clubResults: Signal<ClubSearchResultItem[]> = computed<ClubSearchResultItem[]>(() => {
-    const clubs = this.#searchResults.data() ?? [];
-
-    // Transform to display format
-    return clubs.map((club) => ({
-      id: club.id,
-      name: club.name,
-      description: club.description,
-      visibility: club.visibility,
-      memberCount: club.memberCount,
-      avatarUrl: club.imageUrl ?? null,
-      subtitle: this.formatSubtitle(club),
-      iconBadge: club.visibility === 'PUBLIC' ? ('public' as const) : ('private' as const),
-    }));
+  readonly isLoading: Signal<boolean> = this.#omnisearchQuery.loading;
+  readonly searchResults: Signal<SearchResultDto> = computed<SearchResultDto>(() => {
+    return this.#omnisearchQuery.data() ?? {
+      query: '',
+      searchType: 'global',
+      brands: [],
+      cigars: [],
+      clubs: [],
+      users: [],
+      total: 0,
+      duration: 0,
+    };
   });
 
   constructor() {
@@ -112,27 +97,11 @@ export class GlobalSearchComponent {
       }, 300);
     });
 
-    // Trigger refetch when debounced query changes
-    effect(() => {
-      const query = this.#debouncedQuery();
-
-      // Only fetch if query is not empty
-      if (query && query.trim().length > 0) {
-        // Reset query state before refetch to ensure clean state after cache clear
-        this.#searchResults.invalidate();
-        void this.#searchResults.refetch();
-      } else {
-        // Clear results if query is empty
-        this.#searchResults.setData([]);
-      }
-    });
-
     // Reset search when user changes (login/logout)
     effect(() => {
       const currentUser = this.#authService.currentUser();
 
-      // Invalidate and clear search results
-      this.#searchResults.invalidate();
+      // Reset search query (query will auto-refetch due to reactivity)
       this.#searchQuery.set('');
       this.#debouncedQuery.set('');
     });
@@ -147,11 +116,37 @@ export class GlobalSearchComponent {
 
   /**
    * Handle result click
+   * Navigate to Prestige URLs (slug/username)
    */
-  handleResultClick(event: { id: string; type: 'club' }): void {
-    if (event.type === 'club') {
-      // Navigate to club profile
-      void this.#router.navigate(['/club', event.id]);
+  handleResultClick(event: { id: string; type: 'brand' | 'cigar' | 'club' | 'user' }): void {
+    const results = this.searchResults();
+
+    switch (event.type) {
+      case 'club': {
+        const club = results.clubs?.find((c) => c.id === event.id);
+        if (club?.slug) {
+          void this.#router.navigate(['/club', club.slug]); // Clean URL: /club/slug
+        }
+        break;
+      }
+      case 'user': {
+        const user = results.users?.find((u) => u.id === event.id);
+        if (user?.username) {
+          void this.#router.navigate(['/user', `@${user.username}`]); // Prestige URL: /user/@username
+        }
+        break;
+      }
+      case 'brand':
+        // TODO: Implement brand page (/brand/slug)
+        console.log('[GlobalSearch] Brand navigation not implemented:', event.id);
+        break;
+      case 'cigar': {
+        const cigar = results.cigars?.find((c) => c.id === event.id);
+        if (cigar?.slug) {
+          void this.#router.navigate(['/cigar', cigar.slug]); // Prestige URL: /cigar/slug
+        }
+        break;
+      }
     }
   }
 
@@ -163,15 +158,5 @@ export class GlobalSearchComponent {
     // Reset search on close
     this.#searchQuery.set('');
     this.#debouncedQuery.set('');
-  }
-
-  /**
-   * Format subtitle for display
-   * Example: "24 membres · Public"
-   */
-  private formatSubtitle(club: ClubSearchResult): string {
-    const memberText = club.memberCount === 1 ? 'membre' : 'membres';
-    const visibilityText = club.visibility === 'PUBLIC' ? 'Public' : 'Privé';
-    return `${club.memberCount} ${memberText} · ${visibilityText}`;
   }
 }

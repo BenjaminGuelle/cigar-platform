@@ -46,7 +46,7 @@ import { ManageMemberMenuComponent } from '../manage-member-menu/manage-member-m
       <!-- Left: Avatar + Name/Badge + Date -->
       <div class="flex items-center gap-4">
         <a
-          [routerLink]="['/user', member().user.id]"
+          [routerLink]="['/user', '@' + member().user.username]"
           class="flex items-center gap-4 group/link">
           <ui-avatar
             [user]="avatarUser()"

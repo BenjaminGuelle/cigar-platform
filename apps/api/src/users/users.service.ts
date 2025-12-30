@@ -6,6 +6,7 @@ import { User, ClubVisibility } from '@cigar-platform/prisma-client';
 import { UserNotFoundException } from '../common/exceptions';
 import { UserPublicProfileDto } from './dto/user-public-profile.dto';
 import { ClubResponseDto } from '../club/dto';
+import { isUuid, normalizeUsername } from '../common/utils/identifier.util';
 
 /**
  * Service for managing user profiles
@@ -138,15 +139,20 @@ export class UsersService {
 
   /**
    * Get public profile for a user with stats
-   * @param userId - ID of the user
+   * Supports both UUID and username lookups
+   * @param identifier - User ID (UUID) or username (with or without @)
    * @returns User public profile with stats
    */
-  async getPublicProfile(userId: string): Promise<UserPublicProfileDto> {
-    this.logger.log(`Getting public profile for user ${userId}`);
+  async getPublicProfile(identifier: string): Promise<UserPublicProfileDto> {
+    this.logger.log(`Getting public profile for user ${identifier}`);
+
+    // Determine if identifier is UUID or username
+    const isId = isUuid(identifier);
+    const username = isId ? null : normalizeUsername(identifier);
 
     // Get user basic info
     const user = await this.prismaService.user.findUnique({
-      where: { id: userId },
+      where: isId ? { id: identifier } : { username: username! },
       select: {
         id: true,
         displayName: true,
@@ -159,18 +165,21 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new UserNotFoundException(userId);
+      throw new UserNotFoundException(identifier);
     }
 
-    // Get evaluation count
-    const evaluationCount = await this.prismaService.evaluation.count({
+    // Use the resolved user ID for subsequent queries
+    const userId = user.id;
+
+    // Get tasting count (renamed from evaluation)
+    const tastingCount = await this.prismaService.tasting.count({
       where: { userId },
     });
 
-    // Get favorite brand (most evaluated brand)
+    // Get favorite brand (most tasted brand)
     let favoriteBrand: string | null = null;
-    if (evaluationCount > 0) {
-      const brandStats = await this.prismaService.evaluation.groupBy({
+    if (tastingCount > 0) {
+      const brandStats = await this.prismaService.tasting.groupBy({
         by: ['cigarId'],
         where: { userId },
         _count: { cigarId: true },
@@ -181,9 +190,13 @@ export class UsersService {
       if (brandStats.length > 0) {
         const topCigar = await this.prismaService.cigar.findUnique({
           where: { id: brandStats[0].cigarId },
-          select: { brand: true },
+          select: {
+            brand: {
+              select: { name: true },
+            },
+          },
         });
-        favoriteBrand = topCigar?.brand ?? null;
+        favoriteBrand = topCigar?.brand.name ?? null;
       }
     }
 
@@ -201,7 +214,7 @@ export class UsersService {
       bio: user.bio,
       createdAt: user.createdAt,
       stats: {
-        evaluationCount,
+        evaluationCount: tastingCount, // Renamed field for backward compatibility
         favoriteBrand,
         clubCount,
       },
@@ -210,18 +223,29 @@ export class UsersService {
 
   /**
    * Get clubs for a user (all clubs: public and private)
-   * @param userId - ID of the user
+   * Supports both UUID and username lookups
+   * @param identifier - User ID (UUID) or username (with or without @)
    * @param limit - Maximum number of clubs to return
    * @returns Array of clubs the user is member of
    */
-  async getUserClubs(userId: string, limit: number = 6): Promise<ClubResponseDto[]> {
-    this.logger.log(`Getting clubs for user ${userId} (limit: ${limit})`);
+  async getUserClubs(identifier: string, limit: number = 6): Promise<ClubResponseDto[]> {
+    this.logger.log(`Getting clubs for user ${identifier} (limit: ${limit})`);
+
+    // Determine if identifier is UUID or username
+    const isId = isUuid(identifier);
+    const username = isId ? null : normalizeUsername(identifier);
 
     // Check if user exists
-    const user = await this.findById(userId);
+    const user = await this.prismaService.user.findUnique({
+      where: isId ? { id: identifier } : { username: username! },
+    });
+
     if (!user) {
-      throw new UserNotFoundException(userId);
+      throw new UserNotFoundException(identifier);
     }
+
+    // Use the resolved user ID for subsequent queries
+    const userId = user.id;
 
     // Get user's club memberships (all clubs, excluding archived)
     const memberships = await this.prismaService.clubMember.findMany({

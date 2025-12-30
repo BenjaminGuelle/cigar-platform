@@ -43,18 +43,24 @@ export const homeRoutes: Route[] = [
         loadComponent: () =>
           import('./explore/explore.page').then((m) => m.ExplorePage),
       },
-      // Club public profile
+      // Club public profile (Prestige URL: /club/slug)
       {
-        path: 'club/:id',
+        path: 'club/:slug',
         loadComponent: () =>
           import('../club/public/club-profile.page').then((m) => m.ClubProfilePage),
       },
-      // User public profile
+      // User public profile (Prestige URL: /user/@username)
       {
-        path: 'user/:id',
+        path: 'user/:username',
         loadComponent: () =>
           import('../user/public/user-profile.page').then((m) => m.UserProfilePage),
       },
+      // TODO: Cigar public profile (Prestige URL: /cigar/slug)
+      // {
+      //   path: 'cigar/:slug',
+      //   loadComponent: () =>
+      //     import('../cigar/public/cigar-profile.page').then((m) => m.CigarProfilePage),
+      // },
       // Club internal pages (context-driven, requires club context)
       {
         path: 'membres',

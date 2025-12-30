@@ -91,7 +91,7 @@ export class UserSettingsPage {
   readonly profileUrl = computed(() => {
     const user = this.currentUser();
     if (!user) return '';
-    return `${window.location.origin}/user/${user.id}`;
+    return `${window.location.origin}/user/@${user.username}`;
   });
 
   // ViewChildren for form components

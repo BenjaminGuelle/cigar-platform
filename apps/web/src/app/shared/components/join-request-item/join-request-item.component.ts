@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy, input, output, computed } from '@an
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import type { ClubJoinRequestResponseDto } from '@cigar-platform/types';
-import { AvatarComponent, type AvatarUser, ButtonComponent, IconDirective } from '@cigar-platform/shared/ui';
+import { AvatarComponent, type AvatarUser, ButtonComponent } from '@cigar-platform/shared/ui';
 
 /**
  * Join Request Item Component
@@ -35,13 +35,13 @@ import { AvatarComponent, type AvatarUser, ButtonComponent, IconDirective } from
   selector: 'app-join-request-item',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterLink, AvatarComponent, ButtonComponent, IconDirective],
+  imports: [CommonModule, RouterLink, AvatarComponent, ButtonComponent],
   template: `
     <div class="flex items-center justify-between py-3 px-4 hover:bg-white/[0.02] transition-colors group">
       <!-- Left: Avatar + User info + Message + Date -->
       <div class="flex items-center gap-4 flex-1 min-w-0">
         <a
-          [routerLink]="['/user', request().user.id]"
+          [routerLink]="['/user', '@' + request().user.username]"
           class="flex items-center gap-4 group/link">
           <ui-avatar
             [user]="avatarUser()"

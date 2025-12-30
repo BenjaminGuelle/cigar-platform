@@ -44,33 +44,51 @@ export class UsersController {
 
   /**
    * Get public profile for a user
-   * GET /users/:id/profile
+   * GET /users/:identifier/profile
    * Public endpoint - no authentication required
+   * Supports both UUID and username (@username or username)
    */
-  @Get(':id/profile')
+  @Get(':identifier/profile')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get user public profile with stats' })
-  @ApiParam({ name: 'id', description: 'User ID', example: '123e4567-e89b-12d3-a456-426614174000' })
+  @ApiParam({
+    name: 'identifier',
+    description: 'User ID (UUID) or username (with or without @)',
+    examples: {
+      uuid: { value: '123e4567-e89b-12d3-a456-426614174000' },
+      username: { value: 'johndoe' },
+      usernameWithAt: { value: '@johndoe' },
+    },
+  })
   @ApiResponse({
     status: 200,
     description: 'User public profile retrieved successfully',
     type: UserPublicProfileDto,
   })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async getPublicProfile(@Param('id') userId: string): Promise<UserPublicProfileDto> {
-    return this.usersService.getPublicProfile(userId);
+  async getPublicProfile(@Param('identifier') identifier: string): Promise<UserPublicProfileDto> {
+    return this.usersService.getPublicProfile(identifier);
   }
 
   /**
    * Get clubs for a user
-   * GET /users/:id/clubs
+   * GET /users/:identifier/clubs
    * Public endpoint - no authentication required
    * Returns public clubs only
+   * Supports both UUID and username (@username or username)
    */
-  @Get(':id/clubs')
+  @Get(':identifier/clubs')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get user\'s public clubs' })
-  @ApiParam({ name: 'id', description: 'User ID', example: '123e4567-e89b-12d3-a456-426614174000' })
+  @ApiParam({
+    name: 'identifier',
+    description: 'User ID (UUID) or username (with or without @)',
+    examples: {
+      uuid: { value: '123e4567-e89b-12d3-a456-426614174000' },
+      username: { value: 'johndoe' },
+      usernameWithAt: { value: '@johndoe' },
+    },
+  })
   @ApiQuery({
     name: 'limit',
     required: false,
@@ -85,10 +103,10 @@ export class UsersController {
   })
   @ApiResponse({ status: 404, description: 'User not found' })
   async getUserClubs(
-    @Param('id') userId: string,
+    @Param('identifier') identifier: string,
     @Query('limit', new ParseIntPipe({ optional: true })) limit?: number
   ): Promise<ClubResponseDto[]> {
-    return this.usersService.getUserClubs(userId, limit ?? 6);
+    return this.usersService.getUserClubs(identifier, limit ?? 6);
   }
 
   /**

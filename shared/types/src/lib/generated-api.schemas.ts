@@ -275,6 +275,7 @@ export interface UpdateClubDto {
 export interface MemberUserDto {
   id: string;
   displayName: string;
+  username: string;
   /** @nullable */
   avatarUrl: string | null;
 }
@@ -468,6 +469,104 @@ export interface UserPublicProfileDto {
   stats: UserStatsDto;
 }
 
+export interface BrandSearchItemDto {
+  id: string;
+  type: string;
+  name: string;
+  /** @nullable */
+  slug: string | null;
+  /** @nullable */
+  imageUrl: string | null;
+  /** @nullable */
+  description: string | null;
+  /** @nullable */
+  metadata: string | null;
+  country: string;
+}
+
+export interface CigarSearchItemDto {
+  id: string;
+  type: string;
+  name: string;
+  /** @nullable */
+  slug: string | null;
+  /** @nullable */
+  imageUrl: string | null;
+  /** @nullable */
+  description: string | null;
+  /** @nullable */
+  metadata: string | null;
+  brandName: string;
+  vitola: string;
+  size: string;
+}
+
+export interface ClubSearchItemDto {
+  id: string;
+  type: string;
+  name: string;
+  /** @nullable */
+  slug: string | null;
+  /** @nullable */
+  imageUrl: string | null;
+  /** @nullable */
+  description: string | null;
+  /** @nullable */
+  metadata: string | null;
+  memberCount: number;
+  visibility: string;
+}
+
+export interface UserSearchItemDto {
+  id: string;
+  type: string;
+  name: string;
+  /** @nullable */
+  slug: string | null;
+  /** @nullable */
+  imageUrl: string | null;
+  /** @nullable */
+  description: string | null;
+  /** @nullable */
+  metadata: string | null;
+  username: string;
+  /** @nullable */
+  displayName: string | null;
+  visibility: string;
+}
+
+/**
+ * Search type (prefix-based)
+ */
+export type SearchResultDtoSearchType = typeof SearchResultDtoSearchType[keyof typeof SearchResultDtoSearchType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SearchResultDtoSearchType = {
+  global: 'global',
+  user: 'user',
+  club: 'club',
+} as const;
+
+export interface SearchResultDto {
+  /** Search query used */
+  query: string;
+  /** Search type (prefix-based) */
+  searchType: SearchResultDtoSearchType;
+  /** Brands found (global search only) */
+  brands?: BrandSearchItemDto[];
+  /** Cigars found (global search only) */
+  cigars?: CigarSearchItemDto[];
+  /** Clubs found */
+  clubs?: ClubSearchItemDto[];
+  /** Users found */
+  users?: UserSearchItemDto[];
+  /** Total results count */
+  total: number;
+  /** Search duration in milliseconds */
+  duration: number;
+}
+
 export type ClubControllerFindAllParams = {
 /**
  * Page number
@@ -568,5 +667,14 @@ currentUserId?: string;
 
 export type UsersControllerCheckUsernameAvailability200 = {
   available?: boolean;
+};
+
+export type SearchControllerSearchParams = {
+/**
+ * Search query with optional prefix (@ for users, # for clubs)
+ * @minLength 1
+ * @maxLength 100
+ */
+q: string;
 };
 

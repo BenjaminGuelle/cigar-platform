@@ -314,6 +314,7 @@ export class ClubMemberService {
             select: {
               id: true,
               displayName: true,
+              username: true,
               avatarUrl: true,
             },
           },
@@ -338,6 +339,7 @@ export class ClubMemberService {
         user: {
           id: member.user.id,
           displayName: member.user.displayName,
+          username: member.user.username,
           avatarUrl: member.user.avatarUrl,
         },
       })),
@@ -483,6 +485,7 @@ export class ClubMemberService {
             select: {
               id: true,
               displayName: true,
+              username: true,
               avatarUrl: true,
             },
           },
@@ -490,6 +493,7 @@ export class ClubMemberService {
             select: {
               id: true,
               displayName: true,
+              username: true,
               avatarUrl: true,
             },
           },
@@ -514,11 +518,13 @@ export class ClubMemberService {
         user: {
           id: ban.user.id,
           displayName: ban.user.displayName,
+          username: ban.user.username,
           avatarUrl: ban.user.avatarUrl,
         },
         bannedByUser: {
           id: ban.bannedByUser.id,
           displayName: ban.bannedByUser.displayName,
+          username: ban.bannedByUser.username,
           avatarUrl: ban.bannedByUser.avatarUrl,
         },
       })),

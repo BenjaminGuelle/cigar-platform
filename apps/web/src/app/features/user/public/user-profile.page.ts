@@ -13,7 +13,7 @@ import {
 /**
  * User Public Profile Page
  *
- * Route: /user/:id
+ * Route: /user/:username (Prestige URL with @username)
  * Accessible: Public (no auth required)
  *
  * Features:
@@ -29,6 +29,7 @@ import {
  * - Template in separate .html file
  * - Computed signals (no `!` assertions)
  * - Clean separation of concerns
+ * - Uses username from URL (supports @username or username)
  */
 @Component({
   selector: 'app-user-profile',
@@ -47,14 +48,15 @@ export class UserProfilePage {
   #userStore = injectUserStore();
 
   // Route params (toSignal pattern - no subscribe)
-  readonly userId = toSignal(
-    this.#route.paramMap.pipe(map((p) => p.get('id') ?? '')),
+  // Username from URL (with or without @)
+  readonly usernameParam = toSignal(
+    this.#route.paramMap.pipe(map((p) => p.get('username') ?? '')),
     { initialValue: '' }
   );
 
-  // Reactive queries with getter pattern
-  readonly profileQuery = this.#userStore.getUserPublicProfile(() => this.userId());
-  readonly clubsQuery = this.#userStore.getUserClubs(() => this.userId(), () => 6);
+  // Reactive queries with getter pattern (backend supports username)
+  readonly profileQuery = this.#userStore.getUserPublicProfile(() => this.usernameParam());
+  readonly clubsQuery = this.#userStore.getUserClubs(() => this.usernameParam(), () => 6);
 
   // Computed states - extract signals from queries
   readonly profileLoading = this.profileQuery.loading;
@@ -107,10 +109,10 @@ export class UserProfilePage {
   });
 
   /**
-   * Navigate to club detail page
+   * Navigate to club detail page (using slug for Prestige URL)
    */
-  navigateToClub(clubId: string): void {
-    this.#router.navigate(['/club', clubId]);
+  navigateToClub(clubSlug: string): void {
+    this.#router.navigate(['/club', clubSlug]);
   }
 
   /**

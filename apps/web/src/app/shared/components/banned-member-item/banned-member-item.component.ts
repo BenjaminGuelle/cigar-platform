@@ -38,7 +38,7 @@ import { AvatarComponent, type AvatarUser, ButtonComponent } from '@cigar-platfo
       <!-- Left: Avatar + Info -->
       <div class="flex items-center gap-4 flex-1 min-w-0">
         <a
-          [routerLink]="['/user', ban().user.id]"
+          [routerLink]="['/user', '@' + ban().user.username]"
           class="flex items-center gap-4 group/link flex-1 min-w-0">
           <ui-avatar
             [user]="bannedUser()"
