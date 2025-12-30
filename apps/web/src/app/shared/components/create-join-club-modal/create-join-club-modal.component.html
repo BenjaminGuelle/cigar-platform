@@ -1,9 +1,12 @@
 <ui-modal
   [isOpen]="isOpen()"
   size="md"
-  position="right"
+  variant="bottomSheet"
+  desktopPosition="left"
   (close)="close.emit()"
 >
+  <!-- Wrapper with bottom padding -->
+  <div class="pb-6 md:pb-0">
   <!-- Header -->
   <div class="mb-6">
     <h2 id="modal-title" class="text-2xl font-display text-smoke-50 mb-2">
@@ -143,4 +146,5 @@
       </div>
     </form>
   }
+  </div><!-- End wrapper -->
 </ui-modal>

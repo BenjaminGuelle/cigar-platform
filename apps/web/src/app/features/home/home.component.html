@@ -6,8 +6,9 @@
     [club]="context().club"
     [fabMenuOpen]="fabMenuOpen()"
     [fabMenuItems]="fabMenuItems()"
+    [notificationsBadge]="3"
     (contextClick)="onContextClick()"
-    (searchClick)="onSearchOpen()"
+    (notificationsClick)="onComingSoonOpen('Notifications')"
     (fabMenuToggle)="onFabMenuToggle()"
     (fabMenuClose)="onFabMenuClose()"
     (fabMenuItemClicked)="onFabMenuItemClick($event)"
@@ -24,38 +25,43 @@
   />
 
   <!-- Desktop Top Tabs (≥ 768px) - Horizontal navigation -->
-  <ui-desktop-top-tabs (searchClick)="onSearchOpen()">
+  <ui-desktop-top-tabs
+    [notificationsBadge]="3"
+    (notificationsClick)="onComingSoonOpen('Notifications')"
+  >
+    <!-- 1. Dashboard (contextualisé : Solo = Dashboard perso, Club = Dashboard club) -->
     <ui-desktop-top-tab-item
       label="Accueil"
       route="/dashboard"
       icon="home"
       [exact]="true"
     />
-    <!-- Membres tab (only visible in club context) -->
-    @if (context().type === 'club') {
-      <ui-desktop-top-tab-item
-        label="Membres"
-        route="/membres"
-        icon="users"
-      />
-    }
+
+    <!-- 2. Search (modal omnisearch) -->
     <ui-desktop-top-tab-item
-      label="Dégustations"
-      route="/degustations"
+      label="Recherche"
+      [route]="null"
+      icon="search"
+      (clicked)="onSearchOpen()"
+    />
+
+    <!-- 3. Tasting (modal avec choix action) -->
+    <ui-desktop-top-tab-item
+      label="Dégustation"
+      [route]="null"
       icon="flame"
+      (clicked)="onFabMenuToggle()"
     />
+
+    <!-- 4. Cave (prochainement) -->
     <ui-desktop-top-tab-item
-      label="Événements"
-      route="/evenements"
-      icon="calendar"
+      label="Cave"
+      [route]="null"
+      icon="book-copy"
+      (clicked)="onComingSoonOpen('Cave')"
     />
-    <ui-desktop-top-tab-item
-      label="Notifications"
-      route="/notifications"
-      icon="bell"
-      [badge]="3"
-    />
-    <!-- Settings tab (always visible in solo, only for admin/owner in club) -->
+
+    <!-- 5. Paramètres (contextuel : always visible in solo, only for admin/owner in club) -->
     @if (context().type === 'solo' || contextStore.canAccessSettings()) {
       <ui-desktop-top-tab-item
         label="Paramètres"
@@ -82,39 +88,44 @@
   />
 
   <ui-bottom-tab-bar>
+    <!-- 1. Dashboard (contextualisé : Solo = Dashboard perso, Club = Dashboard club) -->
     <ui-bottom-tab-item
       icon="home"
       label="Accueil"
       route="/dashboard"
       [exact]="true"
     />
-    <!-- Membres tab (only in club context) -->
-    @if (context().type === 'club') {
-      <ui-bottom-tab-item
-        icon="users"
-        label="Membres"
-        route="/membres"
-      />
-    }
+
+    <!-- 2. Search (modal omnisearch) -->
+    <ui-bottom-tab-item
+      icon="search"
+      label="Recherche"
+      [route]="null"
+      (clicked)="onSearchOpen()"
+    />
+
+    <!-- 3. Tasting (modal avec choix action) -->
     <ui-bottom-tab-item
       icon="flame"
-      label="Dégustations"
-      route="/degustations"
+      label="Créer"
+      [route]="null"
+      (clicked)="onFabMenuToggle()"
     />
+
+    <!-- 4. Cave (prochainement) -->
     <ui-bottom-tab-item
-      icon="bell"
-      label="Notifs"
-      route="/notifications"
-      [badge]="3"
+      icon="book-copy"
+      label="Cave"
+      [route]="null"
+      (clicked)="onComingSoonOpen('Cave')"
     />
-    <!-- Settings tab (always visible in solo, only for admin/owner in club) -->
-    @if (context().type === 'solo' || contextStore.canAccessSettings()) {
-      <ui-bottom-tab-item
-        icon="settings"
-        label="Profil"
-        route="/settings"
-      />
-    }
+
+    <!-- 5. Paramètres (contextuel) -->
+    <ui-bottom-tab-item
+      icon="user"
+      label="Profil"
+      route="/settings"
+    />
   </ui-bottom-tab-bar>
 
   <!-- Desktop FAB Menu - Quick Actions (≥ 768px) -->
@@ -147,5 +158,12 @@
   <app-global-search
     [isOpen]="searchModalOpen()"
     (close)="onSearchClose()"
+  />
+
+  <!-- Coming Soon Modal -->
+  <ui-coming-soon-modal
+    [isOpen]="comingSoonModalOpen()"
+    [featureName]="comingSoonFeature()"
+    (close)="onComingSoonClose()"
   />
 </div>

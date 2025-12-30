@@ -1,0 +1,253 @@
+/* Modal Component Styles - ALL STARS Architecture ⭐ */
+
+/* CRITICAL: Global z-index override for CDK Overlay (must be below bottom tab z-100) */
+/* Using PURE global selectors (no :host) since ViewEncapsulation.None is enabled */
+
+/* Target the CDK overlay container when modal is active */
+.cdk-overlay-container.modal-overlay-active {
+    z-index: 40 !important;
+}
+
+/* Target modal-specific overlay elements */
+.modal-z-index-override {
+    z-index: 40 !important;
+}
+
+.cdk-overlay-pane.modal-overlay-pane {
+    z-index: 40 !important;
+}
+
+.cdk-overlay-backdrop.modal-backdrop {
+    z-index: 40 !important;
+}
+
+/* Modal Content Base Styles */
+.modal-content {
+    position: relative;
+    width: 100%;
+    background: #18181b; /* zinc-900 equivalent */
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    padding: 1.5rem;
+    max-height: 85vh;
+    overflow-y: auto;
+
+    /* Mobile: Bottom sheet style */
+    border-radius: 1.5rem 1.5rem 0 0;
+
+    /* Desktop: All corners rounded */
+    @media (min-width: 768px) {
+        border-radius: 1rem;
+        max-height: 90vh;
+    }
+
+    /* Native CSS Transitions - Hidden state (before .is-visible) */
+    opacity: 0;
+    transform: translateY(100%); /* Default: slide up from bottom */
+    transition: opacity 350ms cubic-bezier(0.16, 1, 0.3, 1),
+                transform 350ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Visible state: modal is open */
+.modal-content.is-visible {
+    opacity: 1;
+    /* Mobile: Bottom of modal aligned with bottom of screen */
+    transform: translateY(0);
+
+    /* Desktop: Center properly */
+    @media (min-width: 768px) {
+        transform: translateY(0);
+    }
+}
+
+/* Centered Modal: All corners rounded + scale animation */
+.modal-content.modal-centered {
+    border-radius: 1rem;
+    max-height: 90vh;
+    transform: translateY(24px) scale(0.95);
+}
+
+.modal-content.modal-centered.is-visible {
+    transform: translateY(0) scale(1);
+}
+
+/* Mobile: Dialog/Centered modal less wide (not full screen) */
+@media (max-width: 767px) {
+    .modal-content.modal-centered {
+        width: 90%;
+        max-width: 22rem; /* ~352px */
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
+/* Size Variants - Only apply max-width on desktop, mobile should be 100% */
+@media (min-width: 768px) {
+    .modal-sm {
+        max-width: 24rem;
+    }
+
+    .modal-md {
+        max-width: 28rem;
+    }
+
+    .modal-lg {
+        max-width: 32rem;
+    }
+
+    .modal-xl {
+        max-width: 36rem;
+    }
+}
+
+/* Close Button */
+.modal-close-button {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    padding: 0.5rem;
+    border-radius: 9999px;
+    color: rgb(161 161 170); /* smoke-400 */
+    transition: all 200ms;
+    z-index: 10;
+}
+
+.modal-close-button:hover {
+    color: rgb(228 228 231); /* smoke-200 */
+    background: rgb(63 63 70); /* smoke-700 */
+}
+
+.modal-close-button:focus {
+    outline: 2px solid rgb(217 174 81); /* gold-500 */
+    outline-offset: 2px;
+}
+
+/* Mobile Bottom Sheet Handle */
+.modal-handle {
+    display: flex;
+    justify-content: center;
+    padding-top: 0.5rem;
+    padding-bottom: 1rem;
+}
+
+@media (min-width: 768px) {
+    .modal-handle {
+        display: none;
+    }
+}
+
+.modal-handle-bar {
+    width: 3rem;
+    height: 0.25rem;
+    border-radius: 9999px;
+    background: rgb(82 82 91); /* smoke-600 */
+}
+
+/* Backdrop Styles - Cigar & Club Theme */
+.cdk-overlay-backdrop.modal-backdrop {
+    background: rgba(0, 0, 0, 0.25) !important; /* Plus léger (0.4 → 0.25) */
+    backdrop-filter: blur(4px) !important;
+    opacity: 1;
+
+    /* Synchronize with modal animation timing */
+    transition: opacity 350ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* Perfect sync: Hide backdrop when modal starts closing */
+.cdk-overlay-container:has(.modal-content:not(.is-visible)) .cdk-overlay-backdrop.modal-backdrop {
+    opacity: 0 !important;
+}
+
+/* Mobile: Reduced bottom padding for bottomSheet */
+@media (max-width: 767px) {
+    .modal-content.modal-bottom-sheet {
+        padding-bottom: 1.5rem; /* Reduced padding (was 6rem) */
+    }
+}
+
+/* ============================================ */
+/* VARIANT: Bottom Sheet */
+/* ============================================ */
+/* Mobile: Force 100% width on overlay pane */
+@media (max-width: 767px) {
+    .cdk-overlay-pane:has(.modal-bottom-sheet) {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
+
+.modal-content.modal-bottom-sheet {
+    /* Mobile: 100% width, slide from bottom */
+    width: 100%;
+    border-radius: 1.5rem 1.5rem 0 0;
+    transform: translateY(100%);
+
+    /* Desktop: configurable via desktopPosition */
+    @media (min-width: 768px) {
+        border-radius: 1rem;
+        transform: translateY(0) scale(0.95);
+    }
+}
+
+.modal-content.modal-bottom-sheet.is-visible {
+    transform: translateY(0);
+
+    @media (min-width: 768px) {
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* ============================================ */
+/* VARIANT: Drawer (Slide Over) */
+/* ============================================ */
+.modal-content.modal-drawer {
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+    width: 100%;
+    max-width: 400px;
+    padding: 0;
+
+    /* Hidden state: slide off-screen */
+    transition: opacity 300ms cubic-bezier(0.16, 1, 0.3, 1),
+                transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Drawer from right */
+.modal-content.modal-drawer-right {
+    transform: translateX(100%);
+}
+
+.modal-content.modal-drawer-right.is-visible {
+    transform: translateX(0);
+}
+
+/* Drawer from left */
+.modal-content.modal-drawer-left {
+    transform: translateX(-100%);
+}
+
+.modal-content.modal-drawer-left.is-visible {
+    transform: translateX(0);
+}
+
+/* Desktop drawer width */
+@media (min-width: 768px) {
+    .modal-content.modal-drawer {
+        max-width: 480px;
+    }
+}
+
+/* ============================================ */
+/* SWIPE TO DISMISS - Interactive Drag */
+/* ============================================ */
+/* While dragging: instant response, no transition */
+.modal-content.is-dragging {
+    transition: none !important;
+}
+
+/* When releasing (bouncing back): smooth spring animation */
+.modal-content:not(.is-dragging) {
+    transition: opacity 350ms cubic-bezier(0.16, 1, 0.3, 1),
+                transform 350ms cubic-bezier(0.16, 1, 0.3, 1);
+}

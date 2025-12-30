@@ -1,7 +1,8 @@
-import { Component, input, output, computed, Signal } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AvatarComponent } from '../avatar';
 import { IconDirective } from '../../directives/icon';
+import { ModalComponent } from '../modal';
 import clsx from 'clsx';
 
 /**
@@ -27,23 +28,16 @@ import clsx from 'clsx';
 @Component({
   selector: 'ui-context-switcher',
   standalone: true,
-  imports: [CommonModule, AvatarComponent, IconDirective],
+  imports: [CommonModule, AvatarComponent, IconDirective, ModalComponent],
   template: `
-    <!-- Backdrop -->
-    @if (isOpen()) {
-      <div
-        class="fixed inset-0 z-50 bg-smoke-950/80 backdrop-blur-sm md:hidden animate-fade-in"
-        (click)="close.emit()"
-      ></div>
-    }
-
-    <!-- Bottom Sheet -->
-    <div
-      [class]="bottomSheetClasses()"
+    <ui-modal
+      [isOpen]="isOpen()"
+      variant="bottomSheet"
+      size="md"
+      [showCloseButton]="false"
+      (close)="close.emit()"
     >
-      <!-- Handle -->
-      <div class="mx-auto mb-6 h-1 w-12 rounded-full bg-smoke-600"></div>
-
+      <div class="pb-6 md:pb-0 md:hidden">
       <!-- Header -->
       <div class="mb-6">
         <h2 class="text-xl font-semibold text-smoke-50">Changer de contexte</h2>
@@ -110,22 +104,9 @@ import clsx from 'clsx';
           <span class="font-medium text-smoke-200">Créer ou rejoindre un club</span>
         </div>
       </button>
-    </div>
+      </div>
+    </ui-modal>
   `,
-  styles: [`
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-      }
-      to {
-        opacity: 1;
-      }
-    }
-
-    .animate-fade-in {
-      animation: fadeIn 0.2s ease-out;
-    }
-  `],
 })
 export class ContextSwitcherComponent {
   // Inputs
@@ -141,21 +122,6 @@ export class ContextSwitcherComponent {
   readonly close = output<void>();
   readonly contextSelected = output<{ type: 'solo' | 'club'; id: string | null; club?: any }>();
   readonly createJoinClub = output<void>();
-
-  /**
-   * Bottom sheet classes with open/closed state
-   */
-  readonly bottomSheetClasses: Signal<string> = computed<string>(() => {
-    return clsx(
-      'fixed bottom-0 left-0 right-0 z-50',
-      'max-h-[80vh] overflow-y-auto',
-      'rounded-t-3xl bg-smoke-800 p-6 pb-24', // pb-24 to avoid bottom tab bar
-      'border-t border-smoke-700',
-      'md:hidden',
-      'transition-transform duration-300 ease-out',
-      this.isOpen() ? 'translate-y-0' : 'translate-y-full pointer-events-none'
-    );
-  });
 
   /**
    * Get classes for context item button
