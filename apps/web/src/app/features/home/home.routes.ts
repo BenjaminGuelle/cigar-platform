@@ -23,6 +23,11 @@ export const homeRoutes: Route[] = [
           import('./dashboard/dashboard.component').then((m) => m.DashboardComponent),
       },
       {
+        path: 'profile',
+        loadComponent: () =>
+          import('./profile/profile-context.page').then((m) => m.ProfileContextPage),
+      },
+      {
         path: 'settings',
         loadComponent: () =>
           import('./settings/settings-context.page').then((m) => m.SettingsContextPage),

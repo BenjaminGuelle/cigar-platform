@@ -1,0 +1,120 @@
+<div class="flex flex-col gap-6">
+  <!-- Header with Settings CTA -->
+  <ui-page-header
+    title="Mon Profil"
+    subtitle="Gérez votre profil et vos préférences"
+  >
+    <a
+      routerLink="/settings"
+      class="flex items-center gap-2 px-4 py-2 rounded-lg bg-smoke-700 hover:bg-smoke-600 text-smoke-100 transition-colors"
+    >
+      <i name="settings" class="w-5 h-5"></i>
+      <span class="hidden md:inline">Paramètres</span>
+    </a>
+  </ui-page-header>
+
+  <!-- Profile Card -->
+  <ui-page-section title="Informations">
+    <div class="flex flex-col md:flex-row gap-6 items-start">
+      <!-- Avatar -->
+      <div class="flex-shrink-0">
+        <ui-avatar
+          [user]="currentUser()"
+          size="lg"
+          class="ring-2 ring-gold-500/20"
+        />
+      </div>
+
+      <!-- User Info -->
+      <div class="flex-1 min-w-0">
+        <h2 class="heading-2 mb-1">{{ displayName() }}</h2>
+        @if (username()) {
+          <p class="body text-smoke-300 mb-2">@{{ username() }}</p>
+        }
+        @if (bio()) {
+          <p class="body-lg text-smoke-200 mb-4">{{ bio() }}</p>
+        }
+        <p class="caption text-smoke-400">{{ email() }}</p>
+      </div>
+    </div>
+  </ui-page-section>
+
+  <!-- Stats -->
+  <ui-page-section title="Statistiques">
+    <div class="grid grid-cols-3 gap-4">
+      <!-- Tastings -->
+      <div class="flex flex-col items-center p-4 rounded-lg bg-smoke-800 border border-smoke-700">
+        <i name="flame" class="w-6 h-6 text-gold-500 mb-2"></i>
+        <span class="heading-3 text-smoke-50">{{ tastingsCount() }}</span>
+        <span class="caption text-smoke-400">Dégustations</span>
+      </div>
+
+      <!-- Clubs -->
+      <div class="flex flex-col items-center p-4 rounded-lg bg-smoke-800 border border-smoke-700">
+        <i name="users" class="w-6 h-6 text-gold-500 mb-2"></i>
+        <span class="heading-3 text-smoke-50">{{ clubsCount() }}</span>
+        <span class="caption text-smoke-400">Clubs</span>
+      </div>
+
+      <!-- Reviews -->
+      <div class="flex flex-col items-center p-4 rounded-lg bg-smoke-800 border border-smoke-700">
+        <i name="star" class="w-6 h-6 text-gold-500 mb-2"></i>
+        <span class="heading-3 text-smoke-50">{{ reviewsCount() }}</span>
+        <span class="caption text-smoke-400">Évaluations</span>
+      </div>
+    </div>
+  </ui-page-section>
+
+  <!-- Quick Actions -->
+  <ui-page-section title="Actions rapides">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- View Public Profile -->
+      <a
+        [href]="profileUrl()"
+        target="_blank"
+        class="flex items-center gap-3 p-4 rounded-lg bg-smoke-800 border border-smoke-700 hover:border-gold-500/30 hover:bg-smoke-750 transition-all cursor-pointer group"
+      >
+        <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-smoke-700 group-hover:bg-gold-500/10 transition-colors">
+          <i name="globe" class="w-5 h-5 text-gold-500"></i>
+        </div>
+        <div class="flex-1">
+          <h3 class="label text-smoke-100 mb-0.5">Voir mon profil public</h3>
+          <p class="caption text-smoke-400">Comme les autres utilisateurs le voient</p>
+        </div>
+      </a>
+
+      <!-- Create Tasting (Coming Soon) -->
+      <div class="flex items-center gap-3 p-4 rounded-lg bg-smoke-800 border border-smoke-700 opacity-50 cursor-not-allowed">
+        <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-smoke-700">
+          <i name="flame" class="w-5 h-5 text-smoke-400"></i>
+        </div>
+        <div class="flex-1">
+          <h3 class="label text-smoke-300 mb-0.5">Créer une dégustation</h3>
+          <p class="caption text-smoke-400">Bientôt disponible</p>
+        </div>
+      </div>
+
+      <!-- Join Club (Coming Soon) -->
+      <div class="flex items-center gap-3 p-4 rounded-lg bg-smoke-800 border border-smoke-700 opacity-50 cursor-not-allowed">
+        <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-smoke-700">
+          <i name="users" class="w-5 h-5 text-smoke-400"></i>
+        </div>
+        <div class="flex-1">
+          <h3 class="label text-smoke-300 mb-0.5">Rejoindre un club</h3>
+          <p class="caption text-smoke-400">Bientôt disponible</p>
+        </div>
+      </div>
+
+      <!-- Analytics (Coming Soon) -->
+      <div class="flex items-center gap-3 p-4 rounded-lg bg-smoke-800 border border-smoke-700 opacity-50 cursor-not-allowed">
+        <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-smoke-700">
+          <i name="star" class="w-5 h-5 text-smoke-400"></i>
+        </div>
+        <div class="flex-1">
+          <h3 class="label text-smoke-300 mb-0.5">Mes statistiques</h3>
+          <p class="caption text-smoke-400">Bientôt disponible</p>
+        </div>
+      </div>
+    </div>
+  </ui-page-section>
+</div>
