@@ -4,14 +4,9 @@
     [contextType]="context().type"
     [user]="currentUser()"
     [club]="context().club"
-    [fabMenuOpen]="fabMenuOpen()"
-    [fabMenuItems]="fabMenuItems()"
     [notificationsBadge]="3"
     (contextClick)="onContextClick()"
     (notificationsClick)="onComingSoonOpen('Notifications')"
-    (fabMenuToggle)="onFabMenuToggle()"
-    (fabMenuClose)="onFabMenuClose()"
-    (fabMenuItemClicked)="onFabMenuItemClick($event)"
   />
 
   <!-- Desktop Context Sidebar (≥ 768px) - Left avatar stack -->

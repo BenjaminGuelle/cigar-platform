@@ -2,7 +2,6 @@ import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { User } from '@cigar-platform/types';
 import { AvatarComponent } from '../avatar';
-import { FabMenuComponent, type FabMenuItem } from '../fab-menu';
 import { IconDirective } from '../../directives/icon';
 
 /**
@@ -14,7 +13,7 @@ import { IconDirective } from '../../directives/icon';
 @Component({
   selector: 'ui-mobile-header',
   standalone: true,
-  imports: [CommonModule, AvatarComponent, FabMenuComponent, IconDirective],
+  imports: [CommonModule, AvatarComponent, IconDirective],
   template: `
     <header class="fixed left-0 right-0 top-0 z-40 border-b border-smoke-800 backdrop-blur-xl md:hidden">
       <div class="flex items-center justify-between px-4 py-3">
@@ -76,16 +75,6 @@ import { IconDirective } from '../../directives/icon';
             </span>
           }
         </button>
-
-        <!-- FAB Menu (contextual quick actions) -->
-        <ui-fab-menu
-          variant="inline"
-          [isOpen]="fabMenuOpen()"
-          [items]="fabMenuItems()"
-          (toggle)="fabMenuToggle.emit()"
-          (close)="fabMenuClose.emit()"
-          (itemClicked)="fabMenuItemClicked.emit($event)"
-        />
       </div>
     </header>
   `,
@@ -96,17 +85,10 @@ export class MobileHeaderComponent {
   readonly user = input<User | null>(null);
   readonly club = input<any | null>(null); // TODO: Replace with ClubDto
 
-  // FAB menu
-  readonly fabMenuOpen = input<boolean>(false);
-  readonly fabMenuItems = input<FabMenuItem[]>([]);
-
   // Notifications
   readonly notificationsBadge = input<number>(0);
 
   // Events
   readonly contextClick = output<void>();
   readonly notificationsClick = output<void>();
-  readonly fabMenuToggle = output<void>();
-  readonly fabMenuClose = output<void>();
-  readonly fabMenuItemClicked = output<string>();
 }
