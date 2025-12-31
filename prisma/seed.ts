@@ -6,7 +6,6 @@ async function main() {
   console.log('🌱 Starting seed...');
 
   // Get the first user as the creator (or create a system user)
-  // In production, you'd use a specific system user ID
   let systemUser = await prisma.user.findFirst({
     where: {
       role: 'SUPER_ADMIN',
@@ -18,11 +17,23 @@ async function main() {
     systemUser = await prisma.user.findFirst();
   }
 
+  // If no user exists, create a test admin user
   if (!systemUser) {
-    throw new Error('No users found in database. Please create a user first.');
+    console.log('📝 No users found. Creating test admin user...');
+    systemUser = await prisma.user.create({
+      data: {
+        email: 'admin@cigar-platform.local',
+        displayName: 'Admin Test',
+        username: 'admin',
+        role: 'SUPER_ADMIN',
+        visibility: 'PUBLIC',
+        shareEvaluationsPublicly: true,
+      },
+    });
+    console.log(`✅ Created test admin user: ${systemUser.displayName} (${systemUser.email})`);
+  } else {
+    console.log(`✅ Using existing user: ${systemUser.displayName} (${systemUser.id})`);
   }
-
-  console.log(`✅ Using user ${systemUser.displayName} (${systemUser.id}) as creator`);
 
   // Premium Cigar Brands
   const brands = [
