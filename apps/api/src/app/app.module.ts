@@ -11,6 +11,7 @@ import { UsersModule } from '../users/users.module';
 import { SearchModule } from '../search/search.module';
 import { BrandModule } from '../brand/brand.module';
 import { CigarModule } from '../cigar/cigar.module';
+import { TastingModule } from '../tasting/tasting.module';
 
 @Global()
 @Module({
@@ -31,6 +32,7 @@ import { CigarModule } from '../cigar/cigar.module';
     SearchModule,
     BrandModule,
     CigarModule,
+    TastingModule,
   ],
   controllers: [AppController],
   providers: [
