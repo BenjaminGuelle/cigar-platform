@@ -61,8 +61,8 @@ export class ObservationService {
           combustion: upsertObservationDto.combustion ?? null,
           aromas: upsertObservationDto.aromas ?? [],
           notes: upsertObservationDto.notes ?? null,
-          organoleptique: upsertObservationDto.organoleptique
-            ? (upsertObservationDto.organoleptique as Prisma.JsonObject)
+          organoleptic: upsertObservationDto.organoleptic
+            ? (upsertObservationDto.organoleptic as Prisma.JsonObject)
             : Prisma.DbNull,
         },
       });
@@ -80,8 +80,8 @@ export class ObservationService {
           combustion: upsertObservationDto.combustion ?? null,
           aromas: upsertObservationDto.aromas ?? [],
           notes: upsertObservationDto.notes ?? null,
-          organoleptique: upsertObservationDto.organoleptique
-            ? (upsertObservationDto.organoleptique as Prisma.JsonObject)
+          organoleptic: upsertObservationDto.organoleptic
+            ? (upsertObservationDto.organoleptic as Prisma.JsonObject)
             : Prisma.DbNull,
         },
       });
@@ -237,7 +237,7 @@ export class ObservationService {
       combustion: observation.combustion,
       aromas: observation.aromas,
       notes: observation.notes,
-      organoleptique: observation.organoleptique as Record<string, unknown> | null,
+      organoleptic: observation.organoleptic as Record<string, unknown> | null,
       createdAt: observation.createdAt,
       updatedAt: observation.updatedAt,
     };

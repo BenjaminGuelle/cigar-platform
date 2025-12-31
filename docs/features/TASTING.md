@@ -141,59 +141,61 @@ model Event {
 }
 ```
 
-### Structure Observation (JSON organoleptique)
+### Structure Observation (JSON organoleptic)
 
-Le champ `Observation.organoleptique` stocke les données détaillées en JSON :
+Le champ `Observation.organoleptic` stocke les données détaillées en JSON :
+
+**⚠️ IMPORTANT**: Toutes les clés sont en ANGLAIS, seules les valeurs d'affichage sont en français.
 
 ```typescript
 interface TastingObservations {
   // Section 1 - Présentation (avant allumage)
   presentation?: {
-    aspectCape: CapeAspect[];      // Multi-select
-    couleurCape: CapeColor;        // Single-select
-    toucher: CapeToucher[];        // Multi-select
+    wrapperAspect: CapeAspect[];      // Multi-select
+    wrapperColor: CapeColor;          // Single-select
+    touch: CapeToucher[];             // Multi-select
   };
 
   // Section 2 - Fumage à cru
-  fumageACru?: {
-    gouts: FlavorTag[];
-    aromes: FlavorTag[];
+  coldDraw?: {
+    tastes: FlavorTag[];
+    aromas: FlavorTag[];
     notes?: string;
   };
 
   // Section 3 - Foin (Premier tiers)
-  foin?: {
-    gouts: FlavorTag[];
-    aromes: FlavorTag[];
+  firstThird?: {
+    tastes: FlavorTag[];
+    aromas: FlavorTag[];
   };
 
   // Section 4 - Divin (Deuxième tiers)
-  divin?: {
-    gouts: FlavorTag[];
-    aromes: FlavorTag[];
+  secondThird?: {
+    tastes: FlavorTag[];
+    aromas: FlavorTag[];
   };
 
   // Section 5 - Purin (Troisième tiers)
-  purin?: {
-    gouts: FlavorTag[];
-    aromes: FlavorTag[];
+  finalThird?: {
+    tastes: FlavorTag[];
+    aromas: FlavorTag[];
   };
 
   // Section 6 - Conclusion
   conclusion?: {
     // Technique
-    tirage: 'difficile' | 'correct' | 'trop_aise';
-    natureCendre: 'reguliere' | 'irreguliere' | 'nette';
-    equilibre: 'bon' | 'heurte' | 'fondu';
-    terroir: 'accuse' | 'sensible' | 'inexistant';
-    
+    draw: 'difficult' | 'correct' | 'too_easy';
+    ashNature: 'regular' | 'irregular' | 'clean';
+    balance: 'good' | 'rough' | 'smooth';
+    terroir: 'strong' | 'noticeable' | 'absent';
+
     // Corps
-    puissance: number;  // 1-10
-    variete: number;    // 1-10
-    
+    power: number;  // 1-10
+    variety: number;    // 1-10
+
     // Impression finale
-    impressionBouche: ImpressionBouche[];
-    persistance: 'courte' | 'moyenne' | 'longue';
+    mouthImpression: ImpressionBouche[];
+    persistence: 'short' | 'medium' | 'long';
   };
 }
 

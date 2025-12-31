@@ -368,10 +368,10 @@ model Observation {
   // Notes libres
   notes String? @db.Text
 
-  // Profil organoleptique (JSON pour flexibilité)
-  // Contient les données détaillées de la fiche papier (57 champs)
+  // Organoleptic profile (JSON for flexibility)
+  // Contains detailed tasting sheet data (57 fields)
   // Structure: { tastes: [], presentation: {}, draw: {}, balance: {}, etc. }
-  organoleptique Json?
+  organoleptic Json?
 
   // Timestamps
   createdAt DateTime @default(now())

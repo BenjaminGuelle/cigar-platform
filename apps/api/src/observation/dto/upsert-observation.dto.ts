@@ -67,11 +67,11 @@ export class UpsertObservationDto {
     description: 'Detailed organoleptic profile (JSON)',
     example: {
       presentation: {
-        aspectCape: ['well_stretched', 'fine_grain'],
-        couleurCape: 'colorado',
-        toucher: ['firm', 'regular'],
+        wrapperAspect: ['well_stretched', 'fine_grain'],
+        wrapperColor: 'colorado',
+        touch: ['firm', 'regular'],
       },
     },
   })
-  organoleptique?: Record<string, unknown>;
+  organoleptic?: Record<string, unknown>;
 }

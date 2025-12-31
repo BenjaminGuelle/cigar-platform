@@ -42,13 +42,13 @@ export class ObservationResponseDto {
     type: Object,
     example: {
       presentation: {
-        aspectCape: ['well_stretched', 'fine_grain'],
-        couleurCape: 'colorado',
-        toucher: ['firm', 'regular'],
+        wrapperAspect: ['well_stretched', 'fine_grain'],
+        wrapperColor: 'colorado',
+        touch: ['firm', 'regular'],
       },
     },
   })
-  organoleptique: Record<string, unknown> | null;
+  organoleptic: Record<string, unknown> | null;
 
   @Expose()
   @ApiProperty({ example: '2024-12-31T20:00:00.000Z' })
