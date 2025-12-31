@@ -19,7 +19,8 @@
       "@cigar-platform/types": ["shared/types/src/index.ts"],
       "@cigar-platform/types/*": ["shared/types/src/*"],
       "@cigar-platform/shared/ui": ["shared/ui/src/index.ts"],
-      "@cigar-platform/prisma-client": ["generated/prisma"]
+      "@cigar-platform/prisma-client": ["generated/prisma"],
+      "@cigar-platform/shared/constants": ["shared/constants/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

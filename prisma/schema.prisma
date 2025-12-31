@@ -63,6 +63,39 @@ enum TastingVisibility {
   CLUB_ONLY // Visible uniquement par les membres des clubs partagés
 }
 
+// Tasting status
+enum TastingStatus {
+  DRAFT // En cours de saisie
+  COMPLETED // Finalisé
+}
+
+// Tasting moment (time of day)
+enum TastingMoment {
+  MATIN
+  APRES_MIDI
+  SOIR
+}
+
+// Tasting situation
+enum TastingSituation {
+  APERITIF
+  COCKTAIL
+  DIGESTIF
+}
+
+// Pairing type
+enum PairingType {
+  WHISKY
+  RHUM
+  COGNAC
+  CAFE
+  THE
+  EAU
+  VIN
+  BIERE
+  AUTRE
+}
+
 // ============================================
 // MODELS
 // ============================================
@@ -197,6 +230,7 @@ model Event {
   cigarId     String?  @db.Uuid
   name        String
   description String?
+  location    String? // "Bar Le Fumoir" ou "Chez @membre"
   date        DateTime
   createdBy   String   @db.Uuid
   createdAt   DateTime @default(now())
@@ -279,17 +313,24 @@ model Tasting {
   cigarId String  @db.Uuid
   eventId String? @db.Uuid
 
-  // Core evaluation
-  rating   Float // 1-5 (allows decimals like 3.5)
-  pleasure Int // 1-10 (plaisir ressenti)
+  // Status
+  status TastingStatus @default(DRAFT)
 
-  // Metadata
-  photoUrl String? // Photo principale de la dégustation
-  date     DateTime
-  duration Int? // Durée en minutes
-  comment  String?  @db.Text // Commentaire global
+  // Phase 1 - Quick
+  date        DateTime         @default(now())
+  moment      TastingMoment?
+  situation   TastingSituation?
+  pairing     PairingType?
+  pairingNote String? // Précision sur la boisson
+  location    String? // Pour tasting solo uniquement
+  photoUrl    String?
 
-  // Privacy
+  // Durée (auto-calculée ou manuelle)
+  duration Int? // Minutes
+
+  // Phase Finale
+  rating     Float               // 0.5-5 par pas de 0.5
+  comment    String?  @db.Text
   visibility TastingVisibility @default(PUBLIC)
 
   // Timestamps
@@ -300,13 +341,13 @@ model Tasting {
   user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   cigar        Cigar           @relation(fields: [cigarId], references: [id], onDelete: Cascade)
   event        Event?          @relation(fields: [eventId], references: [id], onDelete: SetNull)
-  observations Observation[] // Multiple observations (1 par phase: début/milieu/fin)
-  sharedClubs  TastingOnClub[] // Clubs où la dégustation est partagée
+  observations Observation[]
+  sharedClubs  TastingOnClub[]
 
   @@index([userId])
   @@index([cigarId])
   @@index([eventId])
-  @@index([visibility])
+  @@index([status])
   @@map("tastings")
 }
 
