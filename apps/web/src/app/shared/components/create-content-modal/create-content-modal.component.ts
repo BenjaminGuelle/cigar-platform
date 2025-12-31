@@ -109,8 +109,6 @@ export class CreateContentModalComponent {
         date: this.eventDateControl.value || null,
       };
 
-      console.log('[CreateContentModal] Creating event:', eventData);
-
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -118,7 +116,6 @@ export class CreateContentModalComponent {
       this.resetForm();
       this.close.emit();
     } catch (error) {
-      console.error('[CreateContentModal] Error creating event:', error);
       // TODO: Show error toast
     } finally {
       this.isCreatingEvent.set(false);

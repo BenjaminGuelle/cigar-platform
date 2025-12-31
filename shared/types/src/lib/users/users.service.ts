@@ -43,10 +43,10 @@ export class UsersService {
  * @summary Get user public profile with stats
  */
  usersControllerGetPublicProfile<TData = UserPublicProfileDto>(
-    id: string,
+    identifier: string,
  ) {
       return customInstance<TData>(
-      {url: `/api/users/${id}/profile`, method: 'GET'
+      {url: `/api/users/${identifier}/profile`, method: 'GET'
     },
       this.http,
       );
@@ -55,11 +55,11 @@ export class UsersService {
  * @summary Get user's public clubs
  */
  usersControllerGetUserClubs<TData = ClubResponseDto[]>(
-    id: string,
+    identifier: string,
     params?: DeepNonNullable<UsersControllerGetUserClubsParams>,
  ) {
       return customInstance<TData>(
-      {url: `/api/users/${id}/clubs`, method: 'GET',
+      {url: `/api/users/${identifier}/clubs`, method: 'GET',
         params
     },
       this.http,

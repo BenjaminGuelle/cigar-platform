@@ -8,32 +8,45 @@
       <!-- Action Icons -->
       <div class="flex items-center gap-2 flex-shrink-0">
         <!-- View Public Profile -->
-        <a
-          [routerLink]="['/user', '@' + username()]"
-          class="p-2 rounded-lg hover:bg-smoke-800 transition-colors group"
-          title="Voir mon profil public"
-        >
-          <i name="eye" class="w-5 h-5 text-smoke-400 group-hover:text-gold-500 transition-colors"></i>
-        </a>
+        <div [uiTooltip]="'Voir mon profil public'" tooltipPosition="bottom">
+          <a [routerLink]="['/user', '@' + username()]">
+            <ui-button
+              size="icon"
+              variant="ghost"
+              icon="eye"
+              customClass="!rounded-lg"
+            >
+              <span class="sr-only">Voir mon profil public</span>
+            </ui-button>
+          </a>
+        </div>
 
         <!-- Share Profile -->
-        <button
-          type="button"
-          (click)="copyProfileLink()"
-          class="p-2 rounded-lg hover:bg-smoke-800 transition-colors group"
-          title="Partager mon profil"
-        >
-          <i name="book-copy" class="w-5 h-5 text-smoke-400 group-hover:text-gold-500 transition-colors"></i>
-        </button>
+        <div [uiTooltip]="'Partager mon profil'" tooltipPosition="bottom">
+          <ui-button
+            size="icon"
+            variant="ghost"
+            icon="book-copy"
+            customClass="!rounded-lg"
+            (clicked)="copyProfileLink()"
+          >
+            <span class="sr-only">Partager mon profil</span>
+          </ui-button>
+        </div>
 
         <!-- Settings -->
-        <a
-          routerLink="/settings"
-          class="p-2 rounded-lg hover:bg-smoke-800 transition-colors group"
-          title="Paramètres"
-        >
-          <i name="settings" class="w-5 h-5 text-smoke-400 group-hover:text-gold-500 transition-colors"></i>
-        </a>
+        <div [uiTooltip]="'Paramètres'" tooltipPosition="bottom">
+          <a routerLink="/settings">
+            <ui-button
+              size="icon"
+              variant="ghost"
+              icon="settings"
+              customClass="!rounded-lg"
+            >
+              <span class="sr-only">Paramètres</span>
+            </ui-button>
+          </a>
+        </div>
       </div>
     </div>
 

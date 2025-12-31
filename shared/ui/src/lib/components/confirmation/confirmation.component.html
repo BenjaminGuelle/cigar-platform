@@ -1,0 +1,36 @@
+<div [class]="CLASSES.container">
+  <!-- Success Icon -->
+  <div [class]="CLASSES.icon.wrapper">
+    <i [name]="icon()" [class]="CLASSES.icon.svg"></i>
+  </div>
+
+  <!-- Message -->
+  <p [class]="CLASSES.message">{{ message() }}</p>
+
+  <!-- Action Buttons -->
+  <div [class]="CLASSES.actions">
+    <!-- Primary Action -->
+    <ui-button
+      variant="primary"
+      size="lg"
+      [icon]="primaryIcon()"
+      (clicked)="handlePrimaryClick()"
+      customClass="w-full"
+    >
+      {{ primaryLabel() }}
+    </ui-button>
+
+    <!-- Secondary Action (optional) -->
+    @if (secondaryLabel()) {
+      <ui-button
+        variant="ghost"
+        size="md"
+        [icon]="secondaryIcon()"
+        (clicked)="handleSecondaryClick()"
+        customClass="w-full"
+      >
+        {{ secondaryLabel() }}
+      </ui-button>
+    }
+  </div>
+</div>

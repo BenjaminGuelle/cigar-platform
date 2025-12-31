@@ -99,10 +99,12 @@ export class GlobalSearchModalComponent {
   readonly close = output<void>();
   readonly searchQueryChanged = output<string>();
   readonly resultClicked = output<{ id: string; type: 'brand' | 'cigar' | 'club' | 'user' }>();
+  readonly createCigar = output<string>();
 
   // Internal State
   readonly searchControl = new FormControl('');
   readonly #activeResultIndex: WritableSignal<number> = signal<number>(-1);
+  readonly #currentQuery: WritableSignal<string> = signal<string>('');
 
   // Computed - Flatten all results for keyboard navigation
   readonly allResults: Signal<SearchResultItem[]> = computed<SearchResultItem[]>(() => {
@@ -162,7 +164,7 @@ export class GlobalSearchModalComponent {
   });
 
   readonly showEmpty: Signal<boolean> = computed<boolean>(() => {
-    const query = this.searchControl.value?.trim() || '';
+    const query = this.#currentQuery().trim();
     return query.length > 0 && !this.loading() && !this.hasResults();
   });
 
@@ -244,6 +246,7 @@ export class GlobalSearchModalComponent {
 
     // Emit search query changes - Use valueChanges observable, not effect!
     this.searchControl.valueChanges.subscribe((query) => {
+      this.#currentQuery.set(query || '');
       this.searchQueryChanged.emit(query || '');
     });
 
@@ -320,9 +323,8 @@ export class GlobalSearchModalComponent {
    * Triggered when user clicks the "Add to database" virtual item
    */
   handleCreateCigar(): void {
-    const query = this.searchResults().query;
-    // TODO: Emit event to parent to open create cigar modal with pre-filled name
-    console.log('[GlobalSearchModal] Create cigar requested:', query);
+    const query = this.searchControl.value?.trim() || '';
+    this.createCigar.emit(query);
     this.handleClose();
   }
 

@@ -36,3 +36,7 @@ export * from './models/auth-response.model';
 
 // Error types (business logic, not generated)
 export * from './error';
+
+// Business constants (cigar domain)
+export * from './lib/countries/countries.const';
+export * from './lib/cigar';

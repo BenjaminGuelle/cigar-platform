@@ -1,0 +1,71 @@
+<div [class]="CLASSES.container">
+  <!-- Label Row -->
+  @if (label()) {
+    <div [class]="CLASSES.label.container">
+      <label [class]="CLASSES.label.text">
+        {{ label() }}
+        @if (required()) {
+          <span class="text-red-500 ml-1">*</span>
+        }
+      </label>
+      <span [class]="CLASSES.label.value">{{ value() }}</span>
+    </div>
+  }
+
+  <!-- Custom Slider Track (clickable) -->
+  <div
+    #trackRef
+    [class]="CLASSES.track.wrapper"
+    (mousedown)="handleTrackClick($event)"
+    (touchstart)="handleTrackClick($event)"
+  >
+    <!-- Background track -->
+    <div [class]="CLASSES.track.background"></div>
+
+    <!-- Filled portion -->
+    <div
+      [class]="CLASSES.track.fill"
+      [style.width.%]="percentage()"
+    ></div>
+
+    <!-- Custom Thumb (draggable) -->
+    <div
+      class="slider-thumb"
+      [class]="CLASSES.thumb.base"
+      [class.!transition-none]="isDragging()"
+      [style.left.%]="percentage()"
+      [style.transform]="'translateX(-50%)'"
+      (mousedown)="handleThumbMouseDown($event)"
+      (touchstart)="handleThumbTouchStart($event)"
+    ></div>
+  </div>
+
+  <!-- Hidden native input (for accessibility & FormControl) -->
+  <input
+    type="range"
+    [formControl]="control()"
+    [min]="min()"
+    [max]="max()"
+    [step]="step()"
+    class="sr-only"
+    [attr.aria-label]="label() || 'Slider'"
+    [attr.aria-valuemin]="min()"
+    [attr.aria-valuemax]="max()"
+    [attr.aria-valuenow]="value()"
+    [attr.aria-valuetext]="currentLabel()"
+  />
+
+  <!-- Step Dots -->
+  <div [class]="CLASSES.steps.container">
+    @for (stepValue of steps(); track stepValue) {
+      <div
+        [class]="CLASSES.steps.dot + ' ' + (isStepActive(stepValue) ? CLASSES.steps.dotActive : CLASSES.steps.dotInactive)"
+      ></div>
+    }
+  </div>
+
+  <!-- Current Label -->
+  @if (currentLabel()) {
+    <div [class]="CLASSES.currentLabel">{{ currentLabel() }}</div>
+  }
+</div>

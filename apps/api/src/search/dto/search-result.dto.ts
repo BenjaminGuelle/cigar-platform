@@ -57,6 +57,9 @@ export class CigarSearchItemDto extends BaseSearchItemDto {
 
   @ApiProperty({ example: '124mm × 50' })
   size: string;
+
+  @ApiProperty({ example: true, description: 'Whether the cigar has been verified by an admin' })
+  isVerified: boolean;
 }
 
 /**

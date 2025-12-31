@@ -74,7 +74,7 @@ export function injectSearchStore(): SearchStore {
           return searchService.searchControllerSearch({ q: query });
         },
         enabled: !!query && query.trim().length >= 1,
-        staleTime: 1000 * 60 * 5, // 5 minutes
+        staleTime: 1000 * 60 * 2, // 2 minutes (optimized for freshness)
       };
     });
   };

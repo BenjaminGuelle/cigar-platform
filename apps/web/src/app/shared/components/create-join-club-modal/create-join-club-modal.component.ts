@@ -111,16 +111,11 @@ export class CreateJoinClubModalComponent {
   }
 
   async onCreateClub(): Promise<void> {
-    console.log('[CreateJoinClubModal] onCreateClub called');
-
     this.#formService.triggerValidation(this.createClubForm);
 
     if (this.createClubForm.invalid) {
-      console.log('[CreateJoinClubModal] Form invalid, aborting');
       return;
     }
-
-    console.log('[CreateJoinClubModal] Using store mutation...');
 
     const { name, description, isPublicDirectory, autoApproveMembers, allowMemberInvites, maxMembers } =
       this.createClubForm.getRawValue();
@@ -138,22 +133,16 @@ export class CreateJoinClubModalComponent {
       maxMembers: maxMembers || undefined,
     };
 
-    console.log('[CreateJoinClubModal] DTO prepared:', createClubDto);
-
     // Use store mutation (handles cache invalidation automatically)
     const club = await this.#clubStore.createClub.mutate(createClubDto);
 
-    console.log('[CreateJoinClubModal] Mutation result:', club);
-
     // Component handles UX only
     if (this.#clubStore.createClub.error()) {
-      console.error('[CreateJoinClubModal] Error creating club:', this.#clubStore.createClub.error());
       this.#toastService.error('Impossible de créer le club');
       return;
     }
 
     if (club?.id) {
-      console.log('[CreateJoinClubModal] Success! Club created:', club);
       this.#toastService.success('Club créé avec succès !');
 
       // Reload user clubs to get fresh data (store already invalidated cache)
@@ -166,7 +155,6 @@ export class CreateJoinClubModalComponent {
       this.resetForms();
       this.close.emit();
     } else {
-      console.log('[CreateJoinClubModal] Invalid response:', club);
       this.#toastService.error('Impossible de créer le club');
     }
   }
@@ -206,7 +194,6 @@ export class CreateJoinClubModalComponent {
         throw new Error('Invalid response from server');
       }
     } catch (error) {
-      console.error('[CreateJoinClubModal] Error joining club:', error);
       this.#toastService.error('Code d\'invitation invalide ou club introuvable');
     } finally {
       this.isJoining.set(false);

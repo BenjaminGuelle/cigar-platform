@@ -1,0 +1,130 @@
+<ui-modal
+  [isOpen]="isOpen()"
+  size="lg"
+  variant="bottomSheet"
+  desktopPosition="top-right"
+  (close)="onClose()"
+>
+  @if (currentStep() === 'form') {
+    <div class="space-y-6">
+      <!-- Header -->
+      <div>
+        <h2 class="text-2xl font-display text-smoke-50 mb-2">Ajouter un cigare</h2>
+        <p class="text-sm text-smoke-400">Remplissez les informations du cigare</p>
+      </div>
+
+      <!-- Single Form -->
+      <form [formGroup]="cigarForm" (ngSubmit)="onSubmit()" class="space-y-5">
+        <!-- Brand Autocomplete (ALL STARS ⭐ - with Premium logos) -->
+        <ui-autocomplete
+          autocompleteId="brand-autocomplete"
+          label="Marque"
+          placeholder="Rechercher une marque..."
+          hint="Sélectionnez ou créez une nouvelle marque"
+          [control]="cigarForm.controls.brandName"
+          [options]="brandOptions()"
+          [loading]="brandsLoading()"
+          [required]="true"
+          [showCreateOption]="true"
+          createLabel="Créer la marque"
+          (search)="onBrandSearch($event)"
+          (create)="onCreateBrand($event)"
+        />
+
+        <!-- New Brand Fields (conditionally shown) -->
+        @if (showNewBrandFields()) {
+          <div class="space-y-4 p-4 bg-smoke-800 rounded-lg border border-smoke-700 animate-fadeIn">
+            <div class="flex items-center justify-between">
+              <p class="text-xs font-medium text-smoke-400">Nouvelle marque</p>
+              <button
+                type="button"
+                class="text-xs text-gold-500 hover:text-gold-400 transition-colors"
+                (click)="toggleNewBrandFields()"
+              >
+                Annuler
+              </button>
+            </div>
+
+            <!-- Brand Country (with flags + fuzzy search) -->
+            <ui-autocomplete
+              autocompleteId="brand-country"
+              label="Pays d'origine"
+              placeholder="Sélectionner un pays"
+              [control]="cigarForm.controls.brandCountry"
+              [options]="countryOptions()"
+              (search)="onCountrySearch($event)"
+            />
+          </div>
+        }
+
+        <!-- Cigar Name -->
+        <ui-input
+          inputId="cigar-name"
+          type="text"
+          label="Nom du cigare"
+          placeholder="Ex: Behike 52, Edmundo..."
+          [control]="cigarForm.controls.name"
+          [required]="true"
+          autocomplete="off"
+        />
+
+        <!-- Vitola (Format) -->
+        <ui-select
+          inputId="vitola"
+          label="Format (Vitola)"
+          [control]="cigarForm.controls.vitola"
+          [options]="VITOLAS"
+          [required]="true"
+          placeholder="Sélectionnez un format"
+        />
+
+        <!-- Strength Slider -->
+        <ui-slider
+          label="Puissance"
+          [control]="cigarForm.controls.strength"
+          [min]="1"
+          [max]="5"
+          [step]="1"
+          [labels]="STRENGTH_LABELS"
+          [required]="true"
+        />
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-3 pt-4">
+          <ui-button
+            type="button"
+            variant="ghost"
+            size="md"
+            [disabled]="creating()"
+            (clicked)="onClose()"
+          >
+            Annuler
+          </ui-button>
+          <ui-button
+            type="submit"
+            variant="primary"
+            size="md"
+            [loading]="creating()"
+            [disabled]="cigarForm.invalid || creating()"
+          >
+            Créer le cigare
+          </ui-button>
+        </div>
+      </form>
+    </div>
+  }
+
+  <!-- Success Confirmation -->
+  @if (currentStep() === 'success') {
+    <ui-confirmation
+      icon="check-circle"
+      [message]="'Félicitations ! ' + createdCigarName() + ' a été ajouté à la cave'"
+      primaryLabel="Déguster maintenant"
+      [primaryIcon]="'flame'"
+      secondaryLabel="Consulter la fiche"
+      [secondaryIcon]="'eye'"
+      (primaryAction)="handleStartTasting()"
+      (secondaryAction)="handleViewCigar()"
+    />
+  }
+</ui-modal>

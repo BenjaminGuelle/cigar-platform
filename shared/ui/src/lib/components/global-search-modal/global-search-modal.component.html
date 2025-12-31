@@ -49,24 +49,29 @@
     <!-- Results (Grouped by Type) - Priority Order: Cigars/Brands → Clubs → Users -->
     @if (!loading() && hasResults()) {
       <!-- Cigars Group (Priority 1) -->
-      @if (searchResults().cigars && searchResults().cigars!.length > 0) {
-        <ui-search-result-group title="💨 CIGARES">
-          @for (cigar of limitedCigars(); track cigar.id; let i = $index) {
-            <ui-search-result-item
-              [title]="cigar.name"
-              [subtitle]="cigar.metadata ?? ''"
-              [avatarUrl]="cigar.imageUrl"
-              [entityType]="'cigar'"
-              [isActive]="isResultActive('cigar', i)"
-              (clicked)="handleResultClick({ id: cigar.id, type: 'cigar', name: cigar.name, subtitle: cigar.metadata ?? '', avatarUrl: cigar.imageUrl })"
-            />
-          }
+      <!-- Show cigars group if: has cigar results OR should show create CTA -->
+      @if ((searchResults().cigars && searchResults().cigars!.length > 0) || (searchResults().searchType === 'global' && !hasExactCigarMatch())) {
+        <ui-search-result-group title="CIGARES" icon="flame">
+          <!-- Cigar Results (if any) -->
+          @if (searchResults().cigars && searchResults().cigars!.length > 0) {
+            @for (cigar of limitedCigars(); track cigar.id; let i = $index) {
+              <ui-search-result-item
+                [title]="cigar.name"
+                [subtitle]="cigar.metadata ?? ''"
+                [avatarUrl]="cigar.imageUrl"
+                [entityType]="'cigar'"
+                [iconBadge]="cigar.isVerified ? 'verified' : 'community'"
+                [isActive]="isResultActive('cigar', i)"
+                (clicked)="handleResultClick({ id: cigar.id, type: 'cigar', name: cigar.name, subtitle: cigar.metadata ?? '', avatarUrl: cigar.imageUrl })"
+              />
+            }
 
-          <!-- See All Item (when more than 3 results in global view) -->
-          @if (hasMoreCigars()) {
-            <div class="px-4 py-2 text-xs text-gold-500 hover:text-gold-400 cursor-pointer font-medium border-t border-smoke-700/30 transition-colors" (click)="handleSeeAll('cigar')">
-              → Voir tous les cigares ({{ searchResults().cigars!.length }})
-            </div>
+            <!-- See All Item (when more than 3 results in global view) -->
+            @if (hasMoreCigars()) {
+              <div class="px-4 py-2 text-xs text-gold-500 hover:text-gold-400 cursor-pointer font-medium border-t border-smoke-700/30 transition-colors" (click)="handleSeeAll('cigar')">
+                → Voir tous les cigares ({{ searchResults().cigars!.length }})
+              </div>
+            }
           }
 
           <!-- Search-to-Create Action (Global Search Only) -->
@@ -84,7 +89,7 @@
 
       <!-- Brands Group (Priority 1) -->
       @if (searchResults().brands && searchResults().brands!.length > 0) {
-        <ui-search-result-group title="🏆 MARQUES">
+        <ui-search-result-group title="MARQUES" icon="star">
           @for (brand of limitedBrands(); track brand.id; let i = $index) {
             <ui-search-result-item
               [title]="brand.name"
@@ -107,7 +112,7 @@
 
       <!-- Clubs Group (Priority 2) -->
       @if (searchResults().clubs && searchResults().clubs!.length > 0) {
-        <ui-search-result-group title="🏠 CLUBS">
+        <ui-search-result-group title="CLUBS" icon="home">
           @for (club of limitedClubs(); track club.id; let i = $index) {
             <ui-search-result-item
               [title]="club.name"
@@ -131,7 +136,7 @@
 
       <!-- Users Group (Priority 3) -->
       @if (searchResults().users && searchResults().users!.length > 0) {
-        <ui-search-result-group title="👤 MEMBRES">
+        <ui-search-result-group title="MEMBRES" icon="users">
           @for (user of limitedUsers(); track user.id; let i = $index) {
             <ui-search-result-item
               [title]="user.name"
@@ -155,11 +160,22 @@
 
     <!-- Empty State -->
     @if (showEmpty()) {
-      <div class="py-12 text-center">
-        <i name="search" class="w-12 h-12 mx-auto text-smoke-600 mb-3"></i>
-        <p class="text-sm font-medium text-smoke-400">Aucun résultat</p>
-        <p class="text-xs text-smoke-500 mt-1">Essayez une autre recherche</p>
+      <div class="px-4 py-3 text-center">
+        <p class="text-sm text-smoke-400">Aucun résultat trouvé</p>
       </div>
+
+      <!-- Create Cigar Option (when query is not empty) -->
+      @if (searchResults().query && searchResults().query.trim().length >= 1) {
+        <ui-search-result-group title="CIGARES" icon="flame">
+          <ui-search-result-item
+            [title]="'+ Ajouter ' + searchResults().query.trim() + ' à la base'"
+            [subtitle]="'Créer un nouveau cigare'"
+            [entityType]="'cigar'"
+            [isActive]="false"
+            (clicked)="handleCreateCigar()"
+          />
+        </ui-search-result-group>
+      }
     }
     </div>
 

@@ -303,6 +303,19 @@ export function injectClubStore(): ClubStore {
     mutationFn: (variables: { clubId: string; avatar: File }) =>
       clubsService.clubControllerUploadAvatar(variables.clubId, { avatar: variables.avatar }),
 
+    onMutate: (variables) => {
+      // Save previous state for rollback
+      const detailQueryKey = JSON.stringify(['clubs', 'detail', variables.clubId]);
+      const detailQuery = queryCache.get<ClubResponseDto>(detailQueryKey);
+      const previousDetailClub = detailQuery?.data();
+
+      const myClubsQueryKey = JSON.stringify(['clubs', 'my-clubs']);
+      const myClubsQuery = queryCache.get<ClubResponseDto[]>(myClubsQueryKey);
+      const previousMyClubs = myClubsQuery?.data();
+
+      return { previousDetailClub, previousMyClubs };
+    },
+
     onSuccess: (response, variables) => {
       const newImageUrl = response.imageUrl;
 
@@ -334,8 +347,23 @@ export function injectClubStore(): ClubStore {
       }
     },
 
-    onError: (error: Error) => {
-      console.error('[ClubStore] Upload avatar failed:', error);
+    onError: (error: Error, variables, context) => {
+      // Rollback to previous state
+      if (context?.['previousDetailClub']) {
+        const detailQueryKey = JSON.stringify(['clubs', 'detail', variables.clubId]);
+        const detailQuery = queryCache.get<ClubResponseDto>(detailQueryKey);
+        if (detailQuery) {
+          detailQuery.setData(context['previousDetailClub'] as ClubResponseDto);
+        }
+      }
+
+      if (context?.['previousMyClubs']) {
+        const myClubsQueryKey = JSON.stringify(['clubs', 'my-clubs']);
+        const myClubsQuery = queryCache.get<ClubResponseDto[]>(myClubsQueryKey);
+        if (myClubsQuery) {
+          myClubsQuery.setData(context['previousMyClubs'] as ClubResponseDto[]);
+        }
+      }
     },
   });
 
@@ -344,13 +372,17 @@ export function injectClubStore(): ClubStore {
     mutationFn: ({ clubId, data = {} }) => clubsService.clubControllerJoinClub(clubId, data),
 
     onSuccess: (_, variables) => {
-      // Optimistic update - instantly update club detail cache
-      const detailQueryKey = JSON.stringify(['clubs', 'detail', variables.clubId]);
-      const detailQuery = queryCache.get<ClubResponseDto>(detailQueryKey);
+      // Optimistic update: Find ALL detail queries for this club (by ID or slug)
+      // Pages can use either ID or slug, so we search by club.id in the data
+      const detailQueries = queryCache.findQueries<ClubResponseDto>(
+        ['clubs', 'detail'],
+        (club) => club?.id === variables.clubId
+      );
 
-      if (detailQuery && detailQuery.data()) {
-        const currentClub = detailQuery.data();
-        if (!currentClub) return;
+      // Update all found queries (handles both ID and slug cases)
+      for (const query of detailQueries) {
+        const currentClub = query.data();
+        if (!currentClub) continue;
 
         // Determine new status based on club settings
         const isPublic = currentClub.visibility === 'PUBLIC';
@@ -364,11 +396,11 @@ export function injectClubStore(): ClubStore {
           memberCount: willBeAutoApproved ? currentClub.memberCount + 1 : currentClub.memberCount,
         };
 
-        detailQuery.setDataFresh(updatedClub);
+        query.setDataFresh(updatedClub);
       }
 
-      // Invalidate club detail to force refetch (backup if optimistic update failed)
-      queryCache.invalidateQueriesMatching(['clubs', 'detail', variables.clubId]);
+      // Invalidate all club detail queries (catches any we might have missed)
+      queryCache.invalidateQueriesMatching(['clubs', 'detail']);
 
       // Invalidate members queries (background refresh)
       queryCache.invalidateQueriesMatching(['clubs', 'members']);
@@ -452,11 +484,7 @@ export function injectClubStore(): ClubStore {
     },
 
     onError: (error: Error) => {
-      console.error('[CLUB STORE] updateJoinRequest.onError:', {
-        message: error.message,
-        name: error.name,
-        stack: error.stack
-      });
+      // Error handled by component
     },
   });
 

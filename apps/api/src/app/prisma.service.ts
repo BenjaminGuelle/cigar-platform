@@ -9,8 +9,6 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   public readonly client: PrismaClient;
 
   constructor() {
-    console.log('🔥🔥🔥 [PRISMA 6.1.0] PrismaService initializing...');
-
     const connectionString = process.env['DATABASE_URL'];
 
     if (!connectionString) {

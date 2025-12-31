@@ -499,6 +499,8 @@ export interface CigarSearchItemDto {
   brandName: string;
   vitola: string;
   size: string;
+  /** Whether the cigar has been verified by an admin */
+  isVerified: boolean;
 }
 
 export interface ClubSearchItemDto {
@@ -565,6 +567,60 @@ export interface SearchResultDto {
   total: number;
   /** Search duration in milliseconds */
   duration: number;
+}
+
+/**
+ * @nullable
+ */
+export type BrandResponseDtoCountry = { [key: string]: unknown } | null;
+
+/**
+ * @nullable
+ */
+export type BrandResponseDtoDescription = { [key: string]: unknown } | null;
+
+/**
+ * @nullable
+ */
+export type BrandResponseDtoLogoUrl = { [key: string]: unknown } | null;
+
+export interface BrandResponseDto {
+  id: string;
+  name: string;
+  slug: string;
+  /** @nullable */
+  country: BrandResponseDtoCountry;
+  /** @nullable */
+  description: BrandResponseDtoDescription;
+  /** @nullable */
+  logoUrl: BrandResponseDtoLogoUrl;
+  isVerified: boolean;
+  createdAt: string;
+}
+
+export interface CigarResponseDto {
+  id: string;
+  name: string;
+  slug: string;
+  vitola: string;
+  strength: number;
+  brand: BrandResponseDto;
+  isVerified: boolean;
+  status: string;
+  createdAt: string;
+}
+
+export interface CreateCigarDto {
+  /** Brand name (will be created if not exists) */
+  brandName: string;
+  /** Brand country (only for new brands) */
+  brandCountry?: string;
+  /** Cigar name */
+  name: string;
+  /** Cigar vitola (format) */
+  vitola: string;
+  /** Cigar strength (1-5) */
+  strength: number;
 }
 
 export type ClubControllerFindAllParams = {
@@ -676,5 +732,12 @@ export type SearchControllerSearchParams = {
  * @maxLength 100
  */
 q: string;
+};
+
+export type BrandControllerFindAllParams = {
+/**
+ * Search brands by name or slug (case-insensitive)
+ */
+search?: string;
 };
 

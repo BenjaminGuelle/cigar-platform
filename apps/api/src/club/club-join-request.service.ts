@@ -135,12 +135,7 @@ export class ClubJoinRequestService {
           this.logger.log(`[JOIN REQUEST SUCCESS] Auto-approved: ${member.id} for user ${userId} in club ${clubId}`);
           return { autoApproved: true, memberId: member.id };
         } catch (error) {
-          console.error('[JOIN REQUEST ERROR] Failed to auto-approve member:', {
-            clubId,
-            userId,
-            error: error instanceof Error ? error.message : String(error),
-            stack: error instanceof Error ? error.stack : undefined,
-          });
+          this.logger.error(`[JOIN REQUEST ERROR] Failed to auto-approve member: ${error instanceof Error ? error.message : String(error)}`);
           throw error;
         }
       }
@@ -167,24 +162,12 @@ export class ClubJoinRequestService {
           throw new ConflictException('Vous avez déjà postulé à ce club');
         }
 
-        console.error('[JOIN REQUEST ERROR] Failed to create pending request:', {
-          clubId,
-          userId,
-          message: createDto.message,
-          error: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
-        });
+        this.logger.error(`[JOIN REQUEST ERROR] Failed to create pending request: ${error instanceof Error ? error.message : String(error)}`);
         throw error;
       }
     } catch (error) {
       // Log the complete error details
-      console.error('[JOIN REQUEST FATAL ERROR]', {
-        clubId,
-        userId,
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        name: error instanceof Error ? error.name : undefined,
-      });
+      this.logger.error(`[JOIN REQUEST FATAL ERROR] ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
   }

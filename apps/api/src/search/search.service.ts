@@ -231,20 +231,15 @@ export class SearchService {
   }
 
   /**
-   * Search cigars (global only, VERIFIED only)
+   * Search cigars (global - all cigars with verification badge)
    */
   private async searchCigars(query: string): Promise<CigarSearchItemDto[]> {
     const cigars = await this.prisma.cigar.findMany({
       where: {
-        AND: [
-          { isVerified: true }, // Only show verified cigars
-          {
-            OR: [
-              { name: { contains: query, mode: 'insensitive' } },
-              { slug: { contains: query, mode: 'insensitive' } },
-              { brand: { name: { contains: query, mode: 'insensitive' } } },
-            ],
-          },
+        OR: [
+          { name: { contains: query, mode: 'insensitive' } },
+          { slug: { contains: query, mode: 'insensitive' } },
+          { brand: { name: { contains: query, mode: 'insensitive' } } },
         ],
       },
       select: {
@@ -254,6 +249,7 @@ export class SearchService {
         vitola: true,
         length: true,
         ringGauge: true,
+        isVerified: true,
         brand: {
           select: {
             name: true,
@@ -261,7 +257,10 @@ export class SearchService {
           },
         },
       },
-      orderBy: { name: 'asc' },
+      orderBy: [
+        { isVerified: 'desc' }, // Verified cigars first
+        { name: 'asc' },
+      ],
       take: this.MAX_RESULTS,
     });
 
@@ -275,6 +274,7 @@ export class SearchService {
       size: `${cigar.length ?? '?'}mm × ${cigar.ringGauge ?? '?'}`,
       imageUrl: cigar.brand.logoUrl ?? undefined,
       metadata: `${cigar.brand.name} - ${cigar.vitola ?? 'Unknown'}`,
+      isVerified: cigar.isVerified,
     }));
   }
 

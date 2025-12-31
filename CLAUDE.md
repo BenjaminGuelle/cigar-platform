@@ -84,3 +84,29 @@ This document contains the **complete "ALL STARS ⭐" architecture** including:
 
 **For complete implementation details, examples, and troubleshooting**:
 👉 **[READ THE ARCHITECTURE GUIDE](./docs/claude/ARCHITECTURE.md)**
+
+## Conventions Backend - Validation
+
+### Sécurité des champs texte : @IsSecureText()
+
+Tous les champs texte libres saisis par l'utilisateur et affichés dans l'UI doivent utiliser le decorator `@IsSecureText()` :
+```typescript
+import { IsSecureText } from '../common/validators/secure-text.validator';
+
+@IsSecureText()
+@IsString()
+name: string;
+```
+
+**Champs à protéger :**
+- `name`, `description`, `bio`, `comment`, `notes`, `message`, `reason`
+- Tout champ texte libre affiché dans l'UI
+
+**Champs à NE PAS protéger :**
+- `email` → `@IsEmail()`
+- `username`, `slug` → Pattern strict `@Matches()`
+- `password` → Jamais affiché
+- `UUIDs` → `@IsUUID()`
+- `urls` → `@IsUrl()` + whitelist
+- `enums` → `@IsEnum()`
+- Valeurs numériques, dates, booleans

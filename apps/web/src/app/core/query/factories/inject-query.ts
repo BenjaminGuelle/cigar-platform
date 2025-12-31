@@ -79,8 +79,8 @@ export function injectQuery<T>(optionsFactory: () => QueryOptions<T>): Query<T> 
   const initialEnabled = initialInfo.opts.enabled ?? true;
   const isInitialEnabled = typeof initialEnabled === 'boolean' ? initialEnabled : initialEnabled();
   if (isInitialEnabled) {
-    initialStore.fetch().catch((error) => {
-      console.error('[Query] Initial fetch failed:', error);
+    initialStore.fetch().catch(() => {
+      // Error handled by query store
     });
   }
 
@@ -112,8 +112,8 @@ export function injectQuery<T>(optionsFactory: () => QueryOptions<T>): Query<T> 
       const enabled = opts.enabled ?? true;
       const isEnabled = typeof enabled === 'boolean' ? enabled : enabled();
       if (isEnabled) {
-        store.fetch().catch((error) => {
-          console.error('[Query] Fetch failed:', error);
+        store.fetch().catch(() => {
+          // Error handled by query store
         });
       }
     }

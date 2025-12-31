@@ -155,12 +155,10 @@ export class HomeComponent {
 
   onClubCreated(): void {
     // TODO: Refresh user clubs
-    console.log('[Home] Club created successfully');
   }
 
   onClubJoined(): void {
     // TODO: Refresh user clubs
-    console.log('[Home] Club joined successfully');
   }
 
   onCreateContentModalClose(): void {
@@ -169,7 +167,6 @@ export class HomeComponent {
 
   onEventCreated(): void {
     // TODO: Refresh events / navigate to event
-    console.log('[Home] Event created successfully');
   }
 
   onFabMenuToggle(): void {
@@ -185,7 +182,6 @@ export class HomeComponent {
   onFabMenuItemClick(action: string): void {
     if (action === 'create-evaluation') {
       // TODO: Navigate to /evaluations/new with context
-      console.log('[Home] Navigate to create evaluation');
     } else if (action === 'create-event') {
       this.createContentModalOpen.set(true);
     }

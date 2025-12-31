@@ -63,7 +63,6 @@ export class GlobalSearchService {
       return result;
     } catch (error) {
       // Error handling - return empty results
-      console.error('[GlobalSearchService] Search failed:', error);
       return {
         query,
         searchType: 'global',

@@ -98,7 +98,7 @@ export class IconDirective {
         }
       })
       .catch(() => {
-        console.warn(`Icône "${name}" introuvable`);
+        // Silent fail - icon not found
       });
   }
 }

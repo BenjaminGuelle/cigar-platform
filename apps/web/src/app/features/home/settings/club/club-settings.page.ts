@@ -170,7 +170,6 @@ export class ClubSettingsPage {
       // All club roles (member, admin, owner) can access settings
       // Members can leave, admins can edit description, owners have full access
       if (context.type === 'club' && !this.contextStore.canAccessSettings()) {
-        console.warn('[ClubSettingsPage] User does not have access to settings, redirecting to home');
         void this.#router.navigate(['/']);
       }
     });
@@ -376,14 +375,12 @@ export class ClubSettingsPage {
 
     try {
       // TODO: Implement archive endpoint
-      console.log('[ClubSettingsPage] Archive club:', clubData.id);
       this.#toastService.success('Club archivé avec succès');
 
       // Switch to solo context and navigate to explore
       this.contextStore.switchToSolo();
       await this.#router.navigate(['/explore']);
     } catch (error) {
-      console.error('[ClubSettingsPage] Failed to archive club:', error);
       this.#toastService.error('Impossible d\'archiver le club');
     }
   }

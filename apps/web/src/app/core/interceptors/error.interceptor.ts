@@ -32,15 +32,6 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         }
       }
 
-      // Don't log 401 errors (expected during app init before authentication)
-      if (error.status !== 401) {
-        console.error('[HTTP Error]', {
-          status: error.status,
-          message: errorMessage,
-          url: error.url,
-        });
-      }
-
       return throwError(() => new HttpError(errorMessage, error.status, error.url));
     })
   );

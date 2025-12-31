@@ -218,6 +218,7 @@ model Brand {
   logoUrl     String? // SVG logo (Gold for premium brands)
   country     String? // Country of origin
   description String?  @db.Text
+  isVerified  Boolean  @default(false) // For admin moderation
   createdBy   String   @db.Uuid
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -228,6 +229,7 @@ model Brand {
 
   @@index([slug])
   @@index([name])
+  @@index([isVerified])
   @@map("brands")
 }
 

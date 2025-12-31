@@ -60,12 +60,12 @@ export const homeRoutes: Route[] = [
         loadComponent: () =>
           import('../user/public/user-profile.page').then((m) => m.UserProfilePage),
       },
-      // TODO: Cigar public profile (Prestige URL: /cigar/slug)
-      // {
-      //   path: 'cigar/:slug',
-      //   loadComponent: () =>
-      //     import('../cigar/public/cigar-profile.page').then((m) => m.CigarProfilePage),
-      // },
+      // Cigar public profile (Prestige URL: /cigar/slug)
+      {
+        path: 'cigar/:slug',
+        loadComponent: () =>
+          import('../cigar/public/cigar-profile.page').then((m) => m.CigarProfilePage),
+      },
       // Club internal pages (context-driven, requires club context)
       {
         path: 'membres',

@@ -6,6 +6,8 @@ import { injectClubStore } from '../../../../core/stores/club.store';
 import {
   IconDirective,
   PageSectionComponent,
+  ButtonComponent,
+  TooltipDirective,
 } from '@cigar-platform/shared/ui';
 import type { ClubResponseDto } from '@cigar-platform/types';
 
@@ -36,6 +38,8 @@ import type { ClubResponseDto } from '@cigar-platform/types';
     RouterLink,
     IconDirective,
     PageSectionComponent,
+    ButtonComponent,
+    TooltipDirective,
   ],
   templateUrl: './club-profile-private.page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -98,9 +102,8 @@ export class ClubProfilePrivatePage {
     try {
       await navigator.clipboard.writeText(url);
       // TODO: Add toast notification
-      console.log('Lien copié dans le presse-papier');
     } catch {
-      console.error('Impossible de copier le lien');
+      // TODO: Show error toast
     }
   }
 }

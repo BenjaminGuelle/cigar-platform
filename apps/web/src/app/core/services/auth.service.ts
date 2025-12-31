@@ -48,7 +48,7 @@ export class AuthService {
           session ? this.#loadUserProfile() : of(null)
         ),
         catchError((error) => {
-          console.error('Error initializing auth:', error);
+          // Error handled silently
           return of(null);
         }),
         finalize(() => this.#loadingSignal.set(false)),
@@ -77,7 +77,7 @@ export class AuthService {
       map((user) => user ?? null),
       tap((user) => this.#currentUserSignal.set(user)),
       catchError((error) => {
-        console.error('Error loading user profile:', error);
+        // Error handled silently
         return of(null);
       })
     );
@@ -97,7 +97,6 @@ export class AuthService {
       }),
       map(() => ({ error: null })),
       catchError((httpError) => {
-        console.error('Sign up error:', httpError);
         const error: AuthError = {
           message: httpError.error?.error?.message || httpError.error?.message || 'Erreur lors de l\'inscription',
           status: httpError.status,
@@ -160,7 +159,7 @@ export class AuthService {
       switchMap(() => from(this.#router.navigate(['/auth/login']))),
       map(() => undefined),
       catchError((error) => {
-        console.error('Error signing out:', error);
+        // Error handled silently
         return EMPTY;
       })
     );

@@ -121,14 +121,7 @@ export class ClubMemberService {
       this.logger.log(`[ADD MEMBER SUCCESS] Member added: ${member.id} (${userId} to club ${clubId} with role ${role})`);
       return member;
     } catch (error) {
-      console.error('[ADD MEMBER ERROR]', {
-        clubId,
-        userId,
-        role,
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        name: error instanceof Error ? error.name : undefined,
-      });
+      this.logger.error(`[ADD MEMBER ERROR] ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
   }

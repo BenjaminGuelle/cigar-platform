@@ -111,7 +111,8 @@ export class QueryCacheService {
   /**
    * Clear all queries
    * Clears data and invalidates all cached queries
-   * This ensures fresh state after logout without breaking queries
+   * Important: We invalidate but DON'T delete entries to preserve query references
+   * This ensures fresh state after logout without breaking active queries
    */
   clear(): void {
     for (const [, entry] of this.#cache.entries()) {
@@ -125,6 +126,35 @@ export class QueryCacheService {
    */
   size(): number {
     return this.#cache.size;
+  }
+
+  /**
+   * Find all queries matching a condition
+   * Useful for bulk updates when ID/slug might differ
+   *
+   * @param keyPrefix - Partial key to match (e.g., ['clubs', 'detail'])
+   * @param filter - Filter function to check data
+   * @returns Array of matching query instances
+   */
+  findQueries<T>(keyPrefix: unknown[], filter?: (data: T | null) => boolean): any[] {
+    const matches: any[] = [];
+
+    for (const [key, entry] of this.#cache.entries()) {
+      // Deserialize to compare arrays properly
+      const parsedKey = JSON.parse(key) as unknown[];
+
+      // Check if the key starts with the prefix
+      const matchesPrefix = keyPrefix.every((val, idx) => parsedKey[idx] === val);
+
+      if (matchesPrefix) {
+        const data = entry.instance.data() as T | null;
+        if (!filter || filter(data)) {
+          matches.push(entry.instance);
+        }
+      }
+    }
+
+    return matches;
   }
 
   /**

@@ -5,6 +5,8 @@ import { injectUserStore, UserStore } from '../../../../core/stores';
 import {
   IconDirective,
   PageSectionComponent,
+  ButtonComponent,
+  TooltipDirective,
 } from '@cigar-platform/shared/ui';
 import { UserDto } from '@cigar-platform/types';
 
@@ -34,6 +36,8 @@ import { UserDto } from '@cigar-platform/types';
     RouterLink,
     IconDirective,
     PageSectionComponent,
+    ButtonComponent,
+    TooltipDirective,
   ],
   templateUrl: './user-profile-private.page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -71,9 +75,8 @@ export class UserProfilePrivatePage {
     try {
       await navigator.clipboard.writeText(url);
       // TODO: Add toast notification
-      console.log('Lien copié dans le presse-papier');
     } catch {
-      console.error('Impossible de copier le lien');
+      // TODO: Show error toast
     }
   }
 }

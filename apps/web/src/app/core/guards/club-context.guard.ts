@@ -46,7 +46,6 @@ export const clubContextGuard: CanActivateFn = () => {
 
   // User is in solo context, redirect to explore
   // They need to select a club first
-  console.warn('[clubContextGuard] Access denied: user not in club context');
   router.navigate(['/explore']);
   return false;
 };

@@ -185,19 +185,23 @@ export class ContextStore {
 
   /**
    * Switch to club context
+   *
+   * Optimized for instant navigation (ALL STARS ⭐):
+   * - Uses cached data if fresh (determined by staleTime)
+   * - Auto-refetch if stale (join-requests: 1min, members: 2min, detail: 5min)
+   * - Mutations continue to invalidate after critical actions (approve, ban, etc.)
+   * - No forced invalidation on navigation = No loading flicker
    */
   switchToClub(club: ClubResponseDto, role: ClubRole): void {
-    // Invalidate club-specific queries to force fresh data on next access
-    this.#queryCache.invalidateQueriesMatching(['clubs', 'detail', club.id]);
-    this.#queryCache.invalidateQueriesMatching(['clubs', 'members', club.id]);
-    this.#queryCache.invalidateQueriesMatching(['clubs', 'join-requests', club.id]);
-
     this.#context.set({
       type: 'club',
       clubId: club.id,
       club,
       clubRole: role,
     });
+
+    // Note: Queries will auto-refetch if stale based on their staleTime.
+    // Mutations (updateJoinRequest, banMember, etc.) handle invalidation.
   }
 
   /**
@@ -297,7 +301,6 @@ export class ContextStore {
       this.switchToClub(club, club.myRole);
     } else {
       // Club not found (user removed or club deleted), fallback to solo
-      console.warn('[ContextStore] Club not found during hydration, switching to solo');
       this.switchToSolo();
     }
   }
@@ -316,7 +319,7 @@ export class ContextStore {
     try {
       localStorage.setItem(CONTEXT_STORAGE_KEY, JSON.stringify(toSave));
     } catch (error) {
-      console.error('[ContextStore] Failed to persist context:', error);
+      // Silent fail - not critical
     }
   }
 
@@ -332,7 +335,7 @@ export class ContextStore {
 
       return JSON.parse(saved) as PersistedContext;
     } catch (error) {
-      console.error('[ContextStore] Failed to load persisted context:', error);
+      // Silent fail - return null
       return null;
     }
   }

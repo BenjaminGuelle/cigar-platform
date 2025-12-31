@@ -1,5 +1,6 @@
 import { Component, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { IconDirective, type IconName } from '../../directives/icon';
 
 /**
  * Search Result Group Component
@@ -8,20 +9,16 @@ import { CommonModule } from '@angular/common';
  * Used in Global Intelligent Search modal
  *
  * Design:
- * - Uppercase group title (subtle smoke-400)
+ * - Icon + uppercase group title (subtle smoke-400)
  * - Divider below title
  * - Projected content (results)
  * - Spacing between groups
  *
  * @example
  * ```html
- * <ui-search-result-group title="CLUBS">
+ * <ui-search-result-group title="CLUBS" icon="house">
  *   <ui-search-result-item ... />
  *   <ui-search-result-item ... />
- * </ui-search-result-group>
- *
- * <ui-search-result-group title="USERS (bientôt)">
- *   <!-- Future content -->
  * </ui-search-result-group>
  * ```
  */
@@ -29,8 +26,9 @@ import { CommonModule } from '@angular/common';
 const CLASSES = {
   container: 'space-y-1',
   header: {
-    container: 'px-4 py-2 border-b border-smoke-700/30',
+    container: 'px-4 py-2 border-b border-smoke-700/30 flex items-center gap-2',
     title: 'text-xs font-semibold uppercase tracking-wider text-smoke-400',
+    icon: 'w-3.5 h-3.5 text-smoke-500',
   },
   content: 'space-y-0.5',
 } as const;
@@ -38,11 +36,14 @@ const CLASSES = {
 @Component({
   selector: 'ui-search-result-group',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, IconDirective],
   template: `
     <div [class]="CLASSES.container" role="group" [attr.aria-label]="title()">
       <!-- Group Header -->
       <div [class]="CLASSES.header.container">
+        @if (icon()) {
+          <i [name]="icon()!" [class]="CLASSES.header.icon"></i>
+        }
         <h3 [class]="CLASSES.header.title">
           {{ title() }}
         </h3>
@@ -58,6 +59,7 @@ const CLASSES = {
 export class SearchResultGroupComponent {
   // Inputs
   readonly title = input.required<string>();
+  readonly icon = input<IconName>();
 
   // Class constants (expose for template)
   readonly CLASSES = CLASSES;

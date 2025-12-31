@@ -9,6 +9,8 @@ import { AuthModule } from '../auth/auth.module';
 import { ClubModule } from '../club/club.module';
 import { UsersModule } from '../users/users.module';
 import { SearchModule } from '../search/search.module';
+import { BrandModule } from '../brand/brand.module';
+import { CigarModule } from '../cigar/cigar.module';
 
 @Global()
 @Module({
@@ -27,6 +29,8 @@ import { SearchModule } from '../search/search.module';
     ClubModule,
     UsersModule,
     SearchModule,
+    BrandModule,
+    CigarModule,
   ],
   controllers: [AppController],
   providers: [

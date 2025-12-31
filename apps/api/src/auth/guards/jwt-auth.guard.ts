@@ -1,9 +1,11 @@
 import { CanActivate, ExecutionContext, Injectable, Logger } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { User } from '@supabase/supabase-js';
 import { Request } from 'express';
 import { SupabaseService } from '../supabase.service';
 import { PrismaService } from '../../app/prisma.service';
 import { InvalidTokenException } from '../../common/exceptions';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 /**
  * Guard to protect routes with JWT authentication
@@ -22,10 +24,21 @@ export class JwtAuthGuard implements CanActivate {
 
   constructor(
     private supabaseService: SupabaseService,
-    private prismaService: PrismaService
+    private prismaService: PrismaService,
+    private reflector: Reflector
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // Check if route is marked as public
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    if (isPublic) {
+      return true;
+    }
+
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
 

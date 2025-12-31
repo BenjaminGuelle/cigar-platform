@@ -91,13 +91,13 @@ export class ClubsService {
       );
     }
   /**
- * @summary Get a club by ID
+ * @summary Get a club by ID or slug
  */
  clubControllerFindOne<TData = ClubResponseDto>(
-    id: string,
+    identifier: string,
  ) {
       return customInstance<TData>(
-      {url: `/api/clubs/${id}`, method: 'GET'
+      {url: `/api/clubs/${identifier}`, method: 'GET'
     },
       this.http,
       );

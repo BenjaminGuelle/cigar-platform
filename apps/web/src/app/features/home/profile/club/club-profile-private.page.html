@@ -25,33 +25,46 @@
         <!-- Action Icons -->
         <div class="flex items-center gap-2 flex-shrink-0">
           <!-- View Public Profile -->
-          <a
-            [routerLink]="['/club', slug()]"
-            class="p-2 rounded-lg hover:bg-smoke-800 transition-colors group"
-            title="Voir le profil public"
-          >
-            <i name="eye" class="w-5 h-5 text-smoke-400 group-hover:text-gold-500 transition-colors"></i>
-          </a>
+          <div [uiTooltip]="'Voir le profil public'" tooltipPosition="bottom">
+            <a [routerLink]="['/club', slug()]">
+              <ui-button
+                size="icon"
+                variant="ghost"
+                icon="eye"
+                customClass="!rounded-lg"
+              >
+                <span class="sr-only">Voir le profil public</span>
+              </ui-button>
+            </a>
+          </div>
 
           <!-- Share Profile -->
-          <button
-            type="button"
-            (click)="copyClubLink()"
-            class="p-2 rounded-lg hover:bg-smoke-800 transition-colors group"
-            title="Partager le club"
-          >
-            <i name="book-copy" class="w-5 h-5 text-smoke-400 group-hover:text-gold-500 transition-colors"></i>
-          </button>
+          <div [uiTooltip]="'Partager le club'" tooltipPosition="bottom">
+            <ui-button
+              size="icon"
+              variant="ghost"
+              icon="book-copy"
+              customClass="!rounded-lg"
+              (clicked)="copyClubLink()"
+            >
+              <span class="sr-only">Partager le club</span>
+            </ui-button>
+          </div>
 
           <!-- Settings (only for admins/owners) -->
           @if (canAccessSettings()) {
-            <a
-              routerLink="/settings"
-              class="p-2 rounded-lg hover:bg-smoke-800 transition-colors group"
-              title="Paramètres du club"
-            >
-              <i name="settings" class="w-5 h-5 text-smoke-400 group-hover:text-gold-500 transition-colors"></i>
-            </a>
+            <div [uiTooltip]="'Paramètres du club'" tooltipPosition="bottom">
+              <a routerLink="/settings">
+                <ui-button
+                  size="icon"
+                  variant="ghost"
+                  icon="settings"
+                  customClass="!rounded-lg"
+                >
+                  <span class="sr-only">Paramètres du club</span>
+                </ui-button>
+              </a>
+            </div>
           }
         </div>
       </div>

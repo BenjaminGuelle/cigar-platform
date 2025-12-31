@@ -1,6 +1,7 @@
 import { Component, input, output, computed, Signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IconDirective, type IconName } from '../../directives/icon';
+import { LucideAngularModule, ShieldCheck, Sparkles } from 'lucide-angular';
 import clsx from 'clsx';
 
 /**
@@ -31,7 +32,7 @@ import clsx from 'clsx';
  * ```
  */
 
-export type SearchResultIconBadge = 'public' | 'private' | 'user' | 'event' | 'cigar';
+export type SearchResultIconBadge = 'public' | 'private' | 'user' | 'event' | 'cigar' | 'verified' | 'community';
 export type SearchResultEntityType = 'brand' | 'cigar' | 'club' | 'user' | 'event';
 
 const CLASSES = {
@@ -54,16 +55,18 @@ const CLASSES = {
     subtitle: 'text-xs text-smoke-400 truncate mt-0.5',
   },
   badge: {
-    container: 'flex-shrink-0 px-2 py-1 rounded-md text-xs font-medium',
+    container: 'flex-shrink-0 px-2 py-1 rounded-md text-xs font-medium flex items-center gap-1.5',
     public: 'bg-green-400/10 text-green-400 border border-green-400/20',
     private: 'bg-orange-400/10 text-orange-400 border border-orange-400/20',
+    verified: 'bg-gold-500/10 text-gold-500 border border-gold-500/20',
+    community: 'bg-smoke-600/50 text-smoke-300 border border-smoke-600/50',
   },
 } as const;
 
 @Component({
   selector: 'ui-search-result-item',
   standalone: true,
-  imports: [CommonModule, IconDirective],
+  imports: [CommonModule, IconDirective, LucideAngularModule],
   template: `
     <div
       (click)="handleClick()"
@@ -99,10 +102,25 @@ const CLASSES = {
         }
       </div>
 
-      <!-- Badge (public/private) -->
-      @if (iconBadge() === 'public' || iconBadge() === 'private') {
+      <!-- Badges -->
+      @if (iconBadge()) {
         <div [class]="badgeClasses()">
-          {{ iconBadge() === 'public' ? 'Public' : 'Privé' }}
+          @switch (iconBadge()) {
+            @case ('public') {
+              Public
+            }
+            @case ('private') {
+              Privé
+            }
+            @case ('verified') {
+              <lucide-icon [img]="ShieldCheck" [size]="14" />
+              Certifié
+            }
+            @case ('community') {
+              <lucide-icon [img]="Sparkles" [size]="14" />
+              Proposé
+            }
+          }
         </div>
       }
     </div>
@@ -122,6 +140,10 @@ export class SearchResultItemComponent {
 
   // Class constants (expose for template)
   readonly CLASSES = CLASSES;
+
+  // Icons (expose for template)
+  readonly ShieldCheck = ShieldCheck;
+  readonly Sparkles = Sparkles;
 
   // Computed
   readonly entityIcon: Signal<IconName> = computed<IconName>(() => {
@@ -146,9 +168,21 @@ export class SearchResultItemComponent {
 
   readonly badgeClasses: Signal<string> = computed<string>(() => {
     const badge = this.iconBadge();
+    if (!badge) return '';
+
+    const badgeStyleMap: Record<SearchResultIconBadge, string> = {
+      public: CLASSES.badge.public,
+      private: CLASSES.badge.private,
+      verified: CLASSES.badge.verified,
+      community: CLASSES.badge.community,
+      user: '',
+      event: '',
+      cigar: '',
+    };
+
     return clsx(
       CLASSES.badge.container,
-      badge === 'public' ? CLASSES.badge.public : CLASSES.badge.private
+      badgeStyleMap[badge]
     );
   });
 

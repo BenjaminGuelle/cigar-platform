@@ -161,7 +161,6 @@ export function injectUserStore(): UserStore {
       if (context?.['previousUser']) {
         currentUser.setData(context['previousUser'] as UserDto);
       }
-      console.error('[UserStore] Update profile failed:', error);
     },
   });
 
@@ -169,6 +168,11 @@ export function injectUserStore(): UserStore {
   const uploadAvatar = injectMutation<{ avatarUrl: string }, { avatar: File }>({
     mutationFn: (variables: { avatar: File }) =>
       usersService.usersControllerUploadAvatar(variables),
+
+    onMutate: () => {
+      // Return previous user for rollback
+      return { previousUser: currentUser.data() };
+    },
 
     onSuccess: (response) => {
       const newAvatarUrl = response.avatarUrl;
@@ -187,8 +191,13 @@ export function injectUserStore(): UserStore {
       }
     },
 
-    onError: (error: Error) => {
-      console.error('[UserStore] Upload avatar failed:', error);
+    onError: (error: Error, _variables, context) => {
+      // Rollback to previous user data
+      if (context?.['previousUser']) {
+        const previousUser = context['previousUser'] as UserDto;
+        currentUser.setData(previousUser);
+        authService.updateCurrentUser(previousUser);
+      }
     },
   });
 

@@ -140,7 +140,6 @@ export class ExplorePage implements OnInit {
    */
   joinClub(clubId: string): void {
     // TODO: Open join/request modal
-    console.log('[ExplorePage] Join club:', clubId);
   }
 
   /**
