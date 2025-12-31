@@ -623,6 +623,297 @@ export interface CreateCigarDto {
   strength: number;
 }
 
+/**
+ * Time of day
+ */
+export type CreateTastingDtoMoment = typeof CreateTastingDtoMoment[keyof typeof CreateTastingDtoMoment];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CreateTastingDtoMoment = {
+  MATIN: 'MATIN',
+  APRES_MIDI: 'APRES_MIDI',
+  SOIR: 'SOIR',
+} as const;
+
+/**
+ * Tasting situation
+ */
+export type CreateTastingDtoSituation = typeof CreateTastingDtoSituation[keyof typeof CreateTastingDtoSituation];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CreateTastingDtoSituation = {
+  APERITIF: 'APERITIF',
+  COCKTAIL: 'COCKTAIL',
+  DIGESTIF: 'DIGESTIF',
+} as const;
+
+/**
+ * Beverage pairing type
+ */
+export type CreateTastingDtoPairing = typeof CreateTastingDtoPairing[keyof typeof CreateTastingDtoPairing];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CreateTastingDtoPairing = {
+  WHISKY: 'WHISKY',
+  RHUM: 'RHUM',
+  COGNAC: 'COGNAC',
+  CAFE: 'CAFE',
+  THE: 'THE',
+  EAU: 'EAU',
+  VIN: 'VIN',
+  BIERE: 'BIERE',
+  AUTRE: 'AUTRE',
+} as const;
+
+export interface CreateTastingDto {
+  /** UUID of the cigar being tasted */
+  cigarId: string;
+  /** UUID of the event (if tasting during an event) */
+  eventId?: string;
+  /** Time of day */
+  moment?: CreateTastingDtoMoment;
+  /** Tasting situation */
+  situation?: CreateTastingDtoSituation;
+  /** Beverage pairing type */
+  pairing?: CreateTastingDtoPairing;
+  /** Pairing details (e.g., "Lagavulin 16") */
+  pairingNote?: string;
+  /** Location (for solo tastings only) */
+  location?: string;
+  /** Photo URL */
+  photoUrl?: string;
+  /**
+   * Duration in minutes
+   * @minimum 1
+   * @maximum 300
+   */
+  duration?: number;
+}
+
+export type TastingResponseDtoStatus = typeof TastingResponseDtoStatus[keyof typeof TastingResponseDtoStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TastingResponseDtoStatus = {
+  DRAFT: 'DRAFT',
+  COMPLETED: 'COMPLETED',
+} as const;
+
+export type TastingResponseDtoMoment = typeof TastingResponseDtoMoment[keyof typeof TastingResponseDtoMoment];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TastingResponseDtoMoment = {
+  MATIN: 'MATIN',
+  APRES_MIDI: 'APRES_MIDI',
+  SOIR: 'SOIR',
+} as const;
+
+export type TastingResponseDtoSituation = typeof TastingResponseDtoSituation[keyof typeof TastingResponseDtoSituation];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TastingResponseDtoSituation = {
+  APERITIF: 'APERITIF',
+  COCKTAIL: 'COCKTAIL',
+  DIGESTIF: 'DIGESTIF',
+} as const;
+
+export type TastingResponseDtoPairing = typeof TastingResponseDtoPairing[keyof typeof TastingResponseDtoPairing];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TastingResponseDtoPairing = {
+  WHISKY: 'WHISKY',
+  RHUM: 'RHUM',
+  COGNAC: 'COGNAC',
+  CAFE: 'CAFE',
+  THE: 'THE',
+  EAU: 'EAU',
+  VIN: 'VIN',
+  BIERE: 'BIERE',
+  AUTRE: 'AUTRE',
+} as const;
+
+export type TastingResponseDtoVisibility = typeof TastingResponseDtoVisibility[keyof typeof TastingResponseDtoVisibility];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TastingResponseDtoVisibility = {
+  PUBLIC: 'PUBLIC',
+  PRIVATE: 'PRIVATE',
+  CLUB_ONLY: 'CLUB_ONLY',
+} as const;
+
+export interface TastingResponseDto {
+  id: string;
+  userId: string;
+  cigarId: string;
+  eventId?: string;
+  status: TastingResponseDtoStatus;
+  date: string;
+  moment?: TastingResponseDtoMoment;
+  situation?: TastingResponseDtoSituation;
+  pairing?: TastingResponseDtoPairing;
+  pairingNote?: string;
+  location?: string;
+  photoUrl?: string;
+  duration?: number;
+  rating: number;
+  comment?: string;
+  visibility: TastingResponseDtoVisibility;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaginatedTastingResponseDto {
+  /** Array of tastings */
+  data: TastingResponseDto[];
+  /** Pagination metadata */
+  meta: PaginationMetaDto;
+}
+
+/**
+ * Time of day
+ */
+export type UpdateTastingDtoMoment = typeof UpdateTastingDtoMoment[keyof typeof UpdateTastingDtoMoment];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UpdateTastingDtoMoment = {
+  MATIN: 'MATIN',
+  APRES_MIDI: 'APRES_MIDI',
+  SOIR: 'SOIR',
+} as const;
+
+/**
+ * Tasting situation
+ */
+export type UpdateTastingDtoSituation = typeof UpdateTastingDtoSituation[keyof typeof UpdateTastingDtoSituation];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UpdateTastingDtoSituation = {
+  APERITIF: 'APERITIF',
+  COCKTAIL: 'COCKTAIL',
+  DIGESTIF: 'DIGESTIF',
+} as const;
+
+/**
+ * Beverage pairing type
+ */
+export type UpdateTastingDtoPairing = typeof UpdateTastingDtoPairing[keyof typeof UpdateTastingDtoPairing];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UpdateTastingDtoPairing = {
+  WHISKY: 'WHISKY',
+  RHUM: 'RHUM',
+  COGNAC: 'COGNAC',
+  CAFE: 'CAFE',
+  THE: 'THE',
+  EAU: 'EAU',
+  VIN: 'VIN',
+  BIERE: 'BIERE',
+  AUTRE: 'AUTRE',
+} as const;
+
+export interface UpdateTastingDto {
+  /** UUID of the cigar being tasted */
+  cigarId?: string;
+  /** UUID of the event (if tasting during an event) */
+  eventId?: string;
+  /** Time of day */
+  moment?: UpdateTastingDtoMoment;
+  /** Tasting situation */
+  situation?: UpdateTastingDtoSituation;
+  /** Beverage pairing type */
+  pairing?: UpdateTastingDtoPairing;
+  /** Pairing details (e.g., "Lagavulin 16") */
+  pairingNote?: string;
+  /** Location (for solo tastings only) */
+  location?: string;
+  /** Photo URL */
+  photoUrl?: string;
+  /**
+   * Duration in minutes
+   * @minimum 1
+   * @maximum 300
+   */
+  duration?: number;
+}
+
+/**
+ * Tasting visibility
+ */
+export type CompleteTastingDtoVisibility = typeof CompleteTastingDtoVisibility[keyof typeof CompleteTastingDtoVisibility];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CompleteTastingDtoVisibility = {
+  PUBLIC: 'PUBLIC',
+  PRIVATE: 'PRIVATE',
+  CLUB_ONLY: 'CLUB_ONLY',
+} as const;
+
+export interface CompleteTastingDto {
+  /**
+   * Rating from 0.5 to 5 (by steps of 0.5)
+   * @minimum 0.5
+   * @maximum 5
+   */
+  rating: number;
+  /** Global comment about the tasting */
+  comment?: string;
+  /** Tasting visibility */
+  visibility?: CompleteTastingDtoVisibility;
+}
+
+/**
+ * Detailed organoleptic profile (JSON)
+ */
+export type UpsertObservationDtoOrganoleptic = { [key: string]: unknown };
+
+export interface UpsertObservationDto {
+  /**
+   * Aroma intensity (1-5)
+   * @minimum 1
+   * @maximum 5
+   */
+  intensity?: number;
+  /**
+   * Combustion quality (1-5)
+   * @minimum 1
+   * @maximum 5
+   */
+  combustion?: number;
+  /** Detected aromas (simple array) */
+  aromas?: string[];
+  /** Free-form notes */
+  notes?: string;
+  /** Detailed organoleptic profile (JSON) */
+  organoleptic?: UpsertObservationDtoOrganoleptic;
+}
+
+export type ObservationResponseDtoOrganoleptic = { [key: string]: unknown };
+
+export interface ObservationResponseDto {
+  id: string;
+  tastingId: string;
+  /** Phase: presentation | fumage_cru | foin | divin | purin | conclusion */
+  phase: string;
+  intensity?: number;
+  combustion?: number;
+  aromas?: string[];
+  notes?: string;
+  organoleptic?: ObservationResponseDtoOrganoleptic;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type ClubControllerFindAllParams = {
 /**
  * Page number
@@ -740,4 +1031,198 @@ export type BrandControllerFindAllParams = {
  */
 search?: string;
 };
+
+export type TastingControllerFindMineParams = {
+/**
+ * Page number
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Items per page
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+/**
+ * Sort by field
+ */
+sortBy?: TastingControllerFindMineSortBy;
+/**
+ * Sort order
+ */
+order?: TastingControllerFindMineOrder;
+/**
+ * Filter by status
+ */
+status?: TastingControllerFindMineStatus;
+/**
+ * Filter by cigar ID
+ */
+cigarId?: string;
+/**
+ * Filter by user ID
+ */
+userId?: string;
+/**
+ * Filter by event ID
+ */
+eventId?: string;
+};
+
+export type TastingControllerFindMineSortBy = typeof TastingControllerFindMineSortBy[keyof typeof TastingControllerFindMineSortBy];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TastingControllerFindMineSortBy = {
+  date: 'date',
+  rating: 'rating',
+  createdAt: 'createdAt',
+} as const;
+
+export type TastingControllerFindMineOrder = typeof TastingControllerFindMineOrder[keyof typeof TastingControllerFindMineOrder];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TastingControllerFindMineOrder = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;
+
+export type TastingControllerFindMineStatus = typeof TastingControllerFindMineStatus[keyof typeof TastingControllerFindMineStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TastingControllerFindMineStatus = {
+  DRAFT: 'DRAFT',
+  COMPLETED: 'COMPLETED',
+} as const;
+
+export type TastingControllerFindByCigarParams = {
+/**
+ * Page number
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Items per page
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+/**
+ * Sort by field
+ */
+sortBy?: TastingControllerFindByCigarSortBy;
+/**
+ * Sort order
+ */
+order?: TastingControllerFindByCigarOrder;
+/**
+ * Filter by status
+ */
+status?: TastingControllerFindByCigarStatus;
+/**
+ * Filter by user ID
+ */
+userId?: string;
+/**
+ * Filter by event ID
+ */
+eventId?: string;
+};
+
+export type TastingControllerFindByCigarSortBy = typeof TastingControllerFindByCigarSortBy[keyof typeof TastingControllerFindByCigarSortBy];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TastingControllerFindByCigarSortBy = {
+  date: 'date',
+  rating: 'rating',
+  createdAt: 'createdAt',
+} as const;
+
+export type TastingControllerFindByCigarOrder = typeof TastingControllerFindByCigarOrder[keyof typeof TastingControllerFindByCigarOrder];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TastingControllerFindByCigarOrder = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;
+
+export type TastingControllerFindByCigarStatus = typeof TastingControllerFindByCigarStatus[keyof typeof TastingControllerFindByCigarStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TastingControllerFindByCigarStatus = {
+  DRAFT: 'DRAFT',
+  COMPLETED: 'COMPLETED',
+} as const;
+
+export type TastingControllerFindByClubParams = {
+/**
+ * Page number
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Items per page
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+/**
+ * Sort by field
+ */
+sortBy?: TastingControllerFindByClubSortBy;
+/**
+ * Sort order
+ */
+order?: TastingControllerFindByClubOrder;
+/**
+ * Filter by status
+ */
+status?: TastingControllerFindByClubStatus;
+/**
+ * Filter by cigar ID
+ */
+cigarId?: string;
+/**
+ * Filter by user ID
+ */
+userId?: string;
+/**
+ * Filter by event ID
+ */
+eventId?: string;
+};
+
+export type TastingControllerFindByClubSortBy = typeof TastingControllerFindByClubSortBy[keyof typeof TastingControllerFindByClubSortBy];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TastingControllerFindByClubSortBy = {
+  date: 'date',
+  rating: 'rating',
+  createdAt: 'createdAt',
+} as const;
+
+export type TastingControllerFindByClubOrder = typeof TastingControllerFindByClubOrder[keyof typeof TastingControllerFindByClubOrder];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TastingControllerFindByClubOrder = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;
+
+export type TastingControllerFindByClubStatus = typeof TastingControllerFindByClubStatus[keyof typeof TastingControllerFindByClubStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TastingControllerFindByClubStatus = {
+  DRAFT: 'DRAFT',
+  COMPLETED: 'COMPLETED',
+} as const;
 
