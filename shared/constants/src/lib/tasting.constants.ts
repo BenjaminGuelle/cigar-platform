@@ -213,3 +213,42 @@ export const TASTING_PHASES = [
 ] as const;
 
 export type TastingPhase = typeof TASTING_PHASES[number]['id'];
+
+// ============================================
+// PHASE 1 (QUICK) - Moment de la journée
+// ============================================
+export const TASTING_MOMENTS = [
+  { id: 'morning', label: 'Matin' },
+  { id: 'afternoon', label: 'Après-midi' },
+  { id: 'evening', label: 'Soir' },
+] as const;
+
+export type TastingMoment = typeof TASTING_MOMENTS[number]['id'];
+
+// ============================================
+// PHASE 1 (QUICK) - Situation
+// ============================================
+export const TASTING_SITUATIONS = [
+  { id: 'aperitif', label: 'Apéritif' },
+  { id: 'cocktail', label: 'Cocktail' },
+  { id: 'digestif', label: 'Digestif' },
+] as const;
+
+export type TastingSituation = typeof TASTING_SITUATIONS[number]['id'];
+
+// ============================================
+// PHASE 1 (QUICK) - Accompagnement (Pairing)
+// ============================================
+export const PAIRING_TYPES = [
+  { id: 'whisky', label: 'Whisky' },
+  { id: 'rum', label: 'Rhum' },
+  { id: 'cognac', label: 'Cognac' },
+  { id: 'coffee', label: 'Café' },
+  { id: 'tea', label: 'Thé' },
+  { id: 'water', label: 'Eau' },
+  { id: 'wine', label: 'Vin' },
+  { id: 'beer', label: 'Bière' },
+  { id: 'other', label: 'Autre' },
+] as const;
+
+export type PairingType = typeof PAIRING_TYPES[number]['id'];

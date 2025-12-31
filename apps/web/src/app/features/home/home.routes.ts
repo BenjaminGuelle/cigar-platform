@@ -66,6 +66,12 @@ export const homeRoutes: Route[] = [
         loadComponent: () =>
           import('../cigar/public/cigar-profile.page').then((m) => m.CigarProfilePage),
       },
+      // Tasting routes (mode focus - fullscreen experience)
+      {
+        path: 'tasting',
+        loadChildren: () =>
+          import('../tasting/tasting.routes').then((m) => m.tastingRoutes),
+      },
       // Club internal pages (context-driven, requires club context)
       {
         path: 'membres',
