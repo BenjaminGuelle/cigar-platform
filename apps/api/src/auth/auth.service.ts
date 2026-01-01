@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { Session } from '@supabase/supabase-js';
-import { User, Role, UserVisibility } from '@cigar-platform/prisma-client';
+import { User, UserVisibility } from '@cigar-platform/prisma-client';
 import { SupabaseService } from './supabase.service';
 import { PrismaService } from '../app/prisma.service';
 import {
@@ -22,6 +22,7 @@ import {
   usernameFromEmail,
   slugify,
 } from '../common/utils/username.utils';
+import { mapRole } from '../common/utils/role.utils';
 
 /**
  * Service handling authentication business logic
@@ -119,11 +120,29 @@ export class AuthService {
 
   /**
    * Get current user profile
+   * Auto-creates user in DB if doesn't exist (for OAuth users with custom claims)
    */
-  async getProfile(userId: string, authProvider?: string): Promise<UserDto> {
-    const user = await this.prismaService.user.findUnique({
+  async getProfile(userId: string, authProvider?: string, dbUser?: any): Promise<UserDto> {
+    let user = await this.prismaService.user.findUnique({
       where: { id: userId },
     });
+
+    // Auto-create user if doesn't exist (OAuth with custom claims case)
+    if (!user && dbUser) {
+      const username = await this.generateUsername(dbUser.displayName || dbUser.email);
+
+      user = await this.prismaService.user.create({
+        data: {
+          id: dbUser.id,
+          email: dbUser.email,
+          displayName: dbUser.displayName,
+          username,
+          avatarUrl: dbUser.avatarUrl,
+          visibility: UserVisibility.PUBLIC,
+          role: mapRole(dbUser.role),
+        },
+      });
+    }
 
     if (!user) {
       throw new UserNotFoundException();
@@ -171,7 +190,7 @@ export class AuthService {
         bio: dto.bio,
         visibility: dto.visibility ?? UserVisibility.PUBLIC, // Default to PUBLIC
         shareEvaluationsPublicly: dto.shareEvaluationsPublicly ?? true,
-        role: Role.USER, // Default role for OAuth users (platform role != club role)
+        role: mapRole(dbUser.role),
       },
     });
 

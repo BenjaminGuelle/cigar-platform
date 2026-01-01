@@ -10,6 +10,7 @@
 **📖 READ THIS FIRST**: [Complete Architecture Guide](./docs/claude/ARCHITECTURE.md)
 
 This document contains the **complete "ALL STARS ⭐" architecture** including:
+
 - Frontend reactive patterns (Signals + Query Layer)
 - Backend data pipeline (Prisma → NestJS → Orval → Angular)
 - Code quality standards
@@ -22,12 +23,14 @@ This document contains the **complete "ALL STARS ⭐" architecture** including:
 ## 📚 Additional Documentation
 
 ### For Claude Code (Technical Reference)
+
 - [Architecture Guide](./docs/claude/ARCHITECTURE.md) - **Main reference**
 - [TypeScript Conventions](./docs/claude/TYPESCRIPT_CONVENTIONS.md) - Detailed typing rules
 - [NestJS Patterns](./docs/claude/NESTJS_PATTERNS.md) - Backend patterns
 - [Permissions System](./docs/claude/PERMISSIONS.md) - Authorization patterns
 
 ### For Developers (Human-Readable)
+
 - [Project Context](./docs/dev/PROJECT.md) - Project overview (FR)
 - [Data Model](./docs/dev/DATA_MODEL.md) - Database schema
 - [OAuth Setup](./docs/OAUTH_SETUP.md) - OAuth configuration
@@ -36,14 +39,14 @@ This document contains the **complete "ALL STARS ⭐" architecture** including:
 
 ## 🚀 Quick Start Commands
 
-| Task | Command |
-|------|---------|
-| Dev - API | `npm run api:serve` → http://localhost:3000 |
-| Dev - Web | `npm run web:serve` → http://localhost:4200 |
-| Build All | `npm run build:all` |
-| Generate API Client | `npm run generate:api` |
-| Prisma Studio | `npm run prisma:studio` |
-| API Docs | http://localhost:3000/api/docs |
+| Task                | Command                                     |
+| ------------------- | ------------------------------------------- |
+| Dev - API           | `npm run api:serve` → http://localhost:3000 |
+| Dev - Web           | `npm run web:serve` → http://localhost:4200 |
+| Build All           | `npm run build:all`                         |
+| Generate API Client | `npm run generate:api`                      |
+| Prisma Studio       | `npm run prisma:studio`                     |
+| API Docs            | http://localhost:3000/api/docs              |
 
 ---
 
@@ -90,6 +93,7 @@ This document contains the **complete "ALL STARS ⭐" architecture** including:
 ### Sécurité des champs texte : @IsSecureText()
 
 Tous les champs texte libres saisis par l'utilisateur et affichés dans l'UI doivent utiliser le decorator `@IsSecureText()` :
+
 ```typescript
 import { IsSecureText } from '../common/validators/secure-text.validator';
 
@@ -99,10 +103,12 @@ name: string;
 ```
 
 **Champs à protéger :**
+
 - `name`, `description`, `bio`, `comment`, `notes`, `message`, `reason`
 - Tout champ texte libre affiché dans l'UI
 
 **Champs à NE PAS protéger :**
+
 - `email` → `@IsEmail()`
 - `username`, `slug` → Pattern strict `@Matches()`
 - `password` → Jamais affiché
@@ -110,3 +116,17 @@ name: string;
 - `urls` → `@IsUrl()` + whitelist
 - `enums` → `@IsEnum()`
 - Valeurs numériques, dates, booleans
+
+<!-- nx configuration start-->
+<!-- Leave the start & end comments to automatically receive updates. -->
+
+# General Guidelines for working with Nx
+
+- When running tasks (for example build, lint, test, e2e, etc.), always prefer running the task through `nx` (i.e. `nx run`, `nx run-many`, `nx affected`) instead of using the underlying tooling directly
+- You have access to the Nx MCP server and its tools, use them to help the user
+- When answering questions about the repository, use the `nx_workspace` tool first to gain an understanding of the workspace architecture where applicable.
+- When working in individual projects, use the `nx_project_details` mcp tool to analyze and understand the specific project structure and dependencies
+- For questions around nx configuration, best practices or if you're unsure, use the `nx_docs` tool to get relevant, up-to-date docs. Always use this instead of assuming things about nx configuration
+- If the user needs help with an Nx configuration or project graph error, use the `nx_workspace` tool to get any errors
+
+<!-- nx configuration end-->

@@ -19,6 +19,7 @@ datasource db {
 // Global platform roles
 enum Role {
   SUPER_ADMIN // Platform super admin (full control, accès /admin)
+  ADMIN // Platform admin (secondary admin, full access except platform config)
   MODERATOR // Platform moderator (modération contenu global)
   USER // Standard user (default)
 }

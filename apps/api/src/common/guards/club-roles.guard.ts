@@ -28,7 +28,7 @@ export class ClubRolesGuard implements CanActivate {
     }
 
     // Platform admins and moderators have access to all clubs
-    if (user.role === Role.SUPER_ADMIN || user.role === Role.MODERATOR) {
+    if (user.role === Role.SUPER_ADMIN || user.role === Role.ADMIN || user.role === Role.MODERATOR) {
       return true;
     }
 

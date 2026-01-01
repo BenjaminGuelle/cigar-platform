@@ -6,6 +6,8 @@ import { SupabaseService } from '../supabase.service';
 import { PrismaService } from '../../app/prisma.service';
 import { InvalidTokenException } from '../../common/exceptions';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { slugify, ensureMinLength } from '../../common/utils/username.utils';
+import { mapRole } from '../../common/utils/role.utils';
 
 /**
  * Guard to protect routes with JWT authentication
@@ -67,7 +69,7 @@ export class JwtAuthGuard implements CanActivate {
           id: supabaseUser.id,
           email: supabaseUser.email!,
           displayName: supabaseUser.app_metadata.displayName || supabaseUser.email!,
-          role: supabaseUser.app_metadata.role,
+          role: mapRole(supabaseUser.app_metadata.role),
           avatarUrl: supabaseUser.user_metadata?.avatar_url ?? null,
           createdAt: new Date(supabaseUser.created_at),
         },
@@ -88,20 +90,21 @@ export class JwtAuthGuard implements CanActivate {
           `Auto-creating user ${supabaseUser.email} from OAuth/Supabase`
         );
 
-        // Generate temporary username from email
-        // Note: updateProfile in auth.service.ts will generate proper unique username on first save
-        const tempUsername = supabaseUser.email!.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 30);
+        // Generate username using proper utilities (respects 3-30 chars, unique pattern)
+        const displayName = supabaseUser.user_metadata?.full_name ||
+          supabaseUser.user_metadata?.name ||
+          supabaseUser.email?.split('@')[0] ||
+          'User';
+
+        const baseUsername = slugify(displayName);
+        const username = ensureMinLength(baseUsername, 'user');
 
         dbUser = await this.prismaService.user.create({
           data: {
             id: supabaseUser.id,
             email: supabaseUser.email!,
-            displayName:
-              supabaseUser.user_metadata?.full_name ||
-              supabaseUser.user_metadata?.name ||
-              supabaseUser.email?.split('@')[0] ||
-              'User',
-            username: tempUsername,
+            displayName,
+            username,
             avatarUrl: supabaseUser.user_metadata?.avatar_url || null,
           },
         });
