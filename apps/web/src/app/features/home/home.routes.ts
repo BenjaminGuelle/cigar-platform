@@ -72,6 +72,12 @@ export const homeRoutes: Route[] = [
         loadChildren: () =>
           import('../tasting/tasting.routes').then((m) => m.tastingRoutes),
       },
+      // Tastings list (TODO: Create dedicated list page, for now redirect to new tasting)
+      {
+        path: 'tastings',
+        redirectTo: 'tasting/new',
+        pathMatch: 'full',
+      },
       // Club internal pages (context-driven, requires club context)
       {
         path: 'membres',

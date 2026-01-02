@@ -50,6 +50,9 @@ export class TastingService {
         rating: 0, // Temporary value, will be set on complete
         visibility: 'PUBLIC', // Default, will be set on complete
       },
+      include: {
+        cigar: true,
+      },
     });
 
     this.logger.log(`Tasting created: ${tasting.id} by user ${userId} (DRAFT)`);
@@ -69,6 +72,9 @@ export class TastingService {
   ): Promise<TastingResponseDto> {
     const tasting = await this.prisma.tasting.findUnique({
       where: { id },
+      include: {
+        cigar: true,
+      },
     });
 
     if (!tasting) {
@@ -128,6 +134,9 @@ export class TastingService {
           location: updateTastingDto.location,
           photoUrl: updateTastingDto.photoUrl,
           duration: updateTastingDto.duration,
+        },
+        include: {
+          cigar: true,
         },
       });
 
@@ -195,6 +204,9 @@ export class TastingService {
           visibility: completeTastingDto.visibility ?? 'PUBLIC',
           duration,
         },
+        include: {
+          cigar: true,
+        },
       });
 
       this.logger.log(
@@ -253,6 +265,9 @@ export class TastingService {
         orderBy,
         skip,
         take: limit,
+        include: {
+          cigar: true,
+        },
       }),
       this.prisma.tasting.count({ where }),
     ]);
@@ -311,6 +326,9 @@ export class TastingService {
         orderBy,
         skip,
         take: limit,
+        include: {
+          cigar: true,
+        },
       }),
       this.prisma.tasting.count({ where }),
     ]);
@@ -385,6 +403,9 @@ export class TastingService {
         orderBy,
         skip,
         take: limit,
+        include: {
+          cigar: true,
+        },
       }),
       this.prisma.tasting.count({ where }),
     ]);
@@ -491,14 +512,15 @@ export class TastingService {
 
   /**
    * Map Prisma entity to Response DTO
-   * @param tasting - Prisma tasting entity
+   * @param tasting - Prisma tasting entity (with cigar relation)
    * @returns TastingResponseDto
    */
-  private mapToResponse(tasting: Tasting): TastingResponseDto {
+  private mapToResponse(tasting: any): TastingResponseDto {
     return {
       id: tasting.id,
       userId: tasting.userId,
       cigarId: tasting.cigarId,
+      cigar: tasting.cigar,
       eventId: tasting.eventId,
       status: tasting.status,
       date: tasting.date,

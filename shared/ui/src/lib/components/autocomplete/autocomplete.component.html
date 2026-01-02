@@ -49,14 +49,25 @@
               (click)="selectOption(option)"
               (mouseenter)="setHighlightedIndex(i)"
             >
-              <!-- With Logo (Brand style: logo + label + metadata below) -->
-              @if (option.logoUrl) {
+              <!-- With Avatar (Logo or fallback initial) -->
+              @if (option.logoUrl || option.avatarText) {
                 <div class="flex items-center gap-3">
-                  <img
-                    [src]="option.logoUrl"
-                    [alt]="option.label + ' logo'"
-                    [class]="CLASSES.logo.image"
-                  />
+                  <!-- Image if available -->
+                  @if (option.logoUrl) {
+                    <img
+                      [src]="option.logoUrl"
+                      [alt]="option.label + ' logo'"
+                      [class]="CLASSES.logo.image"
+                    />
+                  }
+
+                  <!-- Fallback with initial if no image -->
+                  @if (!option.logoUrl && option.avatarText) {
+                    <div [class]="CLASSES.logo.fallback">
+                      <span [class]="CLASSES.logo.fallbackText">{{ option.avatarText }}</span>
+                    </div>
+                  }
+
                   <div class="flex-1">
                     <div class="font-medium">{{ option.label }}</div>
                     @if (option.metadata) {
@@ -66,8 +77,8 @@
                 </div>
               }
 
-              <!-- Without Logo (Country style: label + flag right) -->
-              @if (!option.logoUrl) {
+              <!-- Without Avatar (Simple: label + metadata right) -->
+              @if (!option.logoUrl && !option.avatarText) {
                 <div class="flex items-center justify-between gap-3 w-full">
                   <div class="font-medium">{{ option.label }}</div>
                   @if (option.metadata) {

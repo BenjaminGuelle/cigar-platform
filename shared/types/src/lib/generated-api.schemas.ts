@@ -32,6 +32,7 @@ export type UserDtoRole = typeof UserDtoRole[keyof typeof UserDtoRole];
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const UserDtoRole = {
   SUPER_ADMIN: 'SUPER_ADMIN',
+  ADMIN: 'ADMIN',
   MODERATOR: 'MODERATOR',
   USER: 'USER',
 } as const;
@@ -752,6 +753,7 @@ export interface TastingResponseDto {
   id: string;
   userId: string;
   cigarId: string;
+  cigar: CigarResponseDto;
   eventId?: string;
   status: TastingResponseDtoStatus;
   date: string;

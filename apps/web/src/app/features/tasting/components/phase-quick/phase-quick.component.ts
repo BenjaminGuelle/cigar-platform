@@ -1,356 +1,357 @@
-import { Component, input, output, OnInit, signal } from '@angular/core';
+import { Component, output, input, OnInit, signal, inject, computed, effect, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
+import { IconDirective, AutocompleteComponent } from '@cigar-platform/shared/ui';
+import type { AutocompleteOption } from '@cigar-platform/shared/ui';
+import { ContextStore } from '../../../../core/stores/context.store';
+import { injectSearchStore } from '../../../../core/stores/search.store';
+import { TastingFormService } from '../../services/tasting-form.service';
+import type { CigarResponseDto } from '@cigar-platform/types';
 import {
-  TASTING_MOMENTS,
   TASTING_SITUATIONS,
   PAIRING_TYPES,
   type TastingMoment,
   type TastingSituation,
   type PairingType,
 } from '@cigar-platform/shared/constants';
+import type { Subscription } from 'rxjs';
+
+/**
+ * Pairing icon mapping (Lucide)
+ * API-aligned keys (uppercase)
+ */
+const PAIRING_ICONS: Record<PairingType, string> = {
+  CAFE: 'coffee',
+  THE: 'cup-soda',
+  WHISKY: 'wine',
+  RHUM: 'wine',
+  COGNAC: 'wine',
+  VIN: 'wine',
+  BIERE: 'beer',
+  EAU: 'droplet',
+  AUTRE: 'circle-help',
+};
+
+/**
+ * Situation icon mapping (Lucide)
+ * API-aligned keys (uppercase)
+ */
+const SITUATION_ICONS: Record<TastingSituation, string> = {
+  APERITIF: 'sun',
+  COCKTAIL: 'glass-water',
+  DIGESTIF: 'moon',
+};
+
 
 /**
  * Phase Quick Component
- * Phase 1 of the Quick tasting flow
+ * "Le Rituel" - Compagnon intelligent de dégustation
  *
- * Captures basic tasting context:
- * - Date (auto)
- * - Moment (morning/afternoon/evening)
- * - Situation (aperitif/cocktail/digestif)
- * - Pairing (whisky/rum/coffee/etc.)
- * - Pairing note (optional detail)
- * - Location (optional, solo only)
- * - Photo (optional)
+ * ALL STARS Architecture ⭐
+ * - Minimaliste et intelligent
+ * - Auto-calcul date/heure/moment
+ * - Icônes Lucide uniquement
+ * - Context-aware (Solo/Club)
+ *
+ * Captures:
+ * - Situation (icônes)
+ * - Pairing / Les Noces (icônes + précisions)
  */
 @Component({
   selector: 'app-phase-quick',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule, IconDirective, AutocompleteComponent],
   template: `
-    <div class="phase-quick">
-      <div class="phase-header">
-        <h2>Contexte de dégustation</h2>
-        <p class="phase-subtitle">Quelques informations sur ce moment</p>
+    <div class="flex flex-col gap-10">
+      <!-- Hero Section -->
+      <div class="flex flex-col items-center gap-4 pb-6 border-b border-zinc-800">
+        <!-- Date/Heure/Moment (auto-calculés, lecture seule) -->
+        <div class="text-center text-sm text-smoke-400 italic">
+          {{ formattedDateTime() }}
+        </div>
+
+        <!-- Contexte -->
+        <div class="flex items-center gap-2 text-xs text-smoke-400 uppercase tracking-wider">
+          <i [name]="contextIcon()" class="w-4 h-4"></i>
+          <span>{{ contextLabel() }}</span>
+        </div>
+
+        <!-- Sélection Cigare -->
+        <div class="w-full max-w-md">
+          <ui-autocomplete
+            [placeholder]="cigarPlaceholder()"
+            [control]="quickForm.controls.cigar"
+            [options]="cigarOptions()"
+            [loading]="cigarSearchLoading()"
+            [showCreateOption]="false"
+            (search)="onCigarSearch($event)"
+            (valueSelected)="onCigarSelected($event)"
+          />
+          @if (quickForm.controls.cigar.invalid && quickForm.controls.cigar.touched) {
+            <p class="mt-2 text-xs text-red-500">
+              Le choix du cigare est obligatoire
+            </p>
+          }
+        </div>
       </div>
 
-      <div class="phase-content">
-        <!-- Date -->
-        <div class="form-group">
-          <label>Date</label>
-          <input
-            type="datetime-local"
-            [(ngModel)]="dateValue"
-            (ngModelChange)="handleDateChange()"
-            class="form-control"
-          />
-        </div>
+      <!-- Situation -->
+      <div class="flex flex-col gap-4">
+        <h3 class="text-center text-sm font-display text-gold-500 tracking-wide">L'Instant</h3>
 
-        <!-- Moment -->
-        <div class="form-group">
-          <label>Moment de la journée</label>
-          <div class="chip-group">
-            @for (moment of moments; track moment.id) {
-              <button
-                type="button"
-                class="chip"
-                [class.chip-selected]="momentValue() === moment.id"
-                (click)="selectMoment(moment.id)"
-              >
-                {{ moment.label }}
-              </button>
-            }
-          </div>
-        </div>
-
-        <!-- Situation -->
-        <div class="form-group">
-          <label>Situation</label>
-          <div class="chip-group">
-            @for (situation of situations; track situation.id) {
-              <button
-                type="button"
-                class="chip"
-                [class.chip-selected]="situationValue() === situation.id"
-                (click)="selectSituation(situation.id)"
+        <div class="flex justify-center gap-3">
+          @for (situation of situations; track situation.id) {
+            <button
+              type="button"
+              (click)="selectSituation(situation.id)"
+              [class]="quickForm.controls.situation.value === situation.id
+                ? 'flex flex-col items-center gap-2 p-4 rounded-xl border border-gold-500 bg-gold-500/10 transition-all'
+                : 'flex flex-col items-center gap-2 p-4 rounded-xl border border-zinc-800 hover:border-gold-500/30 transition-all'"
+              [title]="situation.label"
+            >
+              <i
+                [name]="getSituationIcon(situation.id)"
+                [class]="quickForm.controls.situation.value === situation.id ? 'w-6 h-6 text-gold-500' : 'w-6 h-6 text-smoke-400'"
+              ></i>
+              <span
+                [class]="quickForm.controls.situation.value === situation.id
+                  ? 'text-xs text-gold-500 font-medium'
+                  : 'text-xs text-smoke-400'"
               >
                 {{ situation.label }}
-              </button>
-            }
-          </div>
-        </div>
-
-        <!-- Pairing -->
-        <div class="form-group">
-          <label>Accompagnement</label>
-          <div class="chip-group">
-            @for (pairing of pairings; track pairing.id) {
-              <button
-                type="button"
-                class="chip"
-                [class.chip-selected]="pairingValue() === pairing.id"
-                (click)="selectPairing(pairing.id)"
-              >
-                {{ pairing.label }}
-              </button>
-            }
-          </div>
-        </div>
-
-        <!-- Pairing Note (shown if pairing selected) -->
-        @if (pairingValue()) {
-          <div class="form-group">
-            <label>Précisions (optionnel)</label>
-            <input
-              type="text"
-              [(ngModel)]="pairingNoteValue"
-              (ngModelChange)="handlePairingNoteChange()"
-              placeholder="Ex: Lagavulin 16 ans"
-              class="form-control"
-            />
-          </div>
-        }
-
-        <!-- Location (solo only - TODO: check context) -->
-        <div class="form-group">
-          <label>Lieu (optionnel)</label>
-          <input
-            type="text"
-            [(ngModel)]="locationValue"
-            (ngModelChange)="handleLocationChange()"
-            placeholder="Ex: Terrasse, Bar Le Fumoir"
-            class="form-control"
-          />
-        </div>
-
-        <!-- Photo Upload (TODO: implement) -->
-        <div class="form-group">
-          <label>Photo (optionnel)</label>
-          <button type="button" class="upload-btn" disabled>
-            📸 Ajouter une photo
-            <span class="badge-soon">Bientôt</span>
-          </button>
+              </span>
+            </button>
+          }
         </div>
       </div>
 
-      <!-- Actions -->
-      <div class="phase-actions">
-        <button class="btn btn-primary" (click)="next.emit()">
-          Continuer →
-        </button>
+      <!-- Les Noces (Pairing) -->
+      <div class="flex flex-col gap-4">
+        <h3 class="text-center text-sm font-display text-gold-500 tracking-wide">Les Noces</h3>
+
+        <div class="grid grid-cols-4 gap-3">
+          @for (pairing of pairings; track pairing.id) {
+            <button
+              type="button"
+              (click)="selectPairing(pairing.id)"
+              [class]="quickForm.controls.pairing.value === pairing.id
+                ? 'flex flex-col items-center gap-2 p-3 rounded-xl border border-gold-500 bg-gold-500/10 transition-all'
+                : 'flex flex-col items-center gap-2 p-3 rounded-xl border border-zinc-800 hover:border-gold-500/30 transition-all'"
+              [title]="pairing.label"
+            >
+              <i
+                [name]="getPairingIcon(pairing.id)"
+                [class]="quickForm.controls.pairing.value === pairing.id ? 'w-5 h-5 text-gold-500' : 'w-5 h-5 text-smoke-400'"
+              ></i>
+              <span
+                [class]="quickForm.controls.pairing.value === pairing.id
+                  ? 'text-[10px] text-gold-500 font-medium'
+                  : 'text-[10px] text-smoke-400'"
+              >
+                {{ pairing.label }}
+              </span>
+            </button>
+          }
+        </div>
+
+        <!-- Précisions (conditionnel) -->
+        @if (quickForm.controls.pairing.value) {
+          <input
+            type="text"
+            [formControl]="quickForm.controls.pairingNote"
+            placeholder="Ex: Précisions sur l'accompagnement..."
+            class="px-4 py-2 text-sm bg-transparent border border-zinc-800 rounded-lg text-smoke-200 placeholder:text-smoke-600 focus:outline-none focus:border-gold-500/50 transition-colors"
+          />
+        }
       </div>
     </div>
   `,
-  styles: [
-    `
-      .phase-quick {
-        display: flex;
-        flex-direction: column;
-        gap: 2rem;
-      }
-
-      .phase-header {
-        text-align: center;
-      }
-
-      .phase-header h2 {
-        margin: 0 0 0.5rem;
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: var(--color-text-primary);
-      }
-
-      .phase-subtitle {
-        margin: 0;
-        font-size: 0.875rem;
-        color: var(--color-text-secondary);
-      }
-
-      .phase-content {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-      }
-
-      .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-
-      .form-group label {
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: var(--color-text-primary);
-      }
-
-      .form-control {
-        padding: 0.75rem;
-        border: 1px solid var(--color-border);
-        border-radius: 8px;
-        font-size: 1rem;
-        background: var(--color-surface);
-        color: var(--color-text-primary);
-      }
-
-      .form-control:focus {
-        outline: none;
-        border-color: var(--color-primary);
-      }
-
-      .chip-group {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-      }
-
-      .chip {
-        padding: 0.5rem 1rem;
-        border: 1px solid var(--color-border);
-        border-radius: 20px;
-        background: var(--color-surface);
-        color: var(--color-text-primary);
-        font-size: 0.875rem;
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-
-      .chip:hover {
-        background: var(--color-hover);
-      }
-
-      .chip-selected {
-        background: var(--color-primary);
-        color: white;
-        border-color: var(--color-primary);
-      }
-
-      .upload-btn {
-        position: relative;
-        padding: 0.75rem;
-        border: 1px dashed var(--color-border);
-        border-radius: 8px;
-        background: var(--color-surface);
-        color: var(--color-text-secondary);
-        font-size: 0.875rem;
-        cursor: not-allowed;
-        opacity: 0.6;
-      }
-
-      .badge-soon {
-        position: absolute;
-        top: -8px;
-        right: -8px;
-        padding: 0.25rem 0.5rem;
-        background: var(--color-warning);
-        color: white;
-        font-size: 0.75rem;
-        border-radius: 12px;
-      }
-
-      .phase-actions {
-        display: flex;
-        justify-content: flex-end;
-        padding-top: 1rem;
-        border-top: 1px solid var(--color-border);
-      }
-
-      .btn {
-        padding: 0.75rem 2rem;
-        border: none;
-        border-radius: 8px;
-        font-size: 1rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-
-      .btn-primary {
-        background: var(--color-primary);
-        color: white;
-      }
-
-      .btn-primary:hover {
-        opacity: 0.9;
-      }
-    `,
-  ],
 })
-export class PhaseQuickComponent implements OnInit {
+export class PhaseQuickComponent implements OnInit, OnDestroy {
+  // Services
+  readonly #contextStore = inject(ContextStore);
+  readonly #searchStore = injectSearchStore();
+  readonly #formService = inject(TastingFormService);
+
+  // Inputs
+  cigar = input<CigarResponseDto | undefined>();
+  initialCigar = input<CigarResponseDto | null | undefined>(); // For draft restoration
+
   // Constants
-  moments = TASTING_MOMENTS;
   situations = TASTING_SITUATIONS;
   pairings = PAIRING_TYPES;
+  pairingIcons = PAIRING_ICONS;
+  situationIcons = SITUATION_ICONS;
+
+  // Form (from TastingFormService)
+  readonly quickForm = this.#formService.quickForm;
+
+  // Cigar autocomplete search
+  readonly #cigarSearchQuery = signal<string>('');
+  readonly #debouncedCigarQuery = signal<string>('');
+  readonly #selectedCigarId = signal<string | null>(null); // Track selected cigar UUID
+
+  // Search query (reactive)
+  readonly #cigarSearchResults = this.#searchStore.search(() => this.#debouncedCigarQuery());
+
+  // Loading state
+  readonly cigarSearchLoading = this.#cigarSearchResults.loading;
+
+  // Map search results to autocomplete options
+  readonly cigarOptions = computed<AutocompleteOption[]>(() => {
+    const results = this.#cigarSearchResults.data();
+    const cigars = results?.cigars ?? [];
+
+    return cigars.map(cigar => ({
+      value: cigar.id,
+      label: cigar.name,
+      metadata: cigar.description || undefined,
+      logoUrl: cigar.imageUrl || undefined,
+      avatarText: cigar.name[0]?.toUpperCase() || 'C', // Fallback initial
+    }));
+  });
+
+  // Subscriptions
+  #subscriptions: Subscription[] = [];
 
   // Internal state
-  dateValue = '';
-  pairingNoteValue = '';
-  locationValue = '';
-  momentValue = signal<TastingMoment | null>(null);
-  situationValue = signal<TastingSituation | null>(null);
-  pairingValue = signal<PairingType | null>(null);
+  readonly #now = new Date();
+
+  // Computed
+  readonly #moment = computed<TastingMoment>(() => {
+    const hour = this.#now.getHours();
+    if (hour < 12) return 'MATIN';
+    if (hour < 18) return 'APRES_MIDI';
+    return 'SOIR';
+  });
+
+  formattedDateTime = computed(() => {
+    const date = this.#now.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    });
+    const time = this.#now.toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    const momentLabels = { MATIN: 'Matin', APRES_MIDI: 'Après-midi', SOIR: 'Soir' };
+    return `${date} • ${time} • ${momentLabels[this.#moment()]}`;
+  });
+
+  contextLabel = computed(() => {
+    const ctx = this.#contextStore.context();
+    return ctx.type === 'solo' ? 'Solo' : ctx.club?.name || 'Club';
+  });
+
+  contextIcon = computed(() => {
+    const ctx = this.#contextStore.context();
+    return ctx.type === 'solo' ? 'user' : 'users';
+  });
+
+  cigarPlaceholder = computed(() => {
+    const momentLabels = {
+      MATIN: 'Le protagoniste de ce matin...',
+      APRES_MIDI: 'Le protagoniste de cet après-midi...',
+      SOIR: 'Le protagoniste de ce soir...',
+    };
+    return momentLabels[this.#moment()];
+  });
 
   // Outputs
-  next = output<void>();
   dataChange = output<{
     date: string;
-    moment: TastingMoment | null;
+    moment: TastingMoment;
+    cigar: string;
     situation: TastingSituation | null;
     pairing: PairingType | null;
     pairingNote: string;
     location: string;
   }>();
 
-  ngOnInit(): void {
-    // Initialize date to now
-    const now = new Date();
-    this.dateValue = this.formatDateTimeLocal(now);
+  constructor() {
+    // Debounce cigar search (300ms like GlobalSearch)
+    let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    effect(() => {
+      const query = this.#cigarSearchQuery();
+
+      // Clear previous timeout
+      if (debounceTimeout) {
+        clearTimeout(debounceTimeout);
+      }
+
+      // Set new timeout (300ms debounce)
+      debounceTimeout = setTimeout(() => {
+        this.#debouncedCigarQuery.set(query);
+      }, 300);
+    });
+
+    // Watch for initialCigar changes (draft restoration)
+    effect(() => {
+      const initialCigar = this.initialCigar();
+      if (initialCigar) {
+        this.#selectedCigarId.set(initialCigar.id);
+        // Set the FormControl to display the cigar name
+        this.quickForm.controls.cigar.setValue(initialCigar.name, { emitEvent: false });
+      }
+    });
+
+    // Listen to form changes and emit dataChange output
+    const formSub = this.quickForm.valueChanges.subscribe(() => {
+      this.#emitChange();
+    });
+
+    this.#subscriptions.push(formSub);
   }
 
-  selectMoment(moment: TastingMoment): void {
-    this.momentValue.set(moment);
-    this.emitChange();
+  ngOnInit(): void {
+    // Auto-emit initial state
+    this.#emitChange();
   }
 
   selectSituation(situation: TastingSituation): void {
-    this.situationValue.set(situation);
-    this.emitChange();
+    this.quickForm.controls.situation.setValue(situation);
   }
 
   selectPairing(pairing: PairingType): void {
-    this.pairingValue.set(pairing);
-    this.emitChange();
+    this.quickForm.controls.pairing.setValue(pairing);
   }
 
-  handleDateChange(): void {
-    this.emitChange();
+  getPairingIcon(pairing: PairingType): any {
+    return this.pairingIcons[pairing];
   }
 
-  handlePairingNoteChange(): void {
-    this.emitChange();
+  getSituationIcon(situation: TastingSituation): any {
+    return this.situationIcons[situation];
   }
 
-  handleLocationChange(): void {
-    this.emitChange();
+  onCigarSearch(query: string): void {
+    this.#cigarSearchQuery.set(query);
   }
 
-  private emitChange(): void {
+  onCigarSelected(cigarId: string): void {
+    this.#selectedCigarId.set(cigarId);
+    // Trigger data emission with the selected UUID
+    this.#emitChange();
+  }
+
+  #emitChange(): void {
+    const value = this.quickForm.getRawValue();
+    // Use the selected cigar ID (UUID) instead of the FormControl value (label)
+    const cigarId = this.#selectedCigarId();
     this.dataChange.emit({
-      date: this.dateValue,
-      moment: this.momentValue(),
-      situation: this.situationValue(),
-      pairing: this.pairingValue(),
-      pairingNote: this.pairingNoteValue,
-      location: this.locationValue,
+      date: value.date,
+      moment: value.moment,
+      cigar: cigarId || '', // Emit UUID if selected, empty string otherwise
+      situation: value.situation,
+      pairing: value.pairing,
+      pairingNote: value.pairingNote,
+      location: '', // Not captured anymore
     });
   }
 
-  private formatDateTimeLocal(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  ngOnDestroy(): void {
+    this.#subscriptions.forEach(sub => sub.unsubscribe());
   }
 }

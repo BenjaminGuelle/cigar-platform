@@ -1,4 +1,4 @@
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   TastingStatus,
@@ -7,6 +7,7 @@ import {
   PairingType,
   TastingVisibility,
 } from '@cigar-platform/prisma-client';
+import { CigarResponseDto } from '../../cigar/dto/cigar-response.dto';
 
 /**
  * Tasting Response DTO
@@ -24,6 +25,11 @@ export class TastingResponseDto {
   @Expose()
   @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440002' })
   cigarId: string;
+
+  @Expose()
+  @Type(() => CigarResponseDto)
+  @ApiProperty({ type: CigarResponseDto })
+  cigar: CigarResponseDto;
 
   @Expose()
   @ApiPropertyOptional({ type: String, example: '550e8400-e29b-41d4-a716-446655440003' })

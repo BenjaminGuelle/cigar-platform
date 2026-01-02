@@ -1,35 +1,37 @@
-import {
-  Component,
-  OnInit,
-  signal,
-  computed,
-  effect,
-  inject,
-} from '@angular/core';
+import { Component, OnInit, inject, OnDestroy, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, ActivatedRoute } from '@angular/router';
-import { injectTastingStore } from '../../../../core/stores/tasting.store';
+import { ActivatedRoute } from '@angular/router';
+import { TastingOrchestratorService } from '../../services/tasting-orchestrator.service';
+import { TastingAutoSaveService } from '../../services/tasting-auto-save.service';
+import { TastingScrollService } from '../../services/tasting-scroll.service';
+import { TastingFormService } from '../../services/tasting-form.service';
 import { PhaseQuickComponent } from '../../components/phase-quick/phase-quick.component';
+import { PhasePresentationComponent } from '../../components/phase-presentation/phase-presentation.component';
 import { PhaseFinaleComponent } from '../../components/phase-finale/phase-finale.component';
+import { PhaseSectionComponent } from '../../components/phase-section/phase-section.component';
 import { ConfirmationModalComponent } from '../../components/confirmation-modal/confirmation-modal.component';
-import type {
-  CreateTastingDto,
-  UpdateTastingDto,
-  CompleteTastingDto,
-} from '@cigar-platform/types';
+import { DraftConfirmationModalComponent } from '../../components/draft-confirmation-modal/draft-confirmation-modal.component';
+import { ExitConfirmationModalComponent } from '../../components/exit-confirmation-modal/exit-confirmation-modal.component';
+import { DiscoveryBottomSheetComponent } from '../../components/discovery-bottom-sheet/discovery-bottom-sheet.component';
+import { TastingTimelineComponent } from '../../components/tasting-timeline/tasting-timeline.component';
+import { TastingSmartBarComponent } from '../../components/tasting-smart-bar/tasting-smart-bar.component';
+import { IconDirective } from '@cigar-platform/shared/ui';
+import type { CapeAspect, CapeColor, CapeTouch } from '@cigar-platform/shared/constants';
 
 /**
  * Tasting Page Component
- * Full-screen mode focus experience for cigar tasting
+ * "Journal de Dégustation" - Vertical scrollable experience
  *
- * Flow (Quick Mode):
- * Phase 1 (Quick) → Phase Finale → Confirmation
+ * ALL STARS Architecture ⭐ (< 100 lignes)
+ * - Orchestration UI uniquement
+ * - Délègue TOUT au TastingOrchestratorService
+ * - Template déclaratif pur
+ * - Zero business logic
  *
- * Features:
- * - Auto-save DRAFT on every change
- * - Minimal header with back button
- * - No bottom tab (mode focus)
- * - Confirmation on exit if not completed
+ * Flow:
+ * - Phase Quick → CTA A (Verdict) OR CTA B (Chronique)
+ * - CTA A: Scroll direct to Finale
+ * - CTA B: Premium = Chronique / Free = Discovery bottom sheet
  */
 @Component({
   selector: 'app-tasting-page',
@@ -37,239 +39,238 @@ import type {
   imports: [
     CommonModule,
     PhaseQuickComponent,
+    PhasePresentationComponent,
     PhaseFinaleComponent,
+    PhaseSectionComponent,
     ConfirmationModalComponent,
+    DraftConfirmationModalComponent,
+    ExitConfirmationModalComponent,
+    DiscoveryBottomSheetComponent,
+    TastingTimelineComponent,
+    TastingSmartBarComponent,
+    IconDirective,
   ],
+  providers: [TastingOrchestratorService, TastingAutoSaveService, TastingScrollService, TastingFormService],
   template: `
-    <div class="tasting-page">
-      <!-- Minimal Header -->
-      <header class="tasting-header">
-        <button class="back-btn" (click)="handleBack()">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M15 18l-6-6 6-6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
+    <div class="fixed inset-0 bg-zinc-900 z-1000 flex flex-col">
+      <!-- Header Sticky -->
+      <header class="sticky top-0 z-100 flex items-center gap-4 px-6 py-4 border-b border-gold-500/20 bg-smoke-800 backdrop-blur-md">
+        <button
+          type="button"
+          (click)="orchestrator.handleBack()"
+          class="flex items-center justify-center w-10 h-10 text-gold-500 hover:bg-gold-500/10 rounded-lg transition-colors"
+        >
+          <i name="arrow-left" class="w-6 h-6"></i>
         </button>
-        <h1 class="title">
-          {{ isNew() ? 'Nouvelle dégustation' : 'Dégustation' }}
-        </h1>
-        <div class="header-actions">
-          @if (currentPhase() !== 'confirmation') {
-            <span class="save-indicator">
-              {{ saveStatus() }}
-            </span>
+        <div class="flex-1 flex flex-col gap-1">
+          <h1 class="text-2xl font-display text-gold-500 tracking-wide">Le Rituel</h1>
+          @if (autoSave.saveStatus()) {
+            <span class="text-xs text-smoke-400 opacity-70">{{ autoSave.saveStatus() }}</span>
           }
+        </div>
+        <div class="font-mono text-sm text-smoke-400 opacity-60 min-w-12.5 text-right">
+          {{ orchestrator.elapsedTime() }}
         </div>
       </header>
 
-      <!-- Content -->
-      <main class="tasting-content">
-        @switch (currentPhase()) {
-          @case ('quick') {
-            <div class="phase-container">
-              <app-phase-quick
-                (next)="goToFinale()"
-                (dataChange)="handleQuickDataChange($event)"
-              />
+      <!-- Timeline (responsive) -->
+      <app-tasting-timeline
+        [currentPhase]="orchestrator.currentPhase()"
+        [revealedPhases]="orchestrator.revealedPhases()"
+        [isDiscoveryMode]="orchestrator.isDiscoveryMode()"
+        (phaseClicked)="handleTimelinePhaseClick($event)"
+      />
+
+      <!-- Journal Content (Scroll vertical) -->
+      <main class="flex-1 overflow-y-auto scroll-smooth scroll-snap-type-y-proximity md:ml-20" style="scroll-snap-type: y proximity;">
+        <!-- Phase Quick -->
+        <app-phase-section phaseId="phase-quick">
+          <app-phase-quick
+            [initialCigar]="orchestrator.confirmedDraftCigar()"
+            (dataChange)="handleQuickDataChange($event)"
+          />
+        </app-phase-section>
+
+        <!-- Observations (Chronique flow - révélées conditionnellement) -->
+        @if (orchestrator.flowMode() === 'chronique') {
+          @if (orchestrator.isDiscoveryMode()) {
+            <div class="sticky top-20 z-90 px-6 py-3 bg-gold-500/10 border-l-4 border-gold-500 text-center text-sm text-smoke-200 mb-8">
+              Mode Découverte — Ces analyses ne seront pas sauvegardées
             </div>
           }
-          @case ('finale') {
-            <div class="phase-container">
-              <app-phase-finale
-                (back)="goToQuick()"
-                (complete)="completeTasting()"
-                (dataChange)="handleFinaleDataChange($event)"
-              />
-            </div>
-          }
+          <app-phase-section phaseId="phase-presentation">
+            <app-phase-presentation (dataChange)="handlePresentationDataChange($event)" />
+          </app-phase-section>
         }
 
-        <!-- Confirmation Modal (overlay) -->
-        @if (currentPhase() === 'confirmation') {
-          <app-confirmation-modal
-            (viewTasting)="viewTasting()"
-            (close)="close()"
+        <!-- Phase Finale -->
+        <app-phase-section phaseId="phase-finale">
+          <app-phase-finale
+            (complete)="orchestrator.completeTasting()"
+            (dataChange)="handleFinaleDataChange($event)"
           />
-        }
+        </app-phase-section>
       </main>
+
+      <!-- Modals -->
+      @if (orchestrator.showConfirmation()) {
+        <app-confirmation-modal
+          (viewTasting)="orchestrator.viewTasting()"
+          (close)="orchestrator.close()"
+        />
+      }
+
+      <app-discovery-bottom-sheet
+        [isOpen]="orchestrator.showDiscoveryBottomSheet()"
+        (close)="orchestrator.handleDiscovery_Cancel()"
+        (discover)="orchestrator.handleDiscovery_Confirm()"
+        (upgradePremium)="orchestrator.handleDiscovery_UpgradePremium()"
+      />
+
+      <app-draft-confirmation-modal
+        [isOpen]="orchestrator.showDraftConfirmation()"
+        [draft]="orchestrator.existingDraft()"
+        (continue)="handleContinueDraft()"
+        (newTasting)="handleNewTasting()"
+        (close)="orchestrator.showDraftConfirmation.set(false)"
+      />
+
+      <app-exit-confirmation-modal
+        [isOpen]="orchestrator.showExitConfirmation()"
+        (confirm)="orchestrator.confirmExit()"
+        (cancel)="orchestrator.showExitConfirmation.set(false)"
+        (close)="orchestrator.showExitConfirmation.set(false)"
+      />
+
+      <!-- Smart Bar (fixed bottom) -->
+      <app-tasting-smart-bar
+        [currentPhase]="orchestrator.currentPhase()"
+        [elapsedTime]="orchestrator.elapsedTime()"
+        [isLoading]="orchestrator.isCompleting()"
+        (scrollToSection)="handleSmartBarScroll($event)"
+        (nextAction)="handleSmartBarNext()"
+      />
     </div>
   `,
-  styles: [
-    `
-      .tasting-page {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: var(--color-background);
-        z-index: 1000;
-        display: flex;
-        flex-direction: column;
-      }
-
-      .tasting-header {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        padding: 1rem;
-        border-bottom: 1px solid var(--color-border);
-        background: var(--color-surface);
-      }
-
-      .back-btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 40px;
-        height: 40px;
-        border: none;
-        background: transparent;
-        color: var(--color-text-primary);
-        cursor: pointer;
-        border-radius: 8px;
-        transition: background 0.2s;
-      }
-
-      .back-btn:hover {
-        background: var(--color-hover);
-      }
-
-      .title {
-        flex: 1;
-        margin: 0;
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: var(--color-text-primary);
-      }
-
-      .header-actions {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      }
-
-      .save-indicator {
-        font-size: 0.875rem;
-        color: var(--color-text-secondary);
-      }
-
-      .tasting-content {
-        flex: 1;
-        overflow-y: auto;
-        padding: 1.5rem;
-      }
-
-      .phase-container {
-        max-width: 600px;
-        margin: 0 auto;
-      }
-    `,
-  ],
 })
-export class TastingPageComponent implements OnInit {
-  private router = inject(Router);
-  private route = inject(ActivatedRoute);
-  private tastingStore = injectTastingStore();
+export class TastingPageComponent implements OnInit, OnDestroy {
+  readonly #route = inject(ActivatedRoute);
 
-  // Route params
-  private tastingIdParam = signal<string | null>(null);
+  // Orchestrator (Single Source of Truth)
+  readonly orchestrator = inject(TastingOrchestratorService);
 
-  // Tasting data
-  tasting = this.tastingStore.getTastingById(() => this.tastingIdParam() ?? '');
+  // Auto-save (pour afficher le status dans le header)
+  readonly autoSave = inject(TastingAutoSaveService);
 
-  // UI state
-  currentPhase = signal<'quick' | 'finale' | 'confirmation'>('quick');
-  saveStatus = signal<string>('');
-  isNew = computed(() => !this.tastingIdParam());
+  // Scroll service (pour IntersectionObserver)
+  readonly #scroll = inject(TastingScrollService);
 
-  // Tasting data (temporary until store integration)
-  private quickData = signal<any>(null);
-  private finaleData = signal<any>(null);
-
-  ngOnInit(): void {
-    // Get tasting ID from route params
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id && id !== 'new') {
-      this.tastingIdParam.set(id);
-    }
-
-    // TODO: Create draft tasting if new
-    // TODO: Load existing tasting if ID provided
+  constructor() {
+    // Synchroniser la phase courante avec le scroll
+    effect(() => {
+      const phaseFromScroll = this.#scroll.currentPhaseFromScroll();
+      this.orchestrator.currentPhase.set(phaseFromScroll);
+    });
   }
 
-  handleQuickDataChange(data: any): void {
-    this.quickData.set(data);
-    // TODO: Auto-save to draft tasting
-    this.saveStatus.set('Sauvegardé');
+  async ngOnInit(): Promise<void> {
+    const id = this.#route.snapshot.paramMap.get('id');
+    const cigarId = this.#route.snapshot.queryParamMap.get('cigarId');
+    const eventId = this.#route.snapshot.queryParamMap.get('eventId');
+
+    // Orchestrator gère tout (contexte, auto-complete, création)
+    await this.orchestrator.createOrLoadDraft(
+      id && id !== 'new' ? id : cigarId,
+      eventId
+    );
+
+    // Setup IntersectionObserver pour détecter la phase active via scroll
+    // Délai pour s'assurer que le DOM est rendu
+    setTimeout(() => {
+      this.#scroll.setupScrollObserver();
+    }, 100);
   }
 
-  handleFinaleDataChange(data: any): void {
-    this.finaleData.set(data);
-    // TODO: Auto-save to draft tasting
-    this.saveStatus.set('Sauvegardé');
+  // ==================== Data Change Handlers ====================
+
+  async handleQuickDataChange(data: any): Promise<void> {
+    await this.orchestrator.updateQuickData({
+      moment: data.moment,
+      situation: data.situation,
+      pairing: data.pairing,
+      pairingNote: data.pairingNote || undefined,
+      location: data.location || undefined,
+      cigarId: data.cigar || undefined,
+    });
   }
 
-  goToQuick(): void {
-    this.currentPhase.set('quick');
+  handlePresentationDataChange(data: {
+    wrapperAspect: CapeAspect[];
+    wrapperColor: CapeColor | null;
+    touch: CapeTouch[];
+  }): void {
+    this.orchestrator.updateObservation('presentation', {
+      presentation: {
+        wrapperAspect: data.wrapperAspect,
+        wrapperColor: data.wrapperColor,
+        touch: data.touch,
+      },
+    });
   }
 
-  goToFinale(): void {
-    this.currentPhase.set('finale');
+  handleFinaleDataChange(data: { rating: number; comment: string }): void {
+    this.orchestrator.updateFinaleData(data);
   }
 
-  async completeTasting(): Promise<void> {
-    const finale = this.finaleData();
-    if (!finale || finale.rating === 0) {
-      alert('Veuillez donner une note avant de terminer');
-      return;
-    }
+  // ==================== Timeline & SmartBar Handlers ====================
 
-    // TODO: Call completeTasting mutation
-    // For now, just show confirmation
-    this.saveStatus.set('Terminé');
-    this.currentPhase.set('confirmation');
+  /**
+   * Timeline: Phase clicked
+   * Scroll to the selected phase
+   */
+  handleTimelinePhaseClick(phase: string): void {
+    this.orchestrator.scrollToPhase(`phase-${phase.replace('_', '-')}`);
   }
 
-  viewTasting(): void {
-    const id = this.tastingIdParam();
-    if (id) {
-      // TODO: Navigate to tasting detail view
-      this.router.navigate(['/tasting', id]);
-    } else {
-      this.close();
-    }
+  /**
+   * SmartBar: Scroll to section (Le Verdict)
+   */
+  handleSmartBarScroll(sectionId: string): void {
+    this.orchestrator.scrollToPhase(sectionId);
   }
 
-  close(): void {
-    this.router.navigate(['/dashboard']);
+  /**
+   * SmartBar: Next action (contextual selon la phase)
+   */
+  async handleSmartBarNext(): Promise<void> {
+    await this.orchestrator.handleNextAction();
   }
 
-  handleBack(): void {
-    const phase = this.currentPhase();
+  // ==================== Draft Confirmation Handlers ====================
 
-    if (phase === 'confirmation') {
-      this.close();
-      return;
-    }
+  /**
+   * Continuer le draft existant
+   */
+  async handleContinueDraft(): Promise<void> {
+    await this.orchestrator.continueDraft();
+  }
 
-    if (phase === 'finale') {
-      this.currentPhase.set('quick');
-      return;
-    }
+  /**
+   * Créer un nouveau tasting (supprime le draft existant)
+   */
+  async handleNewTasting(): Promise<void> {
+    const cigarId = this.#route.snapshot.queryParamMap.get('cigarId');
+    const eventId = this.#route.snapshot.queryParamMap.get('eventId');
+    await this.orchestrator.createNewAndDeleteDraft(cigarId, eventId);
+  }
 
-    // Phase quick: confirm exit if draft not completed
-    if (
-      confirm(
-        'Voulez-vous vraiment quitter ? Votre dégustation sera sauvegardée en brouillon.'
-      )
-    ) {
-      this.router.navigate(['/dashboard']);
-    }
+  // ==================== Cleanup ====================
+
+  async ngOnDestroy(): Promise<void> {
+    // Cleanup observer
+    this.#scroll.destroyScrollObserver();
+
+    // Flush pending saves
+    await this.orchestrator.flush();
   }
 }

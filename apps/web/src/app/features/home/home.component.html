@@ -40,12 +40,11 @@
       (clicked)="onSearchOpen()"
     />
 
-    <!-- 3. Tasting (modal avec choix action) -->
+    <!-- 3. Tasting (navigation vers liste) -->
     <ui-desktop-top-tab-item
       label="Dégustation"
-      [route]="null"
+      route="/tastings"
       icon="flame"
-      (clicked)="onFabMenuToggle()"
     />
 
     <!-- 4. Cave (prochainement) -->
@@ -97,7 +96,7 @@
       (clicked)="onSearchOpen()"
     />
 
-    <!-- 3. Tasting (modal avec choix action) -->
+    <!-- 3. Tasting (menu FAB comme desktop) -->
     <ui-bottom-tab-item
       icon="flame"
       label="Créer"
@@ -121,9 +120,11 @@
     />
   </ui-bottom-tab-bar>
 
-  <!-- Desktop FAB Menu - Quick Actions (≥ 768px) -->
+  <!-- FAB Menu - Quick Actions (Mobile + Desktop) -->
+  <!-- Mobile: Menu items only (button hidden via CSS) -->
+  <!-- Desktop: Full FAB with button -->
   <ui-fab-menu
-    class="hidden md:block"
+    class="[&>button]:hidden md:[&>button]:flex"
     [isOpen]="fabMenuOpen()"
     [items]="fabMenuItems()"
     (toggle)="onFabMenuToggle()"

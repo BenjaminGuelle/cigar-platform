@@ -51,7 +51,18 @@ export type IconName =
   | 'check'
   | 'check-circle'
   | 'alert-circle'
-  | 'info';
+  | 'info'
+  // Tasting - Pairing
+  | 'coffee'
+  | 'cup-soda'
+  | 'wine'
+  | 'beer'
+  | 'droplet'
+  | 'circle-help'
+  // Tasting - Situation
+  | 'sun'
+  | 'glass-water'
+  | 'moon';
 
 /**
  * Icon Directive

@@ -216,39 +216,42 @@ export type TastingPhase = typeof TASTING_PHASES[number]['id'];
 
 // ============================================
 // PHASE 1 (QUICK) - Moment de la journée
+// API-aligned (uppercase) - Single source of truth
 // ============================================
 export const TASTING_MOMENTS = [
-  { id: 'morning', label: 'Matin' },
-  { id: 'afternoon', label: 'Après-midi' },
-  { id: 'evening', label: 'Soir' },
+  { id: 'MATIN', label: 'Matin' },
+  { id: 'APRES_MIDI', label: 'Après-midi' },
+  { id: 'SOIR', label: 'Soir' },
 ] as const;
 
 export type TastingMoment = typeof TASTING_MOMENTS[number]['id'];
 
 // ============================================
 // PHASE 1 (QUICK) - Situation
+// API-aligned (uppercase) - Single source of truth
 // ============================================
 export const TASTING_SITUATIONS = [
-  { id: 'aperitif', label: 'Apéritif' },
-  { id: 'cocktail', label: 'Cocktail' },
-  { id: 'digestif', label: 'Digestif' },
+  { id: 'APERITIF', label: 'Apéritif' },
+  { id: 'COCKTAIL', label: 'Cocktail' },
+  { id: 'DIGESTIF', label: 'Digestif' },
 ] as const;
 
 export type TastingSituation = typeof TASTING_SITUATIONS[number]['id'];
 
 // ============================================
 // PHASE 1 (QUICK) - Accompagnement (Pairing)
+// API-aligned (uppercase) - Single source of truth
 // ============================================
 export const PAIRING_TYPES = [
-  { id: 'whisky', label: 'Whisky' },
-  { id: 'rum', label: 'Rhum' },
-  { id: 'cognac', label: 'Cognac' },
-  { id: 'coffee', label: 'Café' },
-  { id: 'tea', label: 'Thé' },
-  { id: 'water', label: 'Eau' },
-  { id: 'wine', label: 'Vin' },
-  { id: 'beer', label: 'Bière' },
-  { id: 'other', label: 'Autre' },
+  { id: 'WHISKY', label: 'Whisky' },
+  { id: 'RHUM', label: 'Rhum' },
+  { id: 'COGNAC', label: 'Cognac' },
+  { id: 'CAFE', label: 'Café' },
+  { id: 'THE', label: 'Thé' },
+  { id: 'EAU', label: 'Eau' },
+  { id: 'VIN', label: 'Vin' },
+  { id: 'BIERE', label: 'Bière' },
+  { id: 'AUTRE', label: 'Autre' },
 ] as const;
 
 export type PairingType = typeof PAIRING_TYPES[number]['id'];

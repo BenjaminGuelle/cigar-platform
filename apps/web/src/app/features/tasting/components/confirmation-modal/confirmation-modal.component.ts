@@ -1,175 +1,82 @@
-import { Component, input, output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, output } from '@angular/core';
+import { ModalComponent, ButtonComponent, IconDirective } from '@cigar-platform/shared/ui';
 
 /**
  * Confirmation Modal Component
  * Displayed after successfully completing a tasting
  *
  * Shows:
- * - Success message
+ * - Success message with gold theme
  * - View tasting button
- * - Share button (disabled with "Bientôt" badge for V1)
+ * - Share button (coming soon)
  * - Close button
  */
 @Component({
   selector: 'app-confirmation-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [ModalComponent, ButtonComponent, IconDirective],
   template: `
-    <div class="confirmation-modal">
-      <div class="modal-content">
-        <!-- Success Icon -->
-        <div class="success-icon">
-          <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-            <circle cx="32" cy="32" r="32" fill="var(--color-success-bg)" />
-            <path
-              d="M20 32L28 40L44 24"
-              stroke="var(--color-success)"
-              stroke-width="4"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </div>
-
-        <!-- Title & Message -->
-        <div class="modal-header">
-          <h2>Dégustation terminée !</h2>
-          <p>Votre expérience a été enregistrée avec succès.</p>
-        </div>
-
-        <!-- Actions -->
-        <div class="modal-actions">
-          <button class="btn btn-primary" (click)="viewTasting.emit()">
-            Voir ma dégustation
-          </button>
-
-          <button class="btn btn-share" disabled>
-            📤 Partager
-            <span class="badge-soon">Bientôt</span>
-          </button>
-
-          <button class="btn btn-secondary" (click)="close.emit()">
-            Fermer
-          </button>
+    <ui-modal
+      [isOpen]="true"
+      variant="dialog"
+      size="sm"
+      desktopPosition="centered"
+      [showCloseButton]="false"
+      (close)="close.emit()"
+    >
+      <!-- Success Icon -->
+      <div class="flex justify-center mb-6">
+        <div class="relative">
+          <!-- Circle background with pulse animation -->
+          <div class="absolute inset-0 rounded-full bg-gold-500/20 animate-ping"></div>
+          <div class="relative w-20 h-20 rounded-full bg-gold-500/10 flex items-center justify-center border-2 border-gold-500">
+            <i name="check" class="w-10 h-10 text-gold-500"></i>
+          </div>
         </div>
       </div>
-    </div>
+
+      <!-- Title & Message -->
+      <div class="text-center mb-8">
+        <h2 class="text-2xl font-display text-gold-500 mb-3">
+          Rituel Scellé
+        </h2>
+        <p class="text-smoke-200 leading-relaxed">
+          Votre dégustation a été immortalisée avec succès.
+        </p>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex flex-col gap-3">
+        <ui-button
+          variant="primary"
+          [fullWidth]="true"
+          (clicked)="viewTasting.emit()"
+        >
+          Voir ma dégustation
+        </ui-button>
+
+        <!-- Share button (coming soon) -->
+        <ui-button
+          variant="outline"
+          [fullWidth]="true"
+          [disabled]="true"
+        >
+          <span class="flex items-center justify-center gap-2">
+            <span>Partager</span>
+            <span class="text-xs text-gold-500 font-semibold">(Bientôt)</span>
+          </span>
+        </ui-button>
+
+        <ui-button
+          variant="ghost"
+          [fullWidth]="true"
+          (clicked)="close.emit()"
+        >
+          Fermer
+        </ui-button>
+      </div>
+    </ui-modal>
   `,
-  styles: [
-    `
-      .confirmation-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 2000;
-        padding: 1rem;
-      }
-
-      .modal-content {
-        background: var(--color-surface);
-        border-radius: 16px;
-        padding: 2rem;
-        max-width: 400px;
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 2rem;
-      }
-
-      .success-icon {
-        animation: scaleIn 0.3s ease-out;
-      }
-
-      @keyframes scaleIn {
-        from {
-          transform: scale(0);
-        }
-        to {
-          transform: scale(1);
-        }
-      }
-
-      .modal-header {
-        text-align: center;
-      }
-
-      .modal-header h2 {
-        margin: 0 0 0.5rem;
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: var(--color-text-primary);
-      }
-
-      .modal-header p {
-        margin: 0;
-        font-size: 1rem;
-        color: var(--color-text-secondary);
-      }
-
-      .modal-actions {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-        width: 100%;
-      }
-
-      .btn {
-        padding: 0.875rem 1.5rem;
-        border: none;
-        border-radius: 8px;
-        font-size: 1rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
-        position: relative;
-      }
-
-      .btn-primary {
-        background: var(--color-primary);
-        color: white;
-      }
-
-      .btn-primary:hover {
-        opacity: 0.9;
-      }
-
-      .btn-share {
-        background: var(--color-surface-secondary);
-        color: var(--color-text-tertiary);
-        cursor: not-allowed;
-        opacity: 0.6;
-      }
-
-      .badge-soon {
-        position: absolute;
-        top: -8px;
-        right: -8px;
-        padding: 0.25rem 0.5rem;
-        background: var(--color-warning);
-        color: white;
-        font-size: 0.75rem;
-        border-radius: 12px;
-      }
-
-      .btn-secondary {
-        background: transparent;
-        color: var(--color-text-secondary);
-        border: 1px solid var(--color-border);
-      }
-
-      .btn-secondary:hover {
-        background: var(--color-hover);
-      }
-    `,
-  ],
 })
 export class ConfirmationModalComponent {
   // Outputs

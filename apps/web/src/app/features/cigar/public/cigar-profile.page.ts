@@ -1,6 +1,6 @@
 import { Component, computed, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs/operators';
 import {
@@ -43,6 +43,7 @@ import { injectCigarStore } from '../../../core/stores/cigar.store';
 })
 export class CigarProfilePage {
   #route = inject(ActivatedRoute);
+  #router = inject(Router);
   #cigarStore = injectCigarStore();
 
   // Route params (toSignal pattern - no subscribe)
@@ -88,4 +89,16 @@ export class CigarProfilePage {
   readonly dimensions = computed(() => null as string | null);
   readonly averageRating = computed(() => 0);
   readonly reviewCount = computed(() => 0);
+
+  /**
+   * Navigate to tasting page with pre-selected cigar
+   */
+  startTasting(): void {
+    const cigar = this.cigar();
+    if (!cigar?.id) return;
+
+    void this.#router.navigate(['/tasting', 'new'], {
+      queryParams: { cigarId: cigar.id },
+    });
+  }
 }

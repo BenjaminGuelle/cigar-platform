@@ -746,3 +746,91 @@ Un bouton "Partager" est affiché dans la confirmation modal mais désactivé :
 - Valoriser la profondeur sans pénaliser les utilisateurs pressés
 - Préparer naturellement la monétisation future
 - Maintenir une expérience fluide et respectueuse
+
+TEXT DE LA FEATURES : 
+1. Le Header (Titre de la Page):
+Titre principal (Doré + font display) : Le Rituel 
+Sous-titre (Gris) : Chronique d'un instant sacré
+2. Phase 1 : L'installation (Context)
+      Titre : L'Entrée en Matière
+      Accroche : "Le décor est posé, le temps s'arrête..."
+      Labels revisités :
+      Lieu : Le Refuge
+      Accompagnement : Les Noces (L'alliance du cigare et de la boisson)
+3. Les Trois Tercios (Le cœur de l'expertise)
+      On utilise les termes officiels, mais avec un adjectif qui donne du relief.
+      1er tiers : Le Premier Tercio : L'Éveil (Foin)
+      Texte : "La fumée est légère, les premiers arômes se dessinent."
+      2ème tiers : Le Deuxième Tercio : La Plénitude (Divin)
+      Texte : "Le cigare est à son apogée. L'équilibre est parfait."
+      3ème tiers : Le Dernier Tercio : L'Intensité (Purin)
+      Texte : "Le caractère s'affirme. La vitole livre ses derniers secrets."
+4. Phase Finale : Le Verdict (Conclusion)
+   Titre : Le Dernier Mot
+   Accroche : "Le feu s'éteint, l'expérience est gravée."
+   Note (Bagues) : Le Sceau de l'Excellence
+   Commentaire : Notes Personnelles
+# Update UX Tasting — Vision "Journal de Dégustation"
+
+Lis `docs/features/TASTING.md` — il contient toute la spec mise à jour.
+
+## Résumé des décisions UX validées
+
+### Layout
+- **Scroll vertical unique** (pas de pages séparées)
+- **Scroll snap** avec `proximity` (pas `mandatory`)
+- **Ligne de vie dorée** (SVG vertical) reliant les sections
+- **Header sticky** : nom cigare + timer optionnel
+
+### Flow après Phase 1 — Deux CTAs
+```
+Phase 1 validée
+     │
+     ├── CTA A: "Passer au verdict"
+     │   → Scroll direct vers Phase Finale
+     │   → Sections observations JAMAIS affichées dans le DOM
+     │
+     └── CTA B: "Approfondir la chronique"
+         │
+         ├── Si Premium → Affiche sections + scroll vers Présentation
+         │
+         └── Si Free → Bottom sheet "Mode Découverte"
+```
+
+### Mode Découverte (User Free clique CTA B)
+
+1. Bottom sheet s'affiche :
+    - Titre : "Mode Découverte"
+    - Message : "Ces analyses ne seront pas sauvegardées"
+    - CTA : "J'ai compris, explorer →"
+    - CTA secondaire : "Passer au verdict"
+
+2. Si "J'ai compris" → Sections affichées, user peut explorer
+3. À la sauvegarde → **Seuls Phase 1 + Verdict persistés en DB**
+4. Toast post-save : "Découvrir l'offre complète →"
+
+### Sauvegarde en DB
+
+| User | Choix | Observations sauvegardées |
+|------|-------|---------------------------|
+| Free | CTA A (Verdict) | ❌ Non |
+| Free | CTA B (Découverte) | ❌ Non (local only) |
+| Premium | CTA A (Verdict) | ❌ Non |
+| Premium | CTA B (Chronique) | ✅ Oui (auto-save) |
+
+### Nommage des sections
+
+- Phase 1 : "L'Entrée en Matière"
+- Premier Tercio : "L'Éveil" (Foin)
+- Deuxième Tercio : "La Plénitude" (Divin)
+- Dernier Tercio : "L'Intensité" (Purin)
+- Phase Finale : "Le Dernier Mot"
+
+### Clés JSON en ANGLAIS
+
+Dans le schéma Observation, toutes les clés sont en anglais :
+- `firstThird`, `secondThird`, `finalThird` (pas foin/divin/purin)
+- `coldDraw` (pas fumageACru)
+- `wrapperAspect`, `wrapperColor`, `touch`
+- `tastes`, `aromas` (pas gouts/aromes)
+- `draw`, `ashNature`, `balance`, `power`, `variety`, `mouthFeel`, `persistence`

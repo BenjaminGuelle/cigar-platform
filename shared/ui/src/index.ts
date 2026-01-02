@@ -17,6 +17,7 @@ export * from './lib/components/member-card';
 export * from './lib/components/modal';
 export * from './lib/components/page-header';
 export * from './lib/components/page-section';
+export * from './lib/components/rating-bands';
 export * from './lib/components/search-result-group';
 export * from './lib/components/search-result-item';
 export * from './lib/components/select';

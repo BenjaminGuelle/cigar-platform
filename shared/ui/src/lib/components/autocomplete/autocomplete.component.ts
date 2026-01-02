@@ -26,6 +26,7 @@ export interface AutocompleteOption {
   label: string;
   metadata?: string; // e.g., "Cuba" for brand country
   logoUrl?: string; // e.g., brand logo URL
+  avatarText?: string; // e.g., "C" for cigar initial (fallback if no logoUrl)
   disabled?: boolean;
 }
 
@@ -125,6 +126,7 @@ export class AutocompleteComponent {
   // Outputs
   readonly search = output<string>();
   readonly create = output<string>();
+  readonly valueSelected = output<string>(); // Emits the selected value (UUID)
 
   // Internal state
   readonly #forceShowError: WritableSignal<boolean> = signal<boolean>(false);
@@ -134,6 +136,7 @@ export class AutocompleteComponent {
   readonly #isOpen: WritableSignal<boolean> = signal<boolean>(false);
   readonly #highlightedIndex: WritableSignal<number> = signal<number>(-1);
   readonly #searchQuery: WritableSignal<string> = signal<string>('');
+  readonly #selectedValue: WritableSignal<string | null> = signal<string | null>(null); // Track selected UUID
 
   // Icons
   readonly ChevronDown = ChevronDown;
@@ -267,14 +270,20 @@ export class AutocompleteComponent {
 
   onInput(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
-    this.control().setValue(value);
+    this.control().setValue(value); // Update FormControl for input display
     this.#isOpen.set(true);
+    // Clear selected value when user starts typing again
+    this.#selectedValue.set(null);
   }
 
   selectOption(option: AutocompleteOption): void {
     if (option.disabled) return;
+    // Store label in FormControl for display
     this.control().setValue(option.label);
     this.control().markAsTouched();
+    // Track the selected value (UUID) separately and emit it
+    this.#selectedValue.set(option.value);
+    this.valueSelected.emit(option.value);
     this.close();
   }
 

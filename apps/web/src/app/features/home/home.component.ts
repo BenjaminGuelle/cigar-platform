@@ -77,7 +77,7 @@ export class HomeComponent {
   readonly comingSoonModalOpen: WritableSignal<boolean> = signal<boolean>(false);
   readonly comingSoonFeature: WritableSignal<string> = signal<string>('');
 
-  // FAB menu state
+  // FAB menu state (Mobile + Desktop)
   readonly fabMenuOpen: WritableSignal<boolean> = signal<boolean>(false);
   readonly fabMenuItems: Signal<FabMenuItem[]> = computed(() => {
     const items: FabMenuItem[] = [
@@ -170,7 +170,7 @@ export class HomeComponent {
   }
 
   onFabMenuToggle(): void {
-    // Close search modal when opening FAB menu (mobile bottom tab)
+    // Close search modal when opening FAB menu
     this.#searchModal.close();
     this.fabMenuOpen.update(open => !open);
   }
@@ -181,7 +181,8 @@ export class HomeComponent {
 
   onFabMenuItemClick(action: string): void {
     if (action === 'create-evaluation') {
-      // TODO: Navigate to /evaluations/new with context
+      // Navigate to tasting page (context auto-détecté)
+      void this.#router.navigate(['/tasting', 'new']);
     } else if (action === 'create-event') {
       this.createContentModalOpen.set(true);
     }

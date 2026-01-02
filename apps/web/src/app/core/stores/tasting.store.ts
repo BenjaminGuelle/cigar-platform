@@ -59,6 +59,12 @@ export interface TastingStore {
   getTastingsByClub: (clubIdGetter: () => string) => Query<TastingResponseDto[]>;
 
   /**
+   * Get current user's draft tastings (status = IN_PROGRESS)
+   * Optionally filtered by cigarId
+   */
+  getDrafts: (cigarIdGetter?: () => string) => Query<TastingResponseDto[]>;
+
+  /**
    * Create tasting mutation (DRAFT)
    */
   createTasting: Mutation<TastingResponseDto, CreateTastingDto>;
@@ -158,6 +164,28 @@ export function injectTastingStore(): TastingStore {
     }));
   };
 
+  /**
+   * Get current user's draft tastings (status = IN_PROGRESS)
+   * Optionally filtered by cigarId
+   */
+  const getDrafts = (cigarIdGetter?: () => string): Query<TastingResponseDto[]> => {
+    return injectQuery<TastingResponseDto[]>(() => ({
+      queryKey: ['tastings', 'drafts', cigarIdGetter?.() ?? 'all'],
+      queryFn: async () => {
+        const response = await tastingsService.tastingControllerFindMine({
+          limit: 100,
+          page: 1,
+          status: 'DRAFT',
+          cigarId: cigarIdGetter?.(),
+          sortBy: 'date',
+          order: 'desc',
+        });
+        return response?.data ?? [];
+      },
+      staleTime: 1 * 60 * 1000, // 1 minute (drafts change frequently)
+    }));
+  };
+
   // Mutation: Create Tasting (DRAFT)
   const createTasting = injectMutation<TastingResponseDto, CreateTastingDto>({
     mutationFn: (data: CreateTastingDto) => tastingsService.tastingControllerCreate(data),
@@ -235,6 +263,7 @@ export function injectTastingStore(): TastingStore {
     getTastingById,
     getTastingsByCigar,
     getTastingsByClub,
+    getDrafts,
     createTasting,
     updateTasting,
     completeTasting,
