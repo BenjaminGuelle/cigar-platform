@@ -1,0 +1,149 @@
+<div class="flex flex-col gap-8">
+  <!-- Header Recap (construit progressivement) -->
+  @if (currentStep() !== 'tastes') {
+    <div class="header-summary flex flex-wrap items-center justify-center gap-3 text-sm text-smoke-400 pb-4 border-b border-zinc-800">
+      @if (tastesValue().length > 0) {
+        <div class="flex items-center gap-2">
+          <i name="check" class="w-4 h-4 text-gold-500"></i>
+          <span>{{ tastesValue().length }} goût(s)</span>
+        </div>
+      }
+      @if (aromasValue().length > 0) {
+        <div class="flex items-center gap-2">
+          <i name="check" class="w-4 h-4 text-gold-500"></i>
+          <span>{{ aromasValue().length }} arôme(s)</span>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Question Active -->
+  <div class="flex flex-col gap-6 items-center">
+    @switch (currentStep()) {
+      <!-- Step 1: Tastes -->
+      @case ('tastes') {
+        <div class="question-step flex flex-col gap-8 items-center w-full max-w-2xl">
+          <p class="text-center text-lg md:text-xl text-smoke-300 italic max-w-md font-light tracking-wide">
+            Le souffle révèle les premières promesses...
+          </p>
+
+          <div class="flex flex-col gap-4 w-full">
+            <h3 class="text-center text-xl font-display text-gold-500 tracking-wide">
+              Goûts perçus en bouche
+            </h3>
+            <app-flavor-picker
+              type="tastes"
+              label="Sélectionnez les goûts"
+              [value]="tastesValue()"
+              (valueChange)="handleTastesChange($event)"
+            />
+          </div>
+
+          @if (tastesValue().length > 0) {
+            <ui-button
+              icon="arrow-right"
+              iconPos="right"
+              customClass="!rounded-full"
+              (clicked)="goToAromas()"
+            >
+              Continuer
+            </ui-button>
+          }
+        </div>
+      }
+
+      <!-- Step 2: Aromas -->
+      @case ('aromas') {
+        <div class="question-step flex flex-col gap-8 items-center w-full max-w-2xl">
+          <p class="text-center text-lg md:text-xl text-smoke-300 italic max-w-md font-light tracking-wide">
+            Au nez, quelles notes se dégagent ?
+          </p>
+
+          <div class="flex flex-col gap-4 w-full">
+            <h3 class="text-center text-xl font-display text-gold-500 tracking-wide">
+              Arômes perçus au nez
+            </h3>
+            <app-flavor-picker
+              type="aromas"
+              label="Sélectionnez les arômes"
+              [value]="aromasValue()"
+              (valueChange)="handleAromasChange($event)"
+            />
+          </div>
+
+          @if (aromasValue().length > 0) {
+            <ui-button
+              icon="arrow-right"
+              iconPos="right"
+              customClass="!rounded-full"
+              (clicked)="goToDone()"
+            >
+              Continuer
+            </ui-button>
+          }
+        </div>
+      }
+
+      <!-- Step 3: Done (Recap) -->
+      @case ('done') {
+        <div class="question-step flex flex-col items-center gap-6 w-full max-w-2xl">
+          <!-- Titre -->
+          <div class="flex items-center gap-2 text-gold-500">
+            <i name="check" class="w-6 h-6"></i>
+            <span class="font-display text-xl">Fumage à cru capturé</span>
+          </div>
+
+          <!-- Recap Card -->
+          <div class="w-full bg-zinc-900/50 rounded-xl border border-zinc-800 p-6 space-y-4">
+            <!-- Tastes -->
+            @if (tastesValue().length > 0) {
+              <div class="flex flex-col gap-2">
+                <span class="text-xs text-smoke-500 uppercase tracking-wide">Goûts ({{ tastesValue().length }})</span>
+                <div class="flex flex-wrap gap-2">
+                  @for (taste of tastesValue(); track taste.id) {
+                    <span class="px-3 py-1 text-xs bg-gold-500/10 text-gold-500 rounded-full border border-gold-500/20">
+                      {{ taste.id }} ({{ taste.intensity }}/3)
+                    </span>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Aromas -->
+            @if (aromasValue().length > 0) {
+              <div class="flex flex-col gap-2 pt-2 border-t border-zinc-800">
+                <span class="text-xs text-smoke-500 uppercase tracking-wide">Arômes ({{ aromasValue().length }})</span>
+                <div class="flex flex-wrap gap-2">
+                  @for (aroma of aromasValue(); track aroma.id) {
+                    <span class="px-3 py-1 text-xs bg-gold-500/10 text-gold-500 rounded-full border border-gold-500/20">
+                      {{ aroma.id }} ({{ aroma.intensity }}/3)
+                    </span>
+                  }
+                </div>
+              </div>
+            }
+
+          </div>
+
+          <!-- Accroche poétique -->
+          <p class="text-center text-smoke-400 italic text-sm px-4">
+            Les premières impressions sont gravées...
+          </p>
+
+          <!-- Bouton final -->
+          <ui-button
+            variant="primary"
+            size="lg"
+            fullWidth
+            icon="arrow-right"
+            iconPos="right"
+            customClass="!rounded-full !text-lg"
+            (clicked)="done.emit()"
+          >
+            Poursuivre
+          </ui-button>
+        </div>
+      }
+    }
+  </div>
+</div>

@@ -59,17 +59,18 @@ interface TimelinePhase {
   template: `
     <!-- Mobile: Horizontal Timeline (sticky top) -->
     <div class="md:hidden sticky top-[73px] z-[80] bg-zinc-900 border-b border-zinc-800 px-6 py-4">
-      <!-- Dots avec ligne de connexion -->
-      <div class="relative flex items-center justify-center gap-3 mb-4">
-        <!-- Ligne de fond (grise) -->
-        <div class="absolute inset-x-0 h-0.5 bg-zinc-700" style="top: 50%; transform: translateY(-50%);"></div>
-
-        <!-- Ligne de progression (gold) -->
-        <div
-          class="absolute left-0 h-0.5 bg-gold-500 transition-all duration-300 ease-out"
-          [style.width.%]="progressPercentage()"
-          style="top: 50%; transform: translateY(-50%);"
-        ></div>
+      <!-- Dots avec ligne de connexion - justify-between pour répartition uniforme -->
+      <div class="relative flex items-center justify-between mb-4">
+        <!-- Wrapper pour les lignes (même zone que les dots) -->
+        <div class="absolute inset-x-0 top-1/2 -translate-y-1/2">
+          <!-- Ligne de fond (grise) -->
+          <div class="absolute inset-x-0 h-0.5 bg-zinc-700"></div>
+          <!-- Ligne de progression (gold) - synchronisée avec les dots -->
+          <div
+            class="absolute left-0 h-0.5 rounded-full bg-gradient-to-r from-gold-600 via-gold-500 to-gold-400 bar-glow transition-all duration-300 ease-out"
+            [style.width.%]="progressPercentage()"
+          ></div>
+        </div>
 
         <!-- Dots -->
         @for (phase of timelinePhases(); track phase.id) {
@@ -79,7 +80,7 @@ interface TimelinePhase {
             [disabled]="phase.state === 'locked'"
             [class]="getPhaseClasses(phase)"
             [title]="phase.label"
-            class="relative z-10"
+            class="relative z-10 flex items-center justify-center"
           >
             <div [class]="getDotClasses(phase)"></div>
           </button>
@@ -87,11 +88,11 @@ interface TimelinePhase {
       </div>
 
       <!-- Current Phase Label (Grid overlay for crossfade) -->
-      <div class="text-center relative h-8">
+      <div class="text-center relative h-10">
         <div class="grid grid-cols-1 grid-rows-1">
           @for (phaseId of getPhaseOrder(); track phaseId) {
             <div
-              class="col-start-1 row-start-1 text-base font-display text-gold-500 tracking-wide transition-all duration-300 ease-out"
+              class="col-start-1 row-start-1 text-lg font-display text-gold-500 tracking-wide transition-all duration-300 ease-out"
               [class.opacity-0]="currentPhase() !== phaseId"
               [class.translate-y-[-10px]]="currentPhase() !== phaseId && currentPhaseIndex() > getPhaseOrder().indexOf(phaseId)"
               [class.translate-y-[10px]]="currentPhase() !== phaseId && currentPhaseIndex() < getPhaseOrder().indexOf(phaseId)"
@@ -105,17 +106,19 @@ interface TimelinePhase {
     </div>
 
     <!-- Desktop: Vertical Timeline (fixed left) -->
-    <div class="hidden md:block fixed left-0 top-[73px] bottom-0 w-20 bg-zinc-900 border-r border-zinc-800 py-8 z-[80]">
-      <div class="relative flex flex-col items-center gap-6">
-        <!-- Ligne verticale de fond (grise) -->
-        <div class="absolute inset-y-0 w-0.5 bg-zinc-700" style="left: 50%; transform: translateX(-50%);"></div>
-
-        <!-- Ligne de progression verticale (gold) -->
-        <div
-          class="absolute top-0 w-0.5 bg-gold-500 transition-all duration-300 ease-out"
-          [style.height.%]="progressPercentage()"
-          style="left: 50%; transform: translateX(-50%);"
-        ></div>
+    <div class="hidden md:block fixed left-0 top-[73px] bottom-0 w-20 bg-zinc-900 border-r border-zinc-800 z-[80]">
+      <!-- justify-between avec padding vertical pour répartition uniforme -->
+      <div class="relative h-full flex flex-col items-center justify-between py-8">
+        <!-- Wrapper pour les lignes verticales (même zone que les dots) -->
+        <div class="absolute inset-y-8 left-1/2 -translate-x-1/2 w-0.5">
+          <!-- Ligne de fond (grise) -->
+          <div class="absolute inset-y-0 w-full bg-zinc-700"></div>
+          <!-- Ligne de progression (gold) - synchronisée avec les dots -->
+          <div
+            class="absolute top-0 w-full rounded-full bg-gradient-to-b from-gold-600 via-gold-500 to-gold-400 bar-glow transition-all duration-300 ease-out"
+            [style.height.%]="progressPercentage()"
+          ></div>
+        </div>
 
         <!-- Dots -->
         @for (phase of timelinePhases(); track phase.id) {
@@ -142,6 +145,25 @@ interface TimelinePhase {
   styles: [`
     :host {
       display: contents;
+    }
+
+    /* Pulse subtil sur le dot actif - premium discret */
+    @keyframes pulse-glow {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.3);
+      }
+      50% {
+        box-shadow: 0 0 0 6px rgba(212, 175, 55, 0);
+      }
+    }
+
+    .dot-pulse {
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+
+    /* Glow subtil sur la barre de progression */
+    .bar-glow {
+      box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
     }
   `],
 })
@@ -252,7 +274,8 @@ export class TastingTimelineComponent {
     // Couleur: gold pour les phases actives, sinon states classiques
     let color = 'bg-zinc-800';
     if (phase.state === 'current') {
-      color = 'bg-gold-500 ring-2 ring-gold-500/30';
+      // Pulse subtil sur le dot actif
+      color = 'bg-gold-500 ring-2 ring-gold-500/30 dot-pulse';
     } else if (isActive) {
       color = 'bg-gold-500';
     } else if (phase.state === 'available') {

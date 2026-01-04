@@ -1,0 +1,143 @@
+<div class="flex flex-col gap-8">
+  <!-- Question Active -->
+  <div class="flex flex-col gap-6 items-center">
+    @switch (currentStep()) {
+      <!-- Step 1: Rating -->
+      @case ('rating') {
+        <div class="question-step flex flex-col gap-12 items-center justify-center w-full max-w-md">
+          <!-- Hero Section -->
+          <div class="flex flex-col items-center gap-6 text-center">
+            <p class="text-lg md:text-xl text-smoke-300 italic max-w-md font-light tracking-wide">
+              Le feu s'éteint, l'expérience est gravée.
+            </p>
+          </div>
+
+          <!-- Rating Section -->
+          <div class="flex flex-col items-center gap-6">
+            <h3 class="text-base font-display text-gold-500 tracking-wide">
+              Le Sceau de l'Excellence
+            </h3>
+
+            <ui-rating-bands
+              [value]="finaleForm.controls.rating.value"
+              (valueChange)="handleRatingChange($event)"
+            />
+          </div>
+
+          <!-- Poursuivre button -->
+          @if (finaleForm.controls.rating.value > 0) {
+            <ui-button
+              icon="arrow-right"
+              iconPos="right"
+              customClass="!rounded-full"
+              (clicked)="goToComment()"
+            >
+              Poursuivre
+            </ui-button>
+          }
+        </div>
+      }
+
+      <!-- Step 2: Comment -->
+      @case ('comment') {
+        <div class="question-step flex flex-col gap-6 items-center w-full max-w-2xl">
+          <!-- Rating recap -->
+          <div class="flex items-center gap-3 text-sm text-smoke-400">
+            <i name="check" class="w-4 h-4 text-gold-500"></i>
+            <span>Note : {{ finaleForm.controls.rating.value }}/5</span>
+          </div>
+
+          <!-- Comment Section -->
+          <div class="w-full flex flex-col gap-3">
+            <label class="text-base font-display text-gold-500 tracking-wide text-center">
+              Confidences de fumée
+            </label>
+            <textarea
+              [formControl]="finaleForm.controls.comment"
+              placeholder="Partagez vos impressions..."
+              rows="4"
+              maxlength="1000"
+              class="w-full px-4 py-3 bg-smoke-900/30 text-smoke-200 placeholder:text-smoke-500 border-2 border-smoke-800 rounded-lg focus:border-gold-500/50 focus:ring-2 focus:ring-gold-500/10 focus:outline-none transition-all duration-200 resize-none font-light text-base"
+            ></textarea>
+            @if (finaleForm.controls.comment.value.length > 0) {
+              <p class="text-xs text-smoke-600 text-right">
+                {{ finaleForm.controls.comment.value.length }} / 1000
+              </p>
+            }
+          </div>
+
+          <!-- Actions -->
+          <div class="flex justify-center gap-4 pt-2">
+            <button
+              type="button"
+              (click)="skipComment()"
+              class="text-sm text-smoke-500 italic hover:text-gold-500 transition-colors"
+            >
+              Sauter cette question
+            </button>
+            <ui-button
+              icon="arrow-right"
+              iconPos="right"
+              customClass="!rounded-full"
+              (clicked)="goToDone()"
+            >
+              Poursuivre
+            </ui-button>
+          </div>
+        </div>
+      }
+
+      <!-- Step 3: Done (Récap) -->
+      @case ('done') {
+        <div class="question-step flex flex-col items-center gap-6 w-full max-w-md">
+          <!-- Titre -->
+          <div class="flex items-center gap-2 text-gold-500">
+            <i name="check" class="w-6 h-6"></i>
+            <span class="font-display text-xl">Le Dernier Mot</span>
+          </div>
+
+          <!-- Récap Card -->
+          <div class="w-full bg-zinc-900/50 rounded-xl border border-zinc-800 p-6 space-y-6">
+            <!-- Rating (avec le beau composant) -->
+            <div class="flex flex-col items-center gap-3">
+              <span class="text-sm font-display text-gold-500/80">Votre note</span>
+              <div class="w-full flex justify-center">
+                <ui-rating-bands
+                  [value]="finaleForm.controls.rating.value"
+                  size="sm"
+                />
+              </div>
+            </div>
+
+            <!-- Comment -->
+            @if (finaleForm.controls.comment.value) {
+              <div class="pt-2 border-t border-zinc-800">
+                <p class="text-sm text-smoke-300 italic text-center leading-relaxed line-clamp-3">
+                  "{{ finaleForm.controls.comment.value }}"
+                </p>
+              </div>
+            }
+          </div>
+
+          <!-- Accroche poétique -->
+          <p class="text-center text-smoke-400 italic text-sm px-4">
+            L'expérience est scellée, le rituel s'achève.
+          </p>
+
+          <!-- Bouton final -->
+          <ui-button
+            variant="primary"
+            size="lg"
+            fullWidth
+            [loading]="isSubmitting()"
+            [disabled]="isSubmitting()"
+            customClass="!rounded-full !text-lg"
+            (clicked)="complete.emit()"
+          >
+            Sceller ce rituel
+          </ui-button>
+        </div>
+      }
+    }
+  </div>
+</div>

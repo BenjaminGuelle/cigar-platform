@@ -1,14 +1,11 @@
 import { Component, input, output, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TASTES, AROMAS } from '@cigar-platform/shared/constants';
+import { IconDirective } from '@cigar-platform/shared/ui';
+import type { FlavorTag } from '../../models/tasting-state.model';
 
-/**
- * Flavor Tag with intensity
- */
-export interface FlavorTag {
-  id: string;
-  intensity: 1 | 2 | 3; // Faible / Moyen / Fort
-}
+// Re-export FlavorTag for components that import it from here
+export type { FlavorTag } from '../../models/tasting-state.model';
 
 /**
  * Flavor Picker Component
@@ -26,41 +23,53 @@ export interface FlavorTag {
 @Component({
   selector: 'app-flavor-picker',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, IconDirective],
   template: `
-    <div class="flavor-picker">
+    <div class="flex flex-col gap-3">
       <!-- Header -->
-      <div class="picker-header">
-        <label>{{ label() }}</label>
+      <div class="flex justify-between items-center">
+        <label class="text-sm font-medium" [class]="disabled() ? 'text-smoke-500' : 'text-smoke-300'">
+          {{ label() }}
+        </label>
         @if (showCount()) {
-          <span class="count">{{ selectedCount() }} sélectionné(s)</span>
+          <span class="text-xs text-smoke-500">{{ selectedCount() }} sélectionné(s)</span>
         }
       </div>
 
       <!-- Selected Flavors (Tags) -->
       @if (selectedCount() > 0) {
-        <div class="selected-flavors">
+        <div class="flex flex-col gap-2">
           @for (flavor of selectedFlavors(); track flavor.id) {
-            <div class="flavor-tag">
-              <span class="flavor-name">{{ getFlavorLabel(flavor.id) }}</span>
-              <div class="intensity-selector">
+            <div class="flex items-center gap-3 px-3 py-3 bg-zinc-900 border rounded-lg transition-colors"
+                 [class]="disabled() ? 'border-zinc-800 opacity-60' : 'border-zinc-800'">
+              <span class="flex-1 text-sm" [class]="disabled() ? 'text-smoke-500' : 'text-smoke-200'">
+                {{ getFlavorLabel(flavor.id) }}
+              </span>
+              <div class="flex gap-1">
                 @for (level of intensityLevels; track level) {
                   <button
                     type="button"
-                    class="intensity-btn"
-                    [class.intensity-active]="flavor.intensity >= level"
+                    [disabled]="disabled()"
+                    class="w-6 h-6 flex items-center justify-center transition-transform"
+                    [class]="disabled() ? 'cursor-not-allowed' : 'cursor-pointer'"
                     (click)="setIntensity(flavor.id, level)"
                   >
-                    <span class="intensity-dot"></span>
+                    <span class="w-2 h-2 rounded-full transition-all"
+                          [class]="flavor.intensity >= level
+                            ? (disabled() ? 'bg-gold-500/40' : 'bg-gold-500 scale-110')
+                            : 'bg-zinc-700'">
+                    </span>
                   </button>
                 }
               </div>
               <button
                 type="button"
-                class="remove-btn"
+                [disabled]="disabled()"
+                class="w-6 h-6 flex items-center justify-center transition-colors"
+                [class]="disabled() ? 'text-smoke-600 cursor-not-allowed' : 'text-smoke-500 hover:text-red-500 cursor-pointer'"
                 (click)="removeFlavor(flavor.id)"
               >
-                ✕
+                <i name="x" class="w-4 h-4"></i>
               </button>
             </div>
           }
@@ -70,7 +79,11 @@ export interface FlavorTag {
       <!-- Add Flavor Button -->
       <button
         type="button"
-        class="add-btn"
+        [disabled]="disabled()"
+        class="px-3 py-3 rounded-lg border border-dashed text-sm font-medium transition-colors"
+        [class]="disabled()
+          ? 'border-zinc-800 text-smoke-600 cursor-not-allowed bg-zinc-900/50'
+          : 'border-zinc-800 text-gold-500 hover:bg-zinc-900 cursor-pointer bg-transparent'"
         (click)="togglePicker()"
       >
         {{ pickerOpen() ? '− Fermer' : '+ Ajouter' }}
@@ -78,184 +91,28 @@ export interface FlavorTag {
 
       <!-- Flavor List (when open) -->
       @if (pickerOpen()) {
-        <div class="flavor-list">
+        <div class="flex flex-col gap-1 max-h-75 overflow-y-auto p-2 bg-zinc-900 border border-zinc-800 rounded-lg">
           @for (flavor of availableFlavors(); track flavor.id) {
             <button
               type="button"
-              class="flavor-option"
+              class="flex flex-col items-start gap-1 px-3 py-3 text-left rounded-md transition-colors hover:bg-zinc-800"
               (click)="addFlavor(flavor.id)"
             >
-              <span class="flavor-label">{{ flavor.label }}</span>
+              <span class="text-sm font-medium text-smoke-200">{{ flavor.label }}</span>
               @if (flavor.description) {
-                <span class="flavor-desc">{{ flavor.description }}</span>
+                <span class="text-xs text-smoke-500">{{ flavor.description }}</span>
               }
             </button>
           }
           @if (availableFlavors().length === 0) {
-            <p class="empty-message">Tous les {{ typeLabel() }} ont été sélectionnés</p>
+            <p class="p-4 text-center text-sm text-smoke-500 m-0">
+              Tous les {{ typeLabel() }} ont été sélectionnés
+            </p>
           }
         </div>
       }
     </div>
   `,
-  styles: [
-    `
-      .flavor-picker {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-      }
-
-      .picker-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .picker-header label {
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: var(--color-text-primary);
-      }
-
-      .count {
-        font-size: 0.75rem;
-        color: var(--color-text-secondary);
-      }
-
-      .selected-flavors {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-
-      .flavor-tag {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem;
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: 8px;
-      }
-
-      .flavor-name {
-        flex: 1;
-        font-size: 0.875rem;
-        color: var(--color-text-primary);
-      }
-
-      .intensity-selector {
-        display: flex;
-        gap: 0.25rem;
-      }
-
-      .intensity-btn {
-        padding: 0;
-        width: 24px;
-        height: 24px;
-        border: none;
-        background: transparent;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .intensity-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--color-border);
-        transition: all 0.2s;
-      }
-
-      .intensity-btn.intensity-active .intensity-dot {
-        background: var(--color-primary);
-        transform: scale(1.2);
-      }
-
-      .remove-btn {
-        width: 24px;
-        height: 24px;
-        border: none;
-        background: transparent;
-        color: var(--color-text-tertiary);
-        font-size: 1rem;
-        cursor: pointer;
-        transition: color 0.2s;
-      }
-
-      .remove-btn:hover {
-        color: var(--color-error);
-      }
-
-      .add-btn {
-        padding: 0.75rem;
-        border: 1px dashed var(--color-border);
-        border-radius: 8px;
-        background: var(--color-surface);
-        color: var(--color-primary);
-        font-size: 0.875rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-
-      .add-btn:hover {
-        background: var(--color-hover);
-      }
-
-      .flavor-list {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-        max-height: 300px;
-        overflow-y: auto;
-        padding: 0.5rem;
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: 8px;
-      }
-
-      .flavor-option {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.25rem;
-        padding: 0.75rem;
-        border: none;
-        background: transparent;
-        text-align: left;
-        cursor: pointer;
-        border-radius: 6px;
-        transition: background 0.2s;
-      }
-
-      .flavor-option:hover {
-        background: var(--color-hover);
-      }
-
-      .flavor-label {
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: var(--color-text-primary);
-      }
-
-      .flavor-desc {
-        font-size: 0.75rem;
-        color: var(--color-text-secondary);
-      }
-
-      .empty-message {
-        padding: 1rem;
-        text-align: center;
-        font-size: 0.875rem;
-        color: var(--color-text-secondary);
-        margin: 0;
-      }
-    `,
-  ],
 })
 export class FlavorPickerComponent {
   // Inputs
@@ -263,6 +120,7 @@ export class FlavorPickerComponent {
   label = input<string>('');
   value = input<FlavorTag[]>([]);
   showCount = input<boolean>(true);
+  disabled = input<boolean>(false);
 
   // Outputs
   valueChange = output<FlavorTag[]>();

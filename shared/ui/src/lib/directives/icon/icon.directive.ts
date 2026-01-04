@@ -8,6 +8,7 @@ export type IconName =
   // Navigation
   | 'arrow-left'
   | 'arrow-right'
+  | 'arrow-down'
   | 'chevron-down'
   | 'chevron-left'
   | 'chevron-right'
@@ -52,6 +53,7 @@ export type IconName =
   | 'check-circle'
   | 'alert-circle'
   | 'info'
+  | 'cloud'
   // Tasting - Pairing
   | 'coffee'
   | 'cup-soda'

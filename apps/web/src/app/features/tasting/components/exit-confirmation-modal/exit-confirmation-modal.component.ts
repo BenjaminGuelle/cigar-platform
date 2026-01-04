@@ -1,6 +1,6 @@
 import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ModalComponent } from '@cigar-platform/shared/ui';
+import { ModalComponent, ButtonComponent } from '@cigar-platform/shared/ui';
 
 /**
  * Exit Confirmation Modal Component
@@ -24,7 +24,7 @@ import { ModalComponent } from '@cigar-platform/shared/ui';
 @Component({
   selector: 'app-exit-confirmation-modal',
   standalone: true,
-  imports: [CommonModule, ModalComponent],
+  imports: [CommonModule, ModalComponent, ButtonComponent],
   template: `
     <ui-modal
       [isOpen]="isOpen()"
@@ -47,22 +47,22 @@ import { ModalComponent } from '@cigar-platform/shared/ui';
         <!-- Actions -->
         <div class="flex flex-col gap-3">
           <!-- Quitter -->
-          <button
-            type="button"
-            (click)="confirm.emit()"
-            class="px-4 py-3 bg-transparent border-2 border-zinc-800 text-smoke-300 font-medium rounded-lg hover:border-gold-500/30 transition-colors"
+          <ui-button
+            variant="outline"
+            fullWidth
+            (clicked)="confirm.emit()"
           >
             Quitter
-          </button>
+          </ui-button>
 
           <!-- Continuer -->
-          <button
-            type="button"
-            (click)="cancel.emit()"
-            class="px-4 py-3 bg-gold-500 text-black font-medium rounded-lg hover:bg-gold-400 transition-colors"
+          <ui-button
+            variant="primary"
+            fullWidth
+            (clicked)="cancel.emit()"
           >
             Continuer le Rituel
-          </button>
+          </ui-button>
         </div>
       </div>
     </ui-modal>

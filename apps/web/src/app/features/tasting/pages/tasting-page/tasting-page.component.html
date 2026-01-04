@@ -1,0 +1,192 @@
+<div class="fixed inset-0 bg-zinc-900 z-1000 flex flex-col">
+  <!-- Header Sticky -->
+  <header class="sticky top-0 z-100 flex items-center gap-4 px-6 py-4 border-b border-gold-500/20 bg-smoke-800 backdrop-blur-md">
+    <button
+      type="button"
+      (click)="orchestrator.handleBack()"
+      class="flex items-center justify-center w-10 h-10 text-gold-500 hover:bg-gold-500/10 rounded-lg transition-colors"
+    >
+      <i name="arrow-left" class="w-6 h-6"></i>
+    </button>
+    <div class="flex-1 flex flex-col gap-1">
+      <h1 class="text-2xl font-display text-gold-500 tracking-wide">Le Rituel</h1>
+      @if (autoSave.saveStatus()) {
+        <span class="text-xs text-smoke-400 opacity-70">{{ autoSave.saveStatus() }}</span>
+      }
+    </div>
+    <div class="font-mono text-sm text-smoke-400 opacity-60 min-w-12.5 text-right">
+      {{ orchestrator.elapsedTime() }}
+    </div>
+  </header>
+
+  <!-- Timeline (responsive) -->
+  <app-tasting-timeline
+    [currentPhase]="orchestrator.currentPhase()"
+    [revealedPhases]="orchestrator.revealedPhases()"
+    [isDiscoveryMode]="orchestrator.isDiscoveryMode()"
+    (phaseClicked)="handleTimelinePhaseClick($event)"
+  />
+
+  <!-- Journal Content (Hybrid: History + Active Phase) -->
+  <main class="flex-1 overflow-y-auto scroll-smooth md:ml-20 pb-32">
+    <div class="max-w-2xl mx-auto px-4 py-6 space-y-4">
+
+      <!-- Historique: Résumés des phases complétées -->
+      @for (phaseId of orchestrator.completedPhases(); track phaseId) {
+        <app-phase-summary
+          [phaseId]="phaseId"
+          [summary]="getPhaseSummary(phaseId)"
+          [data]="getPhaseData(phaseId)"
+          [isDiscoveryMode]="isPhaseInDiscoveryMode(phaseId)"
+        />
+      }
+
+      <!-- Phase Active -->
+      @switch (orchestrator.currentPhase()) {
+        @case ('quick') {
+          <div class="bg-zinc-900/50 rounded-xl border border-gold-500/20 p-6">
+            <app-phase-quick
+              [initialCigar]="orchestrator.confirmedDraftCigar()"
+              [initialSituation]="getQuickSituation()"
+              [initialPairing]="getQuickPairing()"
+              [initialPairingNote]="orchestrator.quickData().pairingNote"
+              [initialLocation]="orchestrator.quickData().location"
+              (dataChange)="handleQuickDataChange($event)"
+              (done)="handleQuickDone()"
+              (sceller)="handleSceller()"
+              (explorer)="handleExplorer()"
+            />
+          </div>
+        }
+        @case ('presentation') {
+          <div class="bg-zinc-900/50 rounded-xl border border-gold-500/20 p-6">
+            <app-phase-presentation
+              [initialAspect]="orchestrator.presentationData().wrapperAspect"
+              [initialColor]="orchestrator.presentationData().wrapperColor"
+              [initialTouch]="orchestrator.presentationData().touch"
+              (dataChange)="handlePresentationDataChange($event)"
+              (done)="handlePresentationDone()"
+            />
+          </div>
+        }
+        @case ('cold_draw') {
+          <div class="bg-zinc-900/50 rounded-xl border border-gold-500/20 p-6">
+            <app-phase-cold-draw
+              [initialTastes]="orchestrator.coldDrawData().tastes"
+              [initialAromas]="orchestrator.coldDrawData().aromas"
+              (dataChange)="handleColdDrawDataChange($event)"
+              (done)="handleColdDrawDone()"
+            />
+          </div>
+        }
+        @case ('first_third') {
+          <div class="bg-zinc-900/50 rounded-xl border border-gold-500/20 p-6">
+            <app-phase-tercio
+              tercio="first"
+              [initialTastes]="orchestrator.firstThirdData().tastes"
+              [initialAromas]="orchestrator.firstThirdData().aromas"
+              (dataChange)="handleFirstThirdDataChange($event)"
+              (done)="handleFirstThirdDone()"
+            />
+          </div>
+        }
+        @case ('second_third') {
+          <div class="bg-zinc-900/50 rounded-xl border border-gold-500/20 p-6">
+            <app-phase-tercio
+              tercio="second"
+              [initialTastes]="orchestrator.secondThirdData().tastes"
+              [initialAromas]="orchestrator.secondThirdData().aromas"
+              (dataChange)="handleSecondThirdDataChange($event)"
+              (done)="handleSecondThirdDone()"
+            />
+          </div>
+        }
+        @case ('final_third') {
+          <div class="bg-zinc-900/50 rounded-xl border border-gold-500/20 p-6">
+            <app-phase-tercio
+              tercio="final"
+              [initialTastes]="orchestrator.finalThirdData().tastes"
+              [initialAromas]="orchestrator.finalThirdData().aromas"
+              (dataChange)="handleFinalThirdDataChange($event)"
+              (done)="handleFinalThirdDone()"
+            />
+          </div>
+        }
+        @case ('conclusion') {
+          <div class="bg-zinc-900/50 rounded-xl border border-gold-500/20 p-6">
+            <app-phase-conclusion
+              [initialDraw]="orchestrator.conclusionLocalData().draw"
+              [initialAsh]="orchestrator.conclusionLocalData().ashNature"
+              [initialBalance]="orchestrator.conclusionLocalData().balance"
+              [initialTerroir]="orchestrator.conclusionLocalData().terroir"
+              [initialPower]="orchestrator.conclusionLocalData().power"
+              [initialVariety]="orchestrator.conclusionLocalData().variety"
+              [initialImpressions]="orchestrator.conclusionLocalData().mouthImpression"
+              [initialPersistence]="orchestrator.conclusionLocalData().persistence"
+              (dataChange)="handleConclusionDataChange($event)"
+              (done)="handleConclusionDone()"
+            />
+          </div>
+        }
+        @case ('finale') {
+          <div class="bg-zinc-900/50 rounded-xl border border-gold-500/20 p-6">
+            <app-phase-finale
+              [isSubmitting]="orchestrator.isCompleting()"
+              (complete)="orchestrator.completeTasting()"
+              (dataChange)="handleFinaleDataChange($event)"
+            />
+          </div>
+        }
+      }
+
+    </div>
+  </main>
+
+  <!-- Sticky CTA: Passer au verdict (chronique flow only) -->
+  @if (orchestrator.flowMode() === 'chronique' && orchestrator.currentPhase() !== 'finale') {
+    <div class="fixed bottom-0 left-0 right-0 z-50 flex justify-center pb-safe md:ml-20">
+      <button
+        type="button"
+        (click)="handlePasserAuVerdict()"
+        class="flex items-center gap-2 px-6 py-3 text-sm text-gold-500/70 hover:text-gold-400 transition-colors
+               bg-zinc-900/80 backdrop-blur-sm rounded-t-xl
+               border-t border-x border-gold-500/10"
+      >
+        <i name="arrow-down" class="w-4 h-4"></i>
+        <span>Passer au verdict</span>
+      </button>
+    </div>
+  }
+
+  <!-- Modals -->
+  @if (orchestrator.showConfirmation()) {
+    <app-confirmation-modal
+      (viewTasting)="orchestrator.viewTasting()"
+      (close)="orchestrator.close()"
+    />
+  }
+
+  <app-discovery-bottom-sheet
+    [isOpen]="orchestrator.showDiscoveryBottomSheet()"
+    (close)="orchestrator.handleDiscovery_Cancel()"
+    (discover)="orchestrator.handleDiscovery_Confirm()"
+    (upgradePremium)="orchestrator.handleDiscovery_UpgradePremium()"
+    (goToVerdict)="handleDiscoveryGoToVerdict()"
+  />
+
+  <app-draft-confirmation-modal
+    [isOpen]="orchestrator.showDraftConfirmation()"
+    [draft]="orchestrator.existingDraft()"
+    (continue)="handleContinueDraft()"
+    (newTasting)="handleNewTasting()"
+    (close)="orchestrator.closeDraftConfirmation()"
+  />
+
+  <app-exit-confirmation-modal
+    [isOpen]="orchestrator.showExitConfirmation()"
+    (confirm)="orchestrator.confirmExit()"
+    (cancel)="orchestrator.cancelExit()"
+    (close)="orchestrator.cancelExit()"
+  />
+
+</div>

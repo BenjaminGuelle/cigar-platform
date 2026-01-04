@@ -5,7 +5,7 @@ import { IconDirective } from '@cigar-platform/shared/ui';
 
 /**
  * Discovery Bottom Sheet Component
- * Shown to Free users when they click "Approfondir la chronique"
+ * Shown to Free users when they click "Explorer la chronique"
  *
  * Uses ui-modal (bottomSheet variant) for consistent UX with:
  * - Swipe-to-dismiss on mobile
@@ -16,9 +16,10 @@ import { IconDirective } from '@cigar-platform/shared/ui';
  * - What Discovery Mode is (explore without saving)
  * - Benefits of Premium (save observations, build taster profile)
  *
- * CTAs:
- * - "Découvrir quand même" → Continue in discovery mode
+ * 3 CTAs:
  * - "Devenir Premium" → Upgrade flow
+ * - "J'ai compris, explorer" → Continue in discovery mode
+ * - "Sceller le verdict" → Return to verdict (go to finale)
  *
  * @example
  * ```html
@@ -27,6 +28,7 @@ import { IconDirective } from '@cigar-platform/shared/ui';
  *   (close)="handleDiscoveryClose()"
  *   (discover)="handleDiscoveryConfirm()"
  *   (upgradePremium)="handleUpgradePremium()"
+ *   (goToVerdict)="handleGoToVerdict()"
  * />
  * ```
  */
@@ -46,7 +48,7 @@ import { IconDirective } from '@cigar-platform/shared/ui';
       <!-- Icon -->
       <div class="flex justify-center mb-4">
         <div class="w-12 h-12 rounded-full bg-gold-500/10 flex items-center justify-center">
-          <i name="info" class="w-6 h-6 text-gold-500"></i>
+          <i name="eye" class="w-6 h-6 text-gold-500"></i>
         </div>
       </div>
 
@@ -58,25 +60,24 @@ import { IconDirective } from '@cigar-platform/shared/ui';
       <!-- Description -->
       <div class="space-y-4 mb-6 text-center">
         <p class="text-smoke-200 leading-relaxed">
-          Explorez les analyses avancées pour enrichir votre expérience de dégustation.
+          Explore la chronique complète. Ces notes ne seront pas sauvegardées,
+          mais tu vas découvrir la profondeur du rituel.
         </p>
 
-        <div class="p-4 bg-gold-500/10 border-l-3 border-gold-500 rounded-md text-left">
-          <p class="text-sm text-smoke-200 flex items-start gap-2">
-            <span class="text-gold-500 flex-shrink-0">✨</span>
+        <div class="p-4 bg-zinc-900/50 border border-zinc-800 rounded-lg text-left">
+          <p class="text-sm text-smoke-300 flex items-start gap-3">
+            <span class="text-gold-500 flex-shrink-0 mt-0.5">✨</span>
             <span>
-              <strong class="text-smoke-50">Note</strong> : En mode Découverte, vos observations ne seront pas sauvegardées.
+              Avec <strong class="text-gold-400">Premium</strong>, tes analyses sont conservées
+              et enrichissent ton profil de dégustateur.
             </span>
           </p>
         </div>
-
-        <p class="text-sm text-smoke-300">
-          Avec <strong class="text-gold-500">Premium</strong>, vos analyses sont conservées et enrichissent votre profil de dégustateur.
-        </p>
       </div>
 
-      <!-- CTAs -->
+      <!-- 3 CTAs -->
       <div class="flex flex-col gap-3">
+        <!-- CTA 1: Upgrade Premium -->
         <ui-button
           variant="primary"
           [fullWidth]="true"
@@ -85,13 +86,23 @@ import { IconDirective } from '@cigar-platform/shared/ui';
           Devenir Premium
         </ui-button>
 
+        <!-- CTA 2: Continue in Discovery Mode -->
         <ui-button
           variant="outline"
           [fullWidth]="true"
           (clicked)="discover.emit()"
         >
-          Découvrir quand même
+          J'ai compris, explorer
         </ui-button>
+
+        <!-- CTA 3: Return to Verdict -->
+        <button
+          type="button"
+          (click)="goToVerdict.emit()"
+          class="py-3 text-sm text-smoke-400 hover:text-smoke-200 transition-colors italic"
+        >
+          Sceller le verdict
+        </button>
       </div>
     </ui-modal>
   `,
@@ -108,7 +119,7 @@ export class DiscoveryBottomSheetComponent {
   close = output<void>();
 
   /**
-   * Emitted when user clicks "Découvrir quand même"
+   * Emitted when user clicks "J'ai compris, explorer"
    */
   discover = output<void>();
 
@@ -116,4 +127,9 @@ export class DiscoveryBottomSheetComponent {
    * Emitted when user clicks "Devenir Premium"
    */
   upgradePremium = output<void>();
+
+  /**
+   * Emitted when user clicks "Sceller le verdict"
+   */
+  goToVerdict = output<void>();
 }

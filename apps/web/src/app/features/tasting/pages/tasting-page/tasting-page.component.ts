@@ -1,22 +1,26 @@
-import { Component, OnInit, inject, OnDestroy, effect } from '@angular/core';
+import { Component, OnInit, inject, OnDestroy, effect, computed, signal, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
-import { TastingOrchestratorService } from '../../services/tasting-orchestrator.service';
+import { TastingOrchestratorService, type TastingPhase } from '../../services/tasting-orchestrator.service';
 import { TastingAutoSaveService } from '../../services/tasting-auto-save.service';
 import { TastingScrollService } from '../../services/tasting-scroll.service';
 import { TastingFormService } from '../../services/tasting-form.service';
+import { TastingStateMachine } from '../../services/tasting-state-machine.service';
 import { PhaseQuickComponent } from '../../components/phase-quick/phase-quick.component';
-import { PhasePresentationComponent } from '../../components/phase-presentation/phase-presentation.component';
 import { PhaseFinaleComponent } from '../../components/phase-finale/phase-finale.component';
-import { PhaseSectionComponent } from '../../components/phase-section/phase-section.component';
+import { PhasePresentationComponent } from '../../components/phase-presentation/phase-presentation.component';
+import { PhaseColdDrawComponent } from '../../components/phase-cold-draw/phase-cold-draw.component';
+import { PhaseTercioComponent } from '../../components/phase-tercio/phase-tercio.component';
+import { PhaseConclusionComponent } from '../../components/phase-conclusion/phase-conclusion.component';
 import { ConfirmationModalComponent } from '../../components/confirmation-modal/confirmation-modal.component';
 import { DraftConfirmationModalComponent } from '../../components/draft-confirmation-modal/draft-confirmation-modal.component';
 import { ExitConfirmationModalComponent } from '../../components/exit-confirmation-modal/exit-confirmation-modal.component';
 import { DiscoveryBottomSheetComponent } from '../../components/discovery-bottom-sheet/discovery-bottom-sheet.component';
 import { TastingTimelineComponent } from '../../components/tasting-timeline/tasting-timeline.component';
-import { TastingSmartBarComponent } from '../../components/tasting-smart-bar/tasting-smart-bar.component';
+import { PhaseSummaryComponent } from '../../components/phase-summary/phase-summary.component';
 import { IconDirective } from '@cigar-platform/shared/ui';
-import type { CapeAspect, CapeColor, CapeTouch } from '@cigar-platform/shared/constants';
+import type { TastingSituation, PairingType } from '@cigar-platform/shared/constants';
+import type { FlavorTag, PhaseData } from '../../models/tasting-state.model';
 
 /**
  * Tasting Page Component
@@ -39,119 +43,21 @@ import type { CapeAspect, CapeColor, CapeTouch } from '@cigar-platform/shared/co
   imports: [
     CommonModule,
     PhaseQuickComponent,
-    PhasePresentationComponent,
     PhaseFinaleComponent,
-    PhaseSectionComponent,
+    PhasePresentationComponent,
+    PhaseColdDrawComponent,
+    PhaseTercioComponent,
+    PhaseConclusionComponent,
+    PhaseSummaryComponent,
     ConfirmationModalComponent,
     DraftConfirmationModalComponent,
     ExitConfirmationModalComponent,
     DiscoveryBottomSheetComponent,
     TastingTimelineComponent,
-    TastingSmartBarComponent,
     IconDirective,
   ],
-  providers: [TastingOrchestratorService, TastingAutoSaveService, TastingScrollService, TastingFormService],
-  template: `
-    <div class="fixed inset-0 bg-zinc-900 z-1000 flex flex-col">
-      <!-- Header Sticky -->
-      <header class="sticky top-0 z-100 flex items-center gap-4 px-6 py-4 border-b border-gold-500/20 bg-smoke-800 backdrop-blur-md">
-        <button
-          type="button"
-          (click)="orchestrator.handleBack()"
-          class="flex items-center justify-center w-10 h-10 text-gold-500 hover:bg-gold-500/10 rounded-lg transition-colors"
-        >
-          <i name="arrow-left" class="w-6 h-6"></i>
-        </button>
-        <div class="flex-1 flex flex-col gap-1">
-          <h1 class="text-2xl font-display text-gold-500 tracking-wide">Le Rituel</h1>
-          @if (autoSave.saveStatus()) {
-            <span class="text-xs text-smoke-400 opacity-70">{{ autoSave.saveStatus() }}</span>
-          }
-        </div>
-        <div class="font-mono text-sm text-smoke-400 opacity-60 min-w-12.5 text-right">
-          {{ orchestrator.elapsedTime() }}
-        </div>
-      </header>
-
-      <!-- Timeline (responsive) -->
-      <app-tasting-timeline
-        [currentPhase]="orchestrator.currentPhase()"
-        [revealedPhases]="orchestrator.revealedPhases()"
-        [isDiscoveryMode]="orchestrator.isDiscoveryMode()"
-        (phaseClicked)="handleTimelinePhaseClick($event)"
-      />
-
-      <!-- Journal Content (Scroll vertical) -->
-      <main class="flex-1 overflow-y-auto scroll-smooth scroll-snap-type-y-proximity md:ml-20" style="scroll-snap-type: y proximity;">
-        <!-- Phase Quick -->
-        <app-phase-section phaseId="phase-quick">
-          <app-phase-quick
-            [initialCigar]="orchestrator.confirmedDraftCigar()"
-            (dataChange)="handleQuickDataChange($event)"
-          />
-        </app-phase-section>
-
-        <!-- Observations (Chronique flow - révélées conditionnellement) -->
-        @if (orchestrator.flowMode() === 'chronique') {
-          @if (orchestrator.isDiscoveryMode()) {
-            <div class="sticky top-20 z-90 px-6 py-3 bg-gold-500/10 border-l-4 border-gold-500 text-center text-sm text-smoke-200 mb-8">
-              Mode Découverte — Ces analyses ne seront pas sauvegardées
-            </div>
-          }
-          <app-phase-section phaseId="phase-presentation">
-            <app-phase-presentation (dataChange)="handlePresentationDataChange($event)" />
-          </app-phase-section>
-        }
-
-        <!-- Phase Finale -->
-        <app-phase-section phaseId="phase-finale">
-          <app-phase-finale
-            (complete)="orchestrator.completeTasting()"
-            (dataChange)="handleFinaleDataChange($event)"
-          />
-        </app-phase-section>
-      </main>
-
-      <!-- Modals -->
-      @if (orchestrator.showConfirmation()) {
-        <app-confirmation-modal
-          (viewTasting)="orchestrator.viewTasting()"
-          (close)="orchestrator.close()"
-        />
-      }
-
-      <app-discovery-bottom-sheet
-        [isOpen]="orchestrator.showDiscoveryBottomSheet()"
-        (close)="orchestrator.handleDiscovery_Cancel()"
-        (discover)="orchestrator.handleDiscovery_Confirm()"
-        (upgradePremium)="orchestrator.handleDiscovery_UpgradePremium()"
-      />
-
-      <app-draft-confirmation-modal
-        [isOpen]="orchestrator.showDraftConfirmation()"
-        [draft]="orchestrator.existingDraft()"
-        (continue)="handleContinueDraft()"
-        (newTasting)="handleNewTasting()"
-        (close)="orchestrator.showDraftConfirmation.set(false)"
-      />
-
-      <app-exit-confirmation-modal
-        [isOpen]="orchestrator.showExitConfirmation()"
-        (confirm)="orchestrator.confirmExit()"
-        (cancel)="orchestrator.showExitConfirmation.set(false)"
-        (close)="orchestrator.showExitConfirmation.set(false)"
-      />
-
-      <!-- Smart Bar (fixed bottom) -->
-      <app-tasting-smart-bar
-        [currentPhase]="orchestrator.currentPhase()"
-        [elapsedTime]="orchestrator.elapsedTime()"
-        [isLoading]="orchestrator.isCompleting()"
-        (scrollToSection)="handleSmartBarScroll($event)"
-        (nextAction)="handleSmartBarNext()"
-      />
-    </div>
-  `,
+  providers: [TastingStateMachine, TastingOrchestratorService, TastingAutoSaveService, TastingScrollService, TastingFormService],
+  templateUrl: './tasting-page.component.html',
 })
 export class TastingPageComponent implements OnInit, OnDestroy {
   readonly #route = inject(ActivatedRoute);
@@ -165,11 +71,317 @@ export class TastingPageComponent implements OnInit, OnDestroy {
   // Scroll service (pour IntersectionObserver)
   readonly #scroll = inject(TastingScrollService);
 
+  // Local state
+  readonly #showDecisionCardSignal = signal(false);
+
+  // ==================== Computed ====================
+
+  /**
+   * Show Decision Card after Phase Quick completed
+   */
+  readonly showDecisionCard = computed(() => {
+    return this.#showDecisionCardSignal();
+  });
+
+  // ==================== Helpers ====================
+
+  /**
+   * Get phase summary text (for compact display)
+   */
+  getPhaseSummary(phaseId: TastingPhase): string {
+    // TODO: Extract real data from observations
+    // For now, placeholder summaries
+    switch (phaseId) {
+      case 'quick':
+        return 'L\'Entrée en Matière complétée';
+      case 'presentation':
+        return 'Présentation complétée';
+      case 'cold_draw':
+        return 'Fumage à cru complété';
+      case 'first_third':
+        return 'Premier Tercio complété';
+      case 'second_third':
+        return 'Deuxième Tercio complété';
+      case 'final_third':
+        return 'Dernier Tercio complété';
+      case 'conclusion':
+        return 'Conclusion complétée';
+      case 'finale':
+        return 'Le Verdict posé';
+      default:
+        return '';
+    }
+  }
+
+  /**
+   * Check if phase should show discovery style
+   * Quick and Finale are always saved, so no discovery style
+   */
+  isPhaseInDiscoveryMode(phaseId: TastingPhase): boolean {
+    if (phaseId === 'quick' || phaseId === 'finale') {
+      return false; // Always saved
+    }
+    return this.orchestrator.isDiscoveryMode();
+  }
+
+  /**
+   * Get Quick situation typed for component input
+   */
+  getQuickSituation(): TastingSituation | null | undefined {
+    const situation = this.orchestrator.quickData()?.situation;
+    return situation as TastingSituation | null | undefined;
+  }
+
+  /**
+   * Get Quick pairing typed for component input
+   */
+  getQuickPairing(): PairingType | null | undefined {
+    const pairing = this.orchestrator.quickData()?.pairing;
+    return pairing as PairingType | null | undefined;
+  }
+
+  /**
+   * Get phase data (for detailed recap in expanded state)
+   */
+  getPhaseData(phaseId: TastingPhase): PhaseData {
+    switch (phaseId) {
+      case 'quick':
+        return this.orchestrator.quickData();
+      case 'presentation':
+        return this.orchestrator.presentationData();
+      case 'cold_draw':
+        return this.orchestrator.coldDrawData();
+      case 'first_third':
+        return this.orchestrator.firstThirdData();
+      case 'second_third':
+        return this.orchestrator.secondThirdData();
+      case 'final_third':
+        return this.orchestrator.finalThirdData();
+      case 'conclusion':
+        return this.orchestrator.conclusionLocalData();
+      case 'finale':
+        return this.orchestrator.finaleData();
+      default:
+        return null;
+    }
+  }
+
+  /**
+   * Get next chronique phase in order
+   * Présentation → Fumage à cru → 1er Tercio → 2ème Tercio → 3ème Tercio → Conclusion → Finale
+   */
+  getNextChroniquePhase(currentPhase: TastingPhase): TastingPhase | null {
+    const chroniqueOrder: TastingPhase[] = [
+      'presentation',
+      'cold_draw',
+      'first_third',
+      'second_third',
+      'final_third',
+      'conclusion',
+      'finale',
+    ];
+    const currentIndex = chroniqueOrder.indexOf(currentPhase);
+    if (currentIndex === -1 || currentIndex === chroniqueOrder.length - 1) {
+      return null;
+    }
+    return chroniqueOrder[currentIndex + 1];
+  }
+
+  /**
+   * Handle Phase Quick reached 'done' step
+   */
+  handleQuickDone(): void {
+    // If we're restoring a draft, don't show CTAs - let restoreObservationsData handle navigation
+    if (this.orchestrator.isRestoringDraft()) {
+      return;
+    }
+
+    this.#showDecisionCardSignal.set(true);
+    // Update highest visited to unlock finale (done by state machine)
+    this.orchestrator.markQuickPhaseCompleted();
+  }
+
+  /**
+   * Handle Phase Présentation done
+   * Auto-progression: collapse → pause 800ms → scroll to next phase
+   */
+  async handlePresentationDone(): Promise<void> {
+    const nextPhase = this.getNextChroniquePhase('presentation');
+    if (!nextPhase) return;
+
+    // Pause to show recap before navigating
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    // Navigate to next phase (presentation will auto-collapse via completedPhases)
+    this.orchestrator.navigateToPhase(nextPhase);
+  }
+
+  /**
+   * Handle Phase Fumage à cru done
+   * Auto-progression: collapse → pause 800ms → scroll to next phase
+   */
+  async handleColdDrawDone(): Promise<void> {
+    const nextPhase = this.getNextChroniquePhase('cold_draw');
+    if (!nextPhase) return;
+
+    // Pause to show recap before navigating
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    // Navigate to next phase (cold_draw will auto-collapse via completedPhases)
+    this.orchestrator.navigateToPhase(nextPhase);
+  }
+
+  /**
+   * Handle Phase First Third done
+   * Auto-progression: collapse → pause 800ms → scroll to next phase
+   */
+  async handleFirstThirdDone(): Promise<void> {
+    const nextPhase = this.getNextChroniquePhase('first_third');
+    if (!nextPhase) return;
+
+    // Pause to show recap before navigating
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    // Navigate to next phase
+    this.orchestrator.navigateToPhase(nextPhase);
+  }
+
+  /**
+   * Handle Phase Second Third done
+   * Auto-progression: collapse → pause 800ms → scroll to next phase
+   */
+  async handleSecondThirdDone(): Promise<void> {
+    const nextPhase = this.getNextChroniquePhase('second_third');
+    if (!nextPhase) return;
+
+    // Pause to show recap before navigating
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    // Navigate to next phase
+    this.orchestrator.navigateToPhase(nextPhase);
+  }
+
+  /**
+   * Handle Phase Final Third done
+   * Auto-progression: collapse → pause 800ms → scroll to next phase
+   */
+  async handleFinalThirdDone(): Promise<void> {
+    const nextPhase = this.getNextChroniquePhase('final_third');
+    if (!nextPhase) return;
+
+    // Pause to show recap before navigating
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    // Navigate to next phase
+    this.orchestrator.navigateToPhase(nextPhase);
+  }
+
+  /**
+   * Handle Phase Conclusion done
+   * Auto-progression: collapse → pause 800ms → scroll to finale
+   */
+  async handleConclusionDone(): Promise<void> {
+    const nextPhase = this.getNextChroniquePhase('conclusion');
+    if (!nextPhase) return;
+
+    // Pause to show recap before navigating
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    // Navigate to finale
+    this.orchestrator.navigateToPhase(nextPhase);
+  }
+
+  /**
+   * Handle Decision: Sceller le verdict
+   */
+  handleSceller(): void {
+    this.#showDecisionCardSignal.set(false);
+    this.orchestrator.navigateToPhase('finale');
+  }
+
+  /**
+   * Handle Decision: Explorer la chronique
+   * Premium → Révèle toutes les phases + scroll vers Présentation
+   * Free → Discovery bottom sheet
+   */
+  async handleExplorer(): Promise<void> {
+    this.#showDecisionCardSignal.set(false);
+    await this.orchestrator.handleCtaB_Chronique();
+  }
+
+  /**
+   * Handle "Poursuivre" button
+   */
+  handlePoursuivre(): void {
+    const currentPhase = this.orchestrator.currentPhase();
+
+    if (currentPhase === 'quick') {
+      // Phase Quick done, show decision card
+      this.#showDecisionCardSignal.set(true);
+      // Update highest visited to unlock finale (done by state machine)
+      this.orchestrator.markQuickPhaseCompleted();
+      return;
+    }
+
+    if (currentPhase === 'finale') {
+      // Finale → Complete tasting
+      void this.orchestrator.completeTasting();
+      return;
+    }
+
+    // Other phases: navigate to next (for future)
+    // For now, just finale
+    this.orchestrator.navigateToPhase('finale');
+  }
+
+  /**
+   * Handle "Passer au verdict" (escape hatch)
+   * Uses skipToFinale() to bypass accessibility check
+   */
+  handlePasserAuVerdict(): void {
+    this.orchestrator.skipToFinale();
+  }
+
+  /**
+   * Handle Discovery "Sceller le verdict" CTA
+   * Close the modal and navigate to finale
+   */
+  handleDiscoveryGoToVerdict(): void {
+    this.orchestrator.closeDiscoveryBottomSheet();
+    this.orchestrator.navigateToPhase('finale');
+  }
+
   constructor() {
     // Synchroniser la phase courante avec le scroll
+    // IMPORTANT: Use untracked to read currentPhase without creating a dependency
+    // This prevents infinite loop: scroll → setCurrentPhase → state change → effect re-run
     effect(() => {
       const phaseFromScroll = this.#scroll.currentPhaseFromScroll();
-      this.orchestrator.currentPhase.set(phaseFromScroll);
+      // Only dispatch if phase actually changed (prevents infinite loop)
+      const currentPhase = untracked(() => this.orchestrator.currentPhase());
+
+      if (phaseFromScroll !== currentPhase) {
+        this.orchestrator.setCurrentPhase(phaseFromScroll);
+      }
+    });
+
+    // Re-setup observer when flowMode becomes 'chronique' (sections are now in DOM)
+    // Track previous flowMode to only run once per transition
+    let previousFlowMode: string | null = null;
+    effect(() => {
+      const flowMode = this.orchestrator.flowMode();
+
+      // Only run when flowMode transitions TO 'chronique' (not repeatedly)
+      if (flowMode === 'chronique' && previousFlowMode !== 'chronique') {
+        previousFlowMode = flowMode;
+        // Delay to ensure DOM has updated with new sections
+        setTimeout(() => {
+          this.#scroll.destroyScrollObserver();
+          this.#scroll.setupScrollObserver();
+        }, 150);
+      } else {
+        previousFlowMode = flowMode;
+      }
     });
   }
 
@@ -193,27 +405,158 @@ export class TastingPageComponent implements OnInit, OnDestroy {
 
   // ==================== Data Change Handlers ====================
 
-  async handleQuickDataChange(data: any): Promise<void> {
+  async handleQuickDataChange(data: {
+    moment: string;
+    situation: TastingSituation | null;
+    pairing: PairingType | null;
+    pairingNote?: string;
+    location?: string;
+    cigar: string | null;
+    cigarName: string | null;
+  }): Promise<void> {
+    // Cast to DTO types (types are compatible, just different enum declarations)
     await this.orchestrator.updateQuickData({
-      moment: data.moment,
-      situation: data.situation,
-      pairing: data.pairing,
+      moment: (data.moment || undefined) as 'MATIN' | 'APRES_MIDI' | 'SOIR' | undefined,
+      situation: (data.situation || undefined) as 'APERITIF' | 'COCKTAIL' | 'DIGESTIF' | undefined,
+      pairing: (data.pairing || undefined) as 'WHISKY' | 'RHUM' | 'COGNAC' | 'CAFE' | 'THE' | 'EAU' | 'VIN' | 'BIERE' | 'AUTRE' | undefined,
       pairingNote: data.pairingNote || undefined,
       location: data.location || undefined,
       cigarId: data.cigar || undefined,
+      cigarName: data.cigarName || undefined,
     });
   }
 
   handlePresentationDataChange(data: {
-    wrapperAspect: CapeAspect[];
-    wrapperColor: CapeColor | null;
-    touch: CapeTouch[];
+    wrapperAspect: string | null;
+    wrapperColor: string | null;
+    touch: string | null;
   }): void {
+    // Update local signal for phase summary
+    this.orchestrator.updatePresentationData({
+      wrapperAspect: data.wrapperAspect,
+      wrapperColor: data.wrapperColor,
+      touch: data.touch,
+    });
+
+    // Save to DB via observation
     this.orchestrator.updateObservation('presentation', {
       presentation: {
         wrapperAspect: data.wrapperAspect,
         wrapperColor: data.wrapperColor,
         touch: data.touch,
+      },
+    });
+  }
+
+  handleColdDrawDataChange(data: {
+    tastes: FlavorTag[];
+    aromas: FlavorTag[];
+  }): void {
+    // Update local signal for phase summary
+    this.orchestrator.updateColdDrawData({
+      tastes: data.tastes,
+      aromas: data.aromas,
+    });
+
+    // Save to DB via observation
+    this.orchestrator.updateObservation('cold_draw', {
+      coldDraw: {
+        tastes: data.tastes,
+        aromas: data.aromas,
+      },
+    });
+  }
+
+  handleFirstThirdDataChange(data: {
+    tastes: FlavorTag[];
+    aromas: FlavorTag[];
+  }): void {
+    // Update local signal for phase summary
+    this.orchestrator.updateFirstThirdData({
+      tastes: data.tastes,
+      aromas: data.aromas,
+    });
+
+    // Save to DB via observation
+    this.orchestrator.updateObservation('first_third', {
+      firstThird: {
+        tastes: data.tastes,
+        aromas: data.aromas,
+      },
+    });
+  }
+
+  handleSecondThirdDataChange(data: {
+    tastes: FlavorTag[];
+    aromas: FlavorTag[];
+  }): void {
+    // Update local signal for phase summary
+    this.orchestrator.updateSecondThirdData({
+      tastes: data.tastes,
+      aromas: data.aromas,
+    });
+
+    // Save to DB via observation
+    this.orchestrator.updateObservation('second_third', {
+      secondThird: {
+        tastes: data.tastes,
+        aromas: data.aromas,
+      },
+    });
+  }
+
+  handleFinalThirdDataChange(data: {
+    tastes: FlavorTag[];
+    aromas: FlavorTag[];
+  }): void {
+    // Update local signal for phase summary
+    this.orchestrator.updateFinalThirdData({
+      tastes: data.tastes,
+      aromas: data.aromas,
+    });
+
+    // Save to DB via observation
+    this.orchestrator.updateObservation('final_third', {
+      finalThird: {
+        tastes: data.tastes,
+        aromas: data.aromas,
+      },
+    });
+  }
+
+  handleConclusionDataChange(data: {
+    draw: string | null;
+    ashNature: string | null;
+    balance: string | null;
+    terroir: string | null;
+    power: number;
+    variety: number;
+    mouthImpression: string[];
+    persistence: string | null;
+  }): void {
+    // Update local signal for phase summary
+    this.orchestrator.updateConclusionLocalData({
+      draw: data.draw,
+      ashNature: data.ashNature,
+      balance: data.balance,
+      terroir: data.terroir,
+      power: data.power,
+      variety: data.variety,
+      mouthImpression: data.mouthImpression,
+      persistence: data.persistence,
+    });
+
+    // Save to DB via observation
+    this.orchestrator.updateObservation('conclusion', {
+      conclusion: {
+        draw: data.draw,
+        ashNature: data.ashNature,
+        balance: data.balance,
+        terroir: data.terroir,
+        power: data.power,
+        variety: data.variety,
+        mouthImpression: data.mouthImpression,
+        persistence: data.persistence,
       },
     });
   }

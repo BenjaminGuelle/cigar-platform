@@ -1,5 +1,7 @@
-import { Component, input, output, signal } from '@angular/core';
+import { Component, input, output, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+
+export type RatingBandSize = 'sm' | 'md' | 'lg';
 
 /**
  * Rating Bands Component
@@ -10,6 +12,7 @@ import { CommonModule } from '@angular/common';
  * - Demi-notes via zones gauche/droite
  * - Animation hover + glow
  * - Design premium gold/zinc
+ * - Responsive avec sizes (sm/md/lg)
  */
 @Component({
   selector: 'ui-rating-bands',
@@ -18,11 +21,11 @@ import { CommonModule } from '@angular/common';
   template: `
     <div class="flex flex-col items-center gap-4">
       <!-- Bagues -->
-      <div class="flex items-center gap-3">
+      <div class="flex items-center" [class]="containerGapClass()">
         @for (band of bands; track band) {
           <button
             type="button"
-            class="relative w-16 h-12 md:w-20 md:h-14 transition-transform duration-200 hover:scale-110 focus:outline-none"
+            [class]="bandSizeClass()"
             (mouseenter)="handleHover(band)"
             (mouseleave)="clearHover()"
             (click)="handleClick($event, band)"
@@ -84,6 +87,7 @@ import { CommonModule } from '@angular/common';
 export class RatingBandsComponent {
   // Input/Output
   value = input<number>(0);
+  size = input<RatingBandSize>('md');
   valueChange = output<number>();
 
   // State
@@ -91,6 +95,26 @@ export class RatingBandsComponent {
 
   // Constants
   readonly bands = [1, 2, 3, 4, 5];
+
+  // Computed classes
+  readonly bandSizeClass = computed(() => {
+    const baseClasses = 'relative transition-transform duration-200 hover:scale-110 focus:outline-none';
+    const sizeClasses = {
+      sm: 'w-10 h-8',
+      md: 'w-16 h-12 md:w-20 md:h-14',
+      lg: 'w-24 h-18',
+    };
+    return `${baseClasses} ${sizeClasses[this.size()]}`;
+  });
+
+  readonly containerGapClass = computed(() => {
+    const gapClasses = {
+      sm: 'gap-2',
+      md: 'gap-3',
+      lg: 'gap-4',
+    };
+    return gapClasses[this.size()];
+  });
 
   /**
    * Vérifie si une bague est active (note >= band)

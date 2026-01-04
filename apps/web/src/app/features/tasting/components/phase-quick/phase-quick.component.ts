@@ -1,12 +1,10 @@
-import { Component, output, input, OnInit, signal, inject, computed, effect, OnDestroy } from '@angular/core';
+import { Component, output, input, OnInit, signal, inject, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule } from '@angular/forms';
-import { IconDirective, AutocompleteComponent } from '@cigar-platform/shared/ui';
-import type { AutocompleteOption } from '@cigar-platform/shared/ui';
+import { FormsModule, FormControl } from '@angular/forms';
+import { AutocompleteComponent, IconDirective, ButtonComponent, type AutocompleteOption, type IconName } from '@cigar-platform/shared/ui';
 import { ContextStore } from '../../../../core/stores/context.store';
 import { injectSearchStore } from '../../../../core/stores/search.store';
-import { TastingFormService } from '../../services/tasting-form.service';
-import type { CigarResponseDto } from '@cigar-platform/types';
+import { SingleSelectChipsComponent, type SingleSelectOption } from '../shared/single-select-chips/single-select-chips.component';
 import {
   TASTING_SITUATIONS,
   PAIRING_TYPES,
@@ -14,210 +12,95 @@ import {
   type TastingSituation,
   type PairingType,
 } from '@cigar-platform/shared/constants';
-import type { Subscription } from 'rxjs';
+
+interface CigarBasic {
+  id: string;
+  name: string;
+}
+
+type QuestionStep = 'cigar' | 'situation' | 'pairing' | 'pairingNote' | 'location' | 'done';
+
+interface PhaseQuickData {
+  moment: TastingMoment;
+  situation: TastingSituation | null;
+  pairing: PairingType | null;
+  pairingNote?: string;
+  location?: string;
+  cigar: string | null;
+  cigarName: string | null;
+}
 
 /**
- * Pairing icon mapping (Lucide)
- * API-aligned keys (uppercase)
- */
-const PAIRING_ICONS: Record<PairingType, string> = {
-  CAFE: 'coffee',
-  THE: 'cup-soda',
-  WHISKY: 'wine',
-  RHUM: 'wine',
-  COGNAC: 'wine',
-  VIN: 'wine',
-  BIERE: 'beer',
-  EAU: 'droplet',
-  AUTRE: 'circle-help',
-};
-
-/**
- * Situation icon mapping (Lucide)
- * API-aligned keys (uppercase)
- */
-const SITUATION_ICONS: Record<TastingSituation, string> = {
-  APERITIF: 'sun',
-  COCKTAIL: 'glass-water',
-  DIGESTIF: 'moon',
-};
-
-
-/**
- * Phase Quick Component
- * "Le Rituel" - Compagnon intelligent de dégustation
+ * Phase Quick Chat Component
+ * "L'Entrée en Matière" - Conversation progressive
  *
- * ALL STARS Architecture ⭐
- * - Minimaliste et intelligent
- * - Auto-calcul date/heure/moment
- * - Icônes Lucide uniquement
- * - Context-aware (Solo/Club)
- *
- * Captures:
- * - Situation (icônes)
- * - Pairing / Les Noces (icônes + précisions)
+ * Chat-Like Architecture ⭐
+ * - Une question à la fois
+ * - Header récapitulatif qui se construit
+ * - Auto-filled: date, heure, moment
  */
 @Component({
   selector: 'app-phase-quick',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, IconDirective, AutocompleteComponent],
-  template: `
-    <div class="flex flex-col gap-10">
-      <!-- Hero Section -->
-      <div class="flex flex-col items-center gap-4 pb-6 border-b border-zinc-800">
-        <!-- Date/Heure/Moment (auto-calculés, lecture seule) -->
-        <div class="text-center text-sm text-smoke-400 italic">
-          {{ formattedDateTime() }}
-        </div>
-
-        <!-- Contexte -->
-        <div class="flex items-center gap-2 text-xs text-smoke-400 uppercase tracking-wider">
-          <i [name]="contextIcon()" class="w-4 h-4"></i>
-          <span>{{ contextLabel() }}</span>
-        </div>
-
-        <!-- Sélection Cigare -->
-        <div class="w-full max-w-md">
-          <ui-autocomplete
-            [placeholder]="cigarPlaceholder()"
-            [control]="quickForm.controls.cigar"
-            [options]="cigarOptions()"
-            [loading]="cigarSearchLoading()"
-            [showCreateOption]="false"
-            (search)="onCigarSearch($event)"
-            (valueSelected)="onCigarSelected($event)"
-          />
-          @if (quickForm.controls.cigar.invalid && quickForm.controls.cigar.touched) {
-            <p class="mt-2 text-xs text-red-500">
-              Le choix du cigare est obligatoire
-            </p>
-          }
-        </div>
-      </div>
-
-      <!-- Situation -->
-      <div class="flex flex-col gap-4">
-        <h3 class="text-center text-sm font-display text-gold-500 tracking-wide">L'Instant</h3>
-
-        <div class="flex justify-center gap-3">
-          @for (situation of situations; track situation.id) {
-            <button
-              type="button"
-              (click)="selectSituation(situation.id)"
-              [class]="quickForm.controls.situation.value === situation.id
-                ? 'flex flex-col items-center gap-2 p-4 rounded-xl border border-gold-500 bg-gold-500/10 transition-all'
-                : 'flex flex-col items-center gap-2 p-4 rounded-xl border border-zinc-800 hover:border-gold-500/30 transition-all'"
-              [title]="situation.label"
-            >
-              <i
-                [name]="getSituationIcon(situation.id)"
-                [class]="quickForm.controls.situation.value === situation.id ? 'w-6 h-6 text-gold-500' : 'w-6 h-6 text-smoke-400'"
-              ></i>
-              <span
-                [class]="quickForm.controls.situation.value === situation.id
-                  ? 'text-xs text-gold-500 font-medium'
-                  : 'text-xs text-smoke-400'"
-              >
-                {{ situation.label }}
-              </span>
-            </button>
-          }
-        </div>
-      </div>
-
-      <!-- Les Noces (Pairing) -->
-      <div class="flex flex-col gap-4">
-        <h3 class="text-center text-sm font-display text-gold-500 tracking-wide">Les Noces</h3>
-
-        <div class="grid grid-cols-4 gap-3">
-          @for (pairing of pairings; track pairing.id) {
-            <button
-              type="button"
-              (click)="selectPairing(pairing.id)"
-              [class]="quickForm.controls.pairing.value === pairing.id
-                ? 'flex flex-col items-center gap-2 p-3 rounded-xl border border-gold-500 bg-gold-500/10 transition-all'
-                : 'flex flex-col items-center gap-2 p-3 rounded-xl border border-zinc-800 hover:border-gold-500/30 transition-all'"
-              [title]="pairing.label"
-            >
-              <i
-                [name]="getPairingIcon(pairing.id)"
-                [class]="quickForm.controls.pairing.value === pairing.id ? 'w-5 h-5 text-gold-500' : 'w-5 h-5 text-smoke-400'"
-              ></i>
-              <span
-                [class]="quickForm.controls.pairing.value === pairing.id
-                  ? 'text-[10px] text-gold-500 font-medium'
-                  : 'text-[10px] text-smoke-400'"
-              >
-                {{ pairing.label }}
-              </span>
-            </button>
-          }
-        </div>
-
-        <!-- Précisions (conditionnel) -->
-        @if (quickForm.controls.pairing.value) {
-          <input
-            type="text"
-            [formControl]="quickForm.controls.pairingNote"
-            placeholder="Ex: Précisions sur l'accompagnement..."
-            class="px-4 py-2 text-sm bg-transparent border border-zinc-800 rounded-lg text-smoke-200 placeholder:text-smoke-600 focus:outline-none focus:border-gold-500/50 transition-colors"
-          />
-        }
-      </div>
-    </div>
-  `,
+  imports: [CommonModule, FormsModule, AutocompleteComponent, SingleSelectChipsComponent, IconDirective, ButtonComponent],
+  templateUrl: './phase-quick.component.html',
+  styles: [`
+    .question-step {
+      animation: question-enter 0.25s ease-out;
+    }
+    @keyframes question-enter {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .header-summary {
+      animation: header-update 0.3s ease-out;
+    }
+    @keyframes header-update {
+      from { opacity: 0.7; }
+      to { opacity: 1; }
+    }
+  `],
 })
-export class PhaseQuickComponent implements OnInit, OnDestroy {
-  // Services
+export class PhaseQuickComponent implements OnInit {
   readonly #contextStore = inject(ContextStore);
   readonly #searchStore = injectSearchStore();
-  readonly #formService = inject(TastingFormService);
 
   // Inputs
-  cigar = input<CigarResponseDto | undefined>();
-  initialCigar = input<CigarResponseDto | null | undefined>(); // For draft restoration
+  initialCigar = input<CigarBasic | null | undefined>();
+  initialSituation = input<TastingSituation | null | undefined>();
+  initialPairing = input<PairingType | null | undefined>();
+  initialPairingNote = input<string | null | undefined>();
+  initialLocation = input<string | null | undefined>();
+
+  // Outputs
+  dataChange = output<PhaseQuickData>();
+  done = output<void>();
+  sceller = output<void>();
+  explorer = output<void>();
 
   // Constants
-  situations = TASTING_SITUATIONS;
-  pairings = PAIRING_TYPES;
-  pairingIcons = PAIRING_ICONS;
-  situationIcons = SITUATION_ICONS;
+  readonly situations = TASTING_SITUATIONS;
+  readonly pairings = PAIRING_TYPES;
 
-  // Form (from TastingFormService)
-  readonly quickForm = this.#formService.quickForm;
+  // State
+  currentStep = signal<QuestionStep>('cigar');
+  selectedCigar = signal<CigarBasic | null>(null);
+  situationValue = signal<TastingSituation | null>(null);
+  pairingValue = signal<PairingType | null>(null);
+  pairingNoteValue = '';
+  locationValue = '';
+  cigarControl = new FormControl('');
 
-  // Cigar autocomplete search
-  readonly #cigarSearchQuery = signal<string>('');
-  readonly #debouncedCigarQuery = signal<string>('');
-  readonly #selectedCigarId = signal<string | null>(null); // Track selected cigar UUID
-
-  // Search query (reactive)
-  readonly #cigarSearchResults = this.#searchStore.search(() => this.#debouncedCigarQuery());
-
-  // Loading state
-  readonly cigarSearchLoading = this.#cigarSearchResults.loading;
-
-  // Map search results to autocomplete options
-  readonly cigarOptions = computed<AutocompleteOption[]>(() => {
-    const results = this.#cigarSearchResults.data();
-    const cigars = results?.cigars ?? [];
-
-    return cigars.map(cigar => ({
-      value: cigar.id,
-      label: cigar.name,
-      metadata: cigar.description || undefined,
-      logoUrl: cigar.imageUrl || undefined,
-      avatarText: cigar.name[0]?.toUpperCase() || 'C', // Fallback initial
-    }));
-  });
-
-  // Subscriptions
-  #subscriptions: Subscription[] = [];
-
-  // Internal state
   readonly #now = new Date();
 
-  // Computed
+  // Options pour SingleSelectChips
+  readonly situationOptions = computed<SingleSelectOption[]>(() =>
+    this.situations.map(s => ({ id: s.id, label: s.label, emoji: this.getSituationEmoji(s.id) }))
+  );
+
+  readonly pairingOptions = computed<SingleSelectOption[]>(() =>
+    this.pairings.map(p => ({ id: p.id, label: p.label, emoji: this.getPairingEmoji(p.id) }))
+  );
   readonly #moment = computed<TastingMoment>(() => {
     const hour = this.#now.getHours();
     if (hour < 12) return 'MATIN';
@@ -225,133 +108,187 @@ export class PhaseQuickComponent implements OnInit, OnDestroy {
     return 'SOIR';
   });
 
-  formattedDateTime = computed(() => {
-    const date = this.#now.toLocaleDateString('fr-FR', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-    });
-    const time = this.#now.toLocaleTimeString('fr-FR', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-    const momentLabels = { MATIN: 'Matin', APRES_MIDI: 'Après-midi', SOIR: 'Soir' };
-    return `${date} • ${time} • ${momentLabels[this.#moment()]}`;
+  // Cigar search
+  readonly #cigarSearchQuery = signal<string>('');
+  readonly #cigarSearchResults = this.#searchStore.search(() => this.#cigarSearchQuery());
+  readonly cigarSearchLoading = this.#cigarSearchResults.loading;
+  readonly cigarOptions = computed<AutocompleteOption[]>(() => {
+    const results = this.#cigarSearchResults.data();
+    const cigars = results?.cigars ?? [];
+    return cigars.map(cigar => ({
+      value: cigar.id,
+      label: cigar.name,
+      metadata: cigar.description || undefined,
+      logoUrl: cigar.imageUrl || undefined,
+      avatarText: cigar.name[0]?.toUpperCase() || 'C',
+    }));
   });
 
-  contextLabel = computed(() => {
-    const ctx = this.#contextStore.context();
-    return ctx.type === 'solo' ? 'Solo' : ctx.club?.name || 'Club';
+  readonly headerSummary = computed(() => {
+    const date = this.#now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const time = this.#now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const parts = [date, time];
+
+    if (this.situationValue()) {
+      const sit = this.situations.find(s => s.id === this.situationValue());
+      if (sit) parts.push(sit.label);
+    } else {
+      const momentLabels = { MATIN: 'Matin', APRES_MIDI: 'Après-midi', SOIR: 'Soir' };
+      parts.push(momentLabels[this.#moment()]);
+    }
+
+    if (this.pairingValue()) {
+      const pair = this.pairings.find(p => p.id === this.pairingValue());
+      if (pair) parts.push(pair.label);
+    }
+
+    return parts.join(' • ');
   });
 
-  contextIcon = computed(() => {
-    const ctx = this.#contextStore.context();
-    return ctx.type === 'solo' ? 'user' : 'users';
-  });
+  readonly dateFormatted = computed(() => this.#now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }));
+  readonly timeFormatted = computed(() => this.#now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }));
+  readonly situationLabel = computed(() => this.situations.find(s => s.id === this.situationValue())?.label || '');
+  readonly situationEmoji = computed(() => { const v = this.situationValue(); return v ? this.getSituationEmoji(v) : ''; });
+  readonly situationIcon = computed<IconName>(() => { const v = this.situationValue(); return v ? this.getSituationIcon(v) : 'sun'; });
+  readonly pairingLabel = computed(() => this.pairings.find(p => p.id === this.pairingValue())?.label || '');
+  readonly pairingEmoji = computed(() => { const v = this.pairingValue(); return v ? this.getPairingEmoji(v) : ''; });
+  readonly pairingIcon = computed<IconName>(() => { const v = this.pairingValue(); return v ? this.getPairingIcon(v) : 'coffee'; });
 
-  cigarPlaceholder = computed(() => {
-    const momentLabels = {
-      MATIN: 'Le protagoniste de ce matin...',
-      APRES_MIDI: 'Le protagoniste de cet après-midi...',
-      SOIR: 'Le protagoniste de ce soir...',
-    };
-    return momentLabels[this.#moment()];
-  });
-
-  // Outputs
-  dataChange = output<{
-    date: string;
-    moment: TastingMoment;
-    cigar: string;
-    situation: TastingSituation | null;
-    pairing: PairingType | null;
-    pairingNote: string;
-    location: string;
-  }>();
+  #hasRestoredCigar = false;
+  #hasRestoredData = false;
 
   constructor() {
-    // Debounce cigar search (300ms like GlobalSearch)
-    let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
-
     effect(() => {
-      const query = this.#cigarSearchQuery();
-
-      // Clear previous timeout
-      if (debounceTimeout) {
-        clearTimeout(debounceTimeout);
-      }
-
-      // Set new timeout (300ms debounce)
-      debounceTimeout = setTimeout(() => {
-        this.#debouncedCigarQuery.set(query);
-      }, 300);
-    });
-
-    // Watch for initialCigar changes (draft restoration)
-    effect(() => {
-      const initialCigar = this.initialCigar();
-      if (initialCigar) {
-        this.#selectedCigarId.set(initialCigar.id);
-        // Set the FormControl to display the cigar name
-        this.quickForm.controls.cigar.setValue(initialCigar.name, { emitEvent: false });
+      const initial = this.initialCigar();
+      if (this.#hasRestoredCigar) return;
+      if (initial) {
+        this.#hasRestoredCigar = true;
+        this.selectedCigar.set(initial);
       }
     });
 
-    // Listen to form changes and emit dataChange output
-    const formSub = this.quickForm.valueChanges.subscribe(() => {
-      this.#emitChange();
+    effect(() => {
+      const situation = this.initialSituation();
+      const pairing = this.initialPairing();
+      const pairingNote = this.initialPairingNote();
+      const location = this.initialLocation();
+      const cigar = this.initialCigar();
+
+      if (this.#hasRestoredData) return;
+
+      const hasMeaningfulData = !!cigar || !!situation || !!pairing;
+      if (!hasMeaningfulData) return;
+
+      this.#hasRestoredData = true;
+
+      if (situation) this.situationValue.set(situation);
+      if (pairing) this.pairingValue.set(pairing);
+      if (pairingNote) this.pairingNoteValue = pairingNote;
+      if (location) this.locationValue = location;
+
+      if (cigar && situation) {
+        this.currentStep.set('done');
+        this.done.emit();
+      } else if (cigar) {
+        this.currentStep.set('situation');
+      }
     });
 
-    this.#subscriptions.push(formSub);
+    effect(() => {
+      const cigar = this.selectedCigar();
+      const situation = this.situationValue();
+      const pairing = this.pairingValue();
+      if (cigar || situation || pairing) this.emitData();
+    });
   }
 
   ngOnInit(): void {
-    // Auto-emit initial state
-    this.#emitChange();
+    if (!this.selectedCigar()) this.currentStep.set('cigar');
   }
 
-  selectSituation(situation: TastingSituation): void {
-    this.quickForm.controls.situation.setValue(situation);
-  }
-
-  selectPairing(pairing: PairingType): void {
-    this.quickForm.controls.pairing.setValue(pairing);
-  }
-
-  getPairingIcon(pairing: PairingType): any {
-    return this.pairingIcons[pairing];
-  }
-
-  getSituationIcon(situation: TastingSituation): any {
-    return this.situationIcons[situation];
-  }
-
-  onCigarSearch(query: string): void {
-    this.#cigarSearchQuery.set(query);
-  }
+  onCigarSearch(query: string): void { this.#cigarSearchQuery.set(query); }
 
   onCigarSelected(cigarId: string): void {
-    this.#selectedCigarId.set(cigarId);
-    // Trigger data emission with the selected UUID
-    this.#emitChange();
+    const results = this.#cigarSearchResults.data();
+    const cigar = results?.cigars?.find(c => c.id === cigarId);
+    if (cigar) {
+      this.selectedCigar.set(cigar);
+      this.currentStep.set('situation');
+    }
   }
 
-  #emitChange(): void {
-    const value = this.quickForm.getRawValue();
-    // Use the selected cigar ID (UUID) instead of the FormControl value (label)
-    const cigarId = this.#selectedCigarId();
+  editCigar(): void { this.currentStep.set('cigar'); }
+
+  /**
+   * Handler quand une situation est confirmée (après le ring)
+   */
+  onSituationConfirmed(situationId: string): void {
+    this.situationValue.set(situationId as TastingSituation);
+    this.currentStep.set('pairing');
+  }
+
+  getSituationEmoji(id: TastingSituation): string {
+    const emojis: Record<TastingSituation, string> = { APERITIF: '🥂', COCKTAIL: '🍸', DIGESTIF: '🌙' };
+    return emojis[id];
+  }
+
+  getSituationIcon(id: TastingSituation): IconName {
+    const icons: Record<TastingSituation, IconName> = { APERITIF: 'sun', COCKTAIL: 'glass-water', DIGESTIF: 'moon' };
+    return icons[id];
+  }
+
+  /**
+   * Handler quand un pairing est confirmé (après le ring)
+   */
+  onPairingConfirmed(pairingId: string): void {
+    this.pairingValue.set(pairingId as PairingType);
+    this.currentStep.set('pairingNote');
+  }
+
+  skipPairing(): void {
+    this.pairingValue.set(null);
+    this.goToNextAfterPairing();
+  }
+
+  getPairingEmoji(id: PairingType): string {
+    const emojis: Record<PairingType, string> = {
+      CAFE: '☕', THE: '🍵', WHISKY: '🥃', RHUM: '🥃', COGNAC: '🥃', VIN: '🍷', BIERE: '🍺', EAU: '💧', AUTRE: '❓',
+    };
+    return emojis[id];
+  }
+
+  getPairingIcon(id: PairingType): IconName {
+    const icons: Record<PairingType, IconName> = {
+      CAFE: 'coffee', THE: 'cup-soda', WHISKY: 'wine', RHUM: 'wine', COGNAC: 'wine', VIN: 'wine', BIERE: 'beer', EAU: 'droplet', AUTRE: 'circle-help',
+    };
+    return icons[id];
+  }
+
+  submitPairingNote(): void { this.goToNextAfterPairing(); }
+  skipPairingNote(): void { this.pairingNoteValue = ''; this.goToNextAfterPairing(); }
+
+  submitLocation(): void { this.currentStep.set('done'); this.done.emit(); }
+  skipLocation(): void { this.locationValue = ''; this.currentStep.set('done'); this.done.emit(); }
+
+  goToNextAfterPairing(): void {
+    const ctx = this.#contextStore.context();
+    if (ctx.type === 'solo') {
+      this.currentStep.set('location');
+    } else {
+      this.currentStep.set('done');
+      this.done.emit();
+    }
+  }
+
+  emitData(): void {
     this.dataChange.emit({
-      date: value.date,
-      moment: value.moment,
-      cigar: cigarId || '', // Emit UUID if selected, empty string otherwise
-      situation: value.situation,
-      pairing: value.pairing,
-      pairingNote: value.pairingNote,
-      location: '', // Not captured anymore
+      moment: this.#moment(),
+      situation: this.situationValue(),
+      pairing: this.pairingValue(),
+      pairingNote: this.pairingNoteValue || undefined,
+      location: this.locationValue || undefined,
+      cigar: this.selectedCigar()?.id || null,
+      cigarName: this.selectedCigar()?.name || null,
     });
-  }
-
-  ngOnDestroy(): void {
-    this.#subscriptions.forEach(sub => sub.unsubscribe());
   }
 }

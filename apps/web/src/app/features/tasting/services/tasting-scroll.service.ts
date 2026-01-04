@@ -68,8 +68,6 @@ export class TastingScrollService {
         behavior: 'smooth',
         block: 'center',
       });
-    } else {
-      console.warn(`[TastingScroll] Section not found: ${sectionId}`);
     }
   }
 

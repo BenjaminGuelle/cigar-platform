@@ -1,0 +1,249 @@
+<div class="flex flex-col gap-8">
+  <!-- Header Récapitulatif -->
+  <div class="flex flex-col items-center gap-3 pb-6 border-b border-zinc-800">
+    <!-- Cigare -->
+    @if (selectedCigar()) {
+      <div class="flex items-center gap-2">
+        <i name="flame" class="w-5 h-5 text-gold-500"></i>
+        <span class="text-lg text-gold-500 font-display">{{ selectedCigar()?.name }}</span>
+        @if (currentStep() !== 'cigar') {
+          <button
+            type="button"
+            (click)="editCigar()"
+            class="text-sm text-smoke-500 hover:text-gold-500 transition-colors"
+          >
+            <i name="edit" class="w-4 h-4"></i>
+          </button>
+        }
+      </div>
+    }
+
+    <!-- Date / Heure / Context -->
+    <div class="text-sm text-smoke-400 text-center header-summary">
+      {{ headerSummary() }}
+    </div>
+  </div>
+
+  <!-- Question Active -->
+  <div class="flex flex-col gap-6 items-center">
+    @switch (currentStep()) {
+      <!-- Step 0: Cigare Selection -->
+      @case ('cigar') {
+        <div class="question-step w-full max-w-md space-y-4">
+          <p class="text-center text-base text-smoke-200 italic">
+            Le protagoniste de cet instant...
+          </p>
+          <ui-autocomplete
+            placeholder="Rechercher un cigare..."
+            [control]="cigarControl"
+            [options]="cigarOptions()"
+            [loading]="cigarSearchLoading()"
+            [showCreateOption]="false"
+            (search)="onCigarSearch($event)"
+            (valueSelected)="onCigarSelected($event)"
+          />
+        </div>
+      }
+
+      <!-- Step 1: Situation (Single-select avec progress ring) -->
+      @case ('situation') {
+        <div class="question-step w-full max-w-lg space-y-4">
+          <p class="text-center text-base text-smoke-200 italic">
+            Le contexte de cet instant ?
+          </p>
+          <app-single-select-chips
+            [options]="situationOptions()"
+            [columns]="3"
+            size="lg"
+            (confirmed)="onSituationConfirmed($event)"
+          />
+        </div>
+      }
+
+      <!-- Step 2: Pairing (Single-select avec progress ring) -->
+      @case ('pairing') {
+        <div class="question-step w-full max-w-2xl space-y-4">
+          <p class="text-center text-base text-smoke-200 italic">
+            Les Noces — L'alliance du moment ?
+          </p>
+          <app-single-select-chips
+            [options]="pairingOptions()"
+            [columns]="4"
+            size="md"
+            (confirmed)="onPairingConfirmed($event)"
+          />
+          <div class="flex justify-center pt-2">
+            <button
+              type="button"
+              (click)="skipPairing()"
+              class="text-sm text-smoke-500 italic hover:text-gold-500 transition-colors"
+            >
+              Sauter cette question
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Step 3: Pairing Note (conditionnel) -->
+      @case ('pairingNote') {
+        <div class="question-step w-full max-w-md space-y-4">
+          <p class="text-center text-base text-smoke-200 italic">
+            Une précision sur l'accord ?
+          </p>
+          <input
+            type="text"
+            [(ngModel)]="pairingNoteValue"
+            placeholder="Ex: Rhum Diplomatico Reserva Exclusiva..."
+            class="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg text-smoke-200 placeholder:text-smoke-600 focus:outline-none focus:border-gold-500/50 transition-colors"
+            (keyup.enter)="submitPairingNote()"
+          />
+          <div class="flex justify-center gap-4">
+            <button
+              type="button"
+              (click)="skipPairingNote()"
+              class="text-sm text-smoke-500 italic hover:text-gold-500 transition-colors"
+            >
+              Sauter
+            </button>
+            <ui-button
+              size="sm"
+              icon="arrow-right"
+              iconPos="right"
+              customClass="!rounded-full"
+              (clicked)="submitPairingNote()"
+            >
+              Continuer
+            </ui-button>
+          </div>
+        </div>
+      }
+
+      <!-- Step 4: Location (conditionnel Solo) -->
+      @case ('location') {
+        <div class="question-step w-full max-w-md space-y-4">
+          <p class="text-center text-base text-smoke-200 italic">
+            Le Refuge ?
+          </p>
+          <input
+            type="text"
+            [(ngModel)]="locationValue"
+            placeholder="Ex: Terrasse, Bureau, Salon..."
+            class="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg text-smoke-200 placeholder:text-smoke-600 focus:outline-none focus:border-gold-500/50 transition-colors"
+            (keyup.enter)="submitLocation()"
+          />
+          <div class="flex justify-center gap-4">
+            <button
+              type="button"
+              (click)="skipLocation()"
+              class="text-sm text-smoke-500 italic hover:text-gold-500 transition-colors"
+            >
+              Sauter
+            </button>
+            <ui-button
+              size="sm"
+              icon="arrow-right"
+              iconPos="right"
+              customClass="!rounded-full"
+              (clicked)="submitLocation()"
+            >
+              Continuer
+            </ui-button>
+          </div>
+        </div>
+      }
+
+      <!-- Step Final: Done -->
+      @case ('done') {
+        <div class="question-step flex flex-col items-center gap-6 w-full max-w-md">
+          <!-- Titre -->
+          <div class="flex items-center gap-2 text-gold-500">
+            <i name="check" class="w-6 h-6"></i>
+            <span class="font-display text-xl">L'Entrée en Matière</span>
+          </div>
+
+          <!-- Récap Card -->
+          <div class="w-full bg-zinc-900/50 rounded-xl border border-zinc-800 p-4 space-y-3">
+            <!-- Cigare -->
+            @if (selectedCigar()) {
+              <div class="flex items-center gap-2">
+                <i name="flame" class="w-4 h-4 text-gold-500"></i>
+                <span class="text-gold-500 font-medium">{{ selectedCigar()?.name }}</span>
+              </div>
+            }
+
+            <!-- Date/Heure -->
+            <div class="flex items-center gap-2 text-sm text-smoke-400">
+              <i name="calendar" class="w-4 h-4"></i>
+              <span>{{ dateFormatted() }} • {{ timeFormatted() }}</span>
+            </div>
+
+            <!-- Situation -->
+            @if (situationValue()) {
+              <div class="flex items-center gap-2 text-sm text-smoke-300">
+                <i [name]="situationIcon()" class="w-4 h-4"></i>
+                <span>{{ situationLabel() }}</span>
+              </div>
+            }
+
+            <!-- Pairing -->
+            @if (pairingValue()) {
+              <div class="flex items-center gap-2 text-sm text-smoke-300">
+                <i [name]="pairingIcon()" class="w-4 h-4"></i>
+                <span>{{ pairingLabel() }}</span>
+                @if (pairingNoteValue) {
+                  <span class="text-smoke-500">— "{{ pairingNoteValue }}"</span>
+                }
+              </div>
+            }
+
+            <!-- Location (si solo) -->
+            @if (locationValue) {
+              <div class="flex items-center gap-2 text-sm text-smoke-300">
+                <i name="globe" class="w-4 h-4"></i>
+                <span>{{ locationValue }}</span>
+              </div>
+            }
+          </div>
+
+          <!-- Accroche poétique -->
+          <p class="text-center text-smoke-400 italic text-sm px-4">
+            Le décor est planté. Tu peux sceller ce moment ou laisser le cigare te révéler ses secrets...
+          </p>
+
+          <!-- Decision Buttons -->
+          <div class="w-full space-y-3">
+            <!-- Sceller le verdict -->
+            <button
+              type="button"
+              (click)="sceller.emit()"
+              class="w-full p-4 bg-zinc-900 border-2 border-zinc-800 rounded-xl hover:border-gold-500/30 transition-all group"
+            >
+              <div class="flex flex-col items-center gap-1 text-center">
+                <span class="text-base text-smoke-200 group-hover:text-gold-500 transition-colors flex items-center gap-2">
+                  <i name="arrow-down" class="w-4 h-4"></i>
+                  <span>Sceller le verdict</span>
+                </span>
+                <span class="text-xs text-smoke-500">(2 min)</span>
+              </div>
+            </button>
+
+            <!-- Explorer la chronique -->
+            <button
+              type="button"
+              (click)="explorer.emit()"
+              class="w-full p-4 bg-zinc-900 border-2 border-gold-500/20 rounded-xl hover:border-gold-500/50 transition-all group"
+            >
+              <div class="flex flex-col items-center gap-1 text-center">
+                <span class="text-base text-gold-500 group-hover:text-gold-400 transition-colors flex items-center gap-2">
+                  <i name="star" class="w-4 h-4"></i>
+                  <span>Explorer la chronique</span>
+                </span>
+                <span class="text-xs text-smoke-500">(temps du cigare)</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      }
+    }
+  </div>
+</div>

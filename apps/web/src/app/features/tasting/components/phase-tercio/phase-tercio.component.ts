@@ -1,27 +1,56 @@
-import { Component, output, signal, input, effect } from '@angular/core';
+import { Component, output, signal, input, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FlavorPickerComponent, type FlavorTag } from '../flavor-picker/flavor-picker.component';
+import { FlavorPickerComponent } from '../flavor-picker/flavor-picker.component';
 import { IconDirective, ButtonComponent } from '@cigar-platform/shared/ui';
+import type { FlavorTag } from '../../models/tasting-state.model';
+
+export type TercioType = 'first' | 'second' | 'final';
+
+interface TercioContent {
+  tastesIntro: string;
+  aromasIntro: string;
+  title: string;
+  closing: string;
+}
+
+const TERCIO_CONTENT: Record<TercioType, TercioContent> = {
+  first: {
+    tastesIntro: "L'éveil... Les premières notes se révèlent.",
+    aromasIntro: "Au nez, quelles fragrances s'échappent ?",
+    title: "L'Éveil capturé",
+    closing: 'Le premier chapitre se ferme...',
+  },
+  second: {
+    tastesIntro: 'Le cœur bat... La complexité s\'intensifie.',
+    aromasIntro: "Au nez, quelles fragrances s'échappent ?",
+    title: 'Le Cœur capturé',
+    closing: "Le deuxième acte s'achève...",
+  },
+  final: {
+    tastesIntro: 'Le finale... La dernière danse commence.',
+    aromasIntro: "Les dernières volutes s'envolent...",
+    title: 'Le Finale saisi',
+    closing: "La fumée s'éteint... Le voyage tire à sa fin.",
+  },
+};
 
 /**
- * Phase Cold Draw Component (Chat-Like)
- * "Fumage à cru" - Observation avant allumage
+ * Phase Tercio Component (Unified)
+ * Handles all three tercios: first_third, second_third, final_third
  *
  * ALL STARS Architecture ⭐
- * - Chat-like sequential flow
- * - One question at a time
- * - Header recap progressif
+ * - Single parameterized component instead of 3 duplicated ones
+ * - Content computed from tercio type
  *
  * Flow: Tastes → Aromas → Done
  */
-
-type ColdDrawStep = 'tastes' | 'aromas' | 'done';
+type TercioStep = 'tastes' | 'aromas' | 'done';
 
 @Component({
-  selector: 'app-phase-cold-draw',
+  selector: 'app-phase-tercio',
   standalone: true,
   imports: [CommonModule, FlavorPickerComponent, IconDirective, ButtonComponent],
-  templateUrl: './phase-cold-draw.component.html',
+  templateUrl: './phase-tercio.component.html',
   styles: [`
     .question-step { animation: question-enter 0.25s ease-out; }
     @keyframes question-enter {
@@ -35,19 +64,20 @@ type ColdDrawStep = 'tastes' | 'aromas' | 'done';
     }
   `],
 })
-export class PhaseColdDrawComponent {
-  // Restoration inputs
+export class PhaseTercioComponent {
+  tercio = input.required<TercioType>();
+
   initialTastes = input<FlavorTag[] | null | undefined>();
   initialAromas = input<FlavorTag[] | null | undefined>();
 
-  // State
-  currentStep = signal<ColdDrawStep>('tastes');
+  content = computed(() => TERCIO_CONTENT[this.tercio()]);
+
+  currentStep = signal<TercioStep>('tastes');
   tastesValue = signal<FlavorTag[]>([]);
   aromasValue = signal<FlavorTag[]>([]);
 
   #hasRestored = false;
 
-  // Outputs
   dataChange = output<{ tastes: FlavorTag[]; aromas: FlavorTag[] }>();
   done = output<void>();
 

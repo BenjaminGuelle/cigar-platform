@@ -1,6 +1,6 @@
 import { Component, input, output, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ModalComponent, IconDirective } from '@cigar-platform/shared/ui';
+import { ModalComponent, IconDirective, ButtonComponent } from '@cigar-platform/shared/ui';
 import type { TastingResponseDto } from '@cigar-platform/types';
 
 /**
@@ -26,7 +26,7 @@ import type { TastingResponseDto } from '@cigar-platform/types';
 @Component({
   selector: 'app-draft-confirmation-modal',
   standalone: true,
-  imports: [CommonModule, ModalComponent, IconDirective],
+  imports: [CommonModule, ModalComponent, IconDirective, ButtonComponent],
   template: `
     <ui-modal
       [isOpen]="isOpen()"
@@ -77,22 +77,22 @@ import type { TastingResponseDto } from '@cigar-platform/types';
         <!-- Actions -->
         <div class="flex flex-col gap-3">
           <!-- Continuer -->
-          <button
-            type="button"
-            (click)="continue.emit()"
-            class="px-4 py-3 bg-gold-500 text-black font-medium rounded-lg hover:bg-gold-400 transition-colors"
+          <ui-button
+            variant="primary"
+            fullWidth
+            (clicked)="continue.emit()"
           >
             Reprendre le Rituel
-          </button>
+          </ui-button>
 
           <!-- Nouveau -->
-          <button
-            type="button"
-            (click)="newTasting.emit()"
-            class="px-4 py-3 bg-transparent border-2 border-zinc-800 text-smoke-300 font-medium rounded-lg hover:border-gold-500/30 transition-colors"
+          <ui-button
+            variant="outline"
+            fullWidth
+            (clicked)="newTasting.emit()"
           >
             Nouveau Rituel
-          </button>
+          </ui-button>
         </div>
 
         <!-- Note -->

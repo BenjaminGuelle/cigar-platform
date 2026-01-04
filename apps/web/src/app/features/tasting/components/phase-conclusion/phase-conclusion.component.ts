@@ -1,4 +1,4 @@
-import { Component, input, output, signal } from '@angular/core';
+import { Component, output, signal, input, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   DRAWS,
@@ -9,441 +9,225 @@ import {
   VARIETY_LABELS,
   MOUTH_IMPRESSIONS,
   PERSISTENCES,
-  type Draw,
-  type AshNature,
-  type Balance,
-  type Terroir,
-  type MouthImpression,
-  type Persistence,
 } from '@cigar-platform/shared/constants';
+import { SingleSelectChipsComponent, type SingleSelectOption } from '../shared/single-select-chips/single-select-chips.component';
+import { IconDirective, ButtonComponent } from '@cigar-platform/shared/ui';
 
 /**
- * Phase Conclusion Component
- * Final technical assessment
+ * Phase Conclusion Component (Chat-Like)
+ * "Conclusion" - Bilan technique final de la dégustation
  *
- * Captures:
- * - Draw quality
- * - Ash nature
- * - Balance
- * - Terroir
- * - Power (1-10 scale)
- * - Variety (1-10 scale)
- * - Mouth impression (multi-select)
- * - Persistence
+ * ALL STARS Architecture ⭐
+ * - Chat-like sequential flow
+ * - One section at a time
+ * - Header recap progressif
+ *
+ * Flow: Technique → Corps → Impression → Done
  */
+
+type ConclusionStep = 'technique' | 'corps' | 'impression' | 'done';
+
 @Component({
   selector: 'app-phase-conclusion',
   standalone: true,
-  imports: [CommonModule],
-  template: `
-    <div class="phase-conclusion">
-      <div class="phase-header">
-        <h2>Conclusion</h2>
-        <p class="phase-subtitle">Bilan technique de la dégustation</p>
-      </div>
-
-      <div class="phase-content">
-        <!-- Technique Section -->
-        <div class="section">
-          <h3 class="section-title">Technique</h3>
-
-          <!-- Draw -->
-          <div class="form-group">
-            <label>Tirage</label>
-            <div class="chip-group">
-              @for (draw of draws; track draw.id) {
-                <button
-                  type="button"
-                  class="chip"
-                  [class.chip-selected]="drawValue() === draw.id"
-                  (click)="selectDraw(draw.id)"
-                >
-                  {{ draw.label }}
-                </button>
-              }
-            </div>
-          </div>
-
-          <!-- Ash Nature -->
-          <div class="form-group">
-            <label>Nature de la cendre</label>
-            <div class="chip-group">
-              @for (ash of ashNatures; track ash.id) {
-                <button
-                  type="button"
-                  class="chip"
-                  [class.chip-selected]="ashValue() === ash.id"
-                  (click)="selectAsh(ash.id)"
-                >
-                  {{ ash.label }}
-                </button>
-              }
-            </div>
-          </div>
-
-          <!-- Balance -->
-          <div class="form-group">
-            <label>Équilibre</label>
-            <div class="chip-group">
-              @for (balance of balances; track balance.id) {
-                <button
-                  type="button"
-                  class="chip"
-                  [class.chip-selected]="balanceValue() === balance.id"
-                  (click)="selectBalance(balance.id)"
-                >
-                  {{ balance.label }}
-                </button>
-              }
-            </div>
-          </div>
-
-          <!-- Terroir -->
-          <div class="form-group">
-            <label>Terroir</label>
-            <div class="chip-group">
-              @for (terroir of terroirs; track terroir.id) {
-                <button
-                  type="button"
-                  class="chip"
-                  [class.chip-selected]="terroirValue() === terroir.id"
-                  (click)="selectTerroir(terroir.id)"
-                >
-                  {{ terroir.label }}
-                </button>
-              }
-            </div>
-          </div>
-        </div>
-
-        <!-- Corps Section -->
-        <div class="section">
-          <h3 class="section-title">Corps</h3>
-
-          <!-- Power -->
-          <div class="form-group">
-            <label>Puissance: {{ getPowerLabel(powerValue()) }}</label>
-            <input
-              type="range"
-              min="1"
-              max="10"
-              [value]="powerValue()"
-              (input)="setPower($any($event.target).value)"
-              class="slider"
-            />
-          </div>
-
-          <!-- Variety -->
-          <div class="form-group">
-            <label>Variété: {{ getVarietyLabel(varietyValue()) }}</label>
-            <input
-              type="range"
-              min="1"
-              max="10"
-              [value]="varietyValue()"
-              (input)="setVariety($any($event.target).value)"
-              class="slider"
-            />
-          </div>
-        </div>
-
-        <!-- Impression Section -->
-        <div class="section">
-          <h3 class="section-title">Impression finale</h3>
-
-          <!-- Mouth Impression (multi-select) -->
-          <div class="form-group">
-            <label>En bouche</label>
-            <div class="chip-group">
-              @for (impression of impressions; track impression.id) {
-                <button
-                  type="button"
-                  class="chip"
-                  [class.chip-selected]="isImpressionSelected(impression.id)"
-                  (click)="toggleImpression(impression.id)"
-                >
-                  {{ impression.label }}
-                </button>
-              }
-            </div>
-          </div>
-
-          <!-- Persistence -->
-          <div class="form-group">
-            <label>Persistance aromatique</label>
-            <div class="chip-group">
-              @for (persistence of persistences; track persistence.id) {
-                <button
-                  type="button"
-                  class="chip"
-                  [class.chip-selected]="persistenceValue() === persistence.id"
-                  (click)="selectPersistence(persistence.id)"
-                >
-                  {{ persistence.label }}
-                </button>
-              }
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Actions -->
-      <div class="phase-actions">
-        <button class="btn btn-secondary" (click)="back.emit()">
-          ← Retour
-        </button>
-        <button class="btn btn-primary" (click)="next.emit()">
-          Continuer →
-        </button>
-      </div>
-    </div>
-  `,
-  styles: [
-    `
-      .phase-conclusion {
-        display: flex;
-        flex-direction: column;
-        gap: 2rem;
-      }
-
-      .phase-header {
-        text-align: center;
-      }
-
-      .phase-header h2 {
-        margin: 0 0 0.5rem;
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: var(--color-text-primary);
-      }
-
-      .phase-subtitle {
-        margin: 0;
-        font-size: 0.875rem;
-        color: var(--color-text-secondary);
-      }
-
-      .phase-content {
-        display: flex;
-        flex-direction: column;
-        gap: 2rem;
-      }
-
-      .section {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-      }
-
-      .section-title {
-        margin: 0;
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: var(--color-text-primary);
-        padding-bottom: 0.5rem;
-        border-bottom: 1px solid var(--color-border);
-      }
-
-      .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-      }
-
-      .form-group label {
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: var(--color-text-primary);
-      }
-
-      .chip-group {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-      }
-
-      .chip {
-        padding: 0.5rem 1rem;
-        border: 1px solid var(--color-border);
-        border-radius: 20px;
-        background: var(--color-surface);
-        color: var(--color-text-primary);
-        font-size: 0.875rem;
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-
-      .chip:hover {
-        background: var(--color-hover);
-      }
-
-      .chip-selected {
-        background: var(--color-primary);
-        color: white;
-        border-color: var(--color-primary);
-      }
-
-      .slider {
-        width: 100%;
-        height: 8px;
-        border-radius: 4px;
-        background: var(--color-border);
-        outline: none;
-        -webkit-appearance: none;
-      }
-
-      .slider::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        background: var(--color-primary);
-        cursor: pointer;
-      }
-
-      .slider::-moz-range-thumb {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        background: var(--color-primary);
-        cursor: pointer;
-        border: none;
-      }
-
-      .phase-actions {
-        display: flex;
-        justify-content: space-between;
-        gap: 1rem;
-        padding-top: 1rem;
-        border-top: 1px solid var(--color-border);
-      }
-
-      .btn {
-        padding: 0.75rem 2rem;
-        border: none;
-        border-radius: 8px;
-        font-size: 1rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-
-      .btn-primary {
-        background: var(--color-primary);
-        color: white;
-      }
-
-      .btn-primary:hover {
-        opacity: 0.9;
-      }
-
-      .btn-secondary {
-        background: transparent;
-        color: var(--color-text-primary);
-        border: 1px solid var(--color-border);
-      }
-
-      .btn-secondary:hover {
-        background: var(--color-hover);
-      }
-    `,
-  ],
+  imports: [CommonModule, SingleSelectChipsComponent, IconDirective, ButtonComponent],
+  templateUrl: './phase-conclusion.component.html',
+  styles: [`
+    .question-step {
+      animation: question-enter 0.25s ease-out;
+    }
+    @keyframes question-enter {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .header-summary {
+      animation: header-update 0.3s ease-out;
+    }
+    @keyframes header-update {
+      from { opacity: 0.7; }
+      to { opacity: 1; }
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 8px;
+      border-radius: 4px;
+      background: linear-gradient(to right, rgb(212 175 55), rgb(212 175 55 / 0.2));
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: rgb(212 175 55);
+      cursor: pointer;
+      margin-top: -6px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    input[type="range"]::-moz-range-track {
+      height: 8px;
+      border-radius: 4px;
+      background: linear-gradient(to right, rgb(212 175 55), rgb(212 175 55 / 0.2));
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: rgb(212 175 55);
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+  `],
 })
 export class PhaseConclusionComponent {
   // Constants
-  draws = DRAWS;
-  ashNatures = ASH_NATURES;
-  balances = BALANCES;
-  terroirs = TERROIRS;
-  powerLabels = STRENGTH_LABELS;
-  varietyLabels = VARIETY_LABELS;
-  impressions = MOUTH_IMPRESSIONS;
-  persistences = PERSISTENCES;
+  readonly draws = DRAWS;
+  readonly ashNatures = ASH_NATURES;
+  readonly balances = BALANCES;
+  readonly terroirs = TERROIRS;
+  readonly powerLabels = STRENGTH_LABELS;
+  readonly varietyLabels = VARIETY_LABELS;
+  readonly impressions = MOUTH_IMPRESSIONS;
+  readonly persistences = PERSISTENCES;
 
-  // Internal state
-  drawValue = signal<Draw | null>(null);
-  ashValue = signal<AshNature | null>(null);
-  balanceValue = signal<Balance | null>(null);
-  terroirValue = signal<Terroir | null>(null);
+  // Restoration inputs
+  initialDraw = input<string | null | undefined>();
+  initialAsh = input<string | null | undefined>();
+  initialBalance = input<string | null | undefined>();
+  initialTerroir = input<string | null | undefined>();
+  initialPower = input<number | null | undefined>();
+  initialVariety = input<number | null | undefined>();
+  initialImpressions = input<string[] | null | undefined>();
+  initialPersistence = input<string | null | undefined>();
+
+  // State
+  currentStep = signal<ConclusionStep>('technique');
+  drawValue = signal<string | null>(null);
+  ashValue = signal<string | null>(null);
+  balanceValue = signal<string | null>(null);
+  terroirValue = signal<string | null>(null);
   powerValue = signal<number>(5);
   varietyValue = signal<number>(5);
-  impressionsValue = signal<MouthImpression[]>([]);
-  persistenceValue = signal<Persistence | null>(null);
+  impressionsValue = signal<string[]>([]);
+  persistenceValue = signal<string | null>(null);
+
+  // Options pour SingleSelectChips
+  readonly drawOptions = computed<SingleSelectOption[]>(() =>
+    this.draws.map(d => ({ id: d.id, label: d.label }))
+  );
+  readonly ashOptions = computed<SingleSelectOption[]>(() =>
+    this.ashNatures.map(a => ({ id: a.id, label: a.label }))
+  );
+  readonly balanceOptions = computed<SingleSelectOption[]>(() =>
+    this.balances.map(b => ({ id: b.id, label: b.label }))
+  );
+  readonly terroirOptions = computed<SingleSelectOption[]>(() =>
+    this.terroirs.map(t => ({ id: t.id, label: t.label }))
+  );
+  readonly persistenceOptions = computed<SingleSelectOption[]>(() =>
+    this.persistences.map(p => ({ id: p.id, label: p.label }))
+  );
+
+  #hasRestored = false;
 
   // Outputs
-  back = output<void>();
-  next = output<void>();
   dataChange = output<{
-    draw: Draw | null;
-    ashNature: AshNature | null;
-    balance: Balance | null;
-    terroir: Terroir | null;
+    draw: string | null;
+    ashNature: string | null;
+    balance: string | null;
+    terroir: string | null;
     power: number;
     variety: number;
-    mouthImpression: MouthImpression[];
-    persistence: Persistence | null;
+    mouthImpression: string[];
+    persistence: string | null;
   }>();
+  done = output<void>();
 
-  selectDraw(id: Draw): void {
-    this.drawValue.set(id);
-    this.emitChange();
+  constructor() {
+    effect(() => {
+      if (this.#hasRestored) return;
+
+      const draw = this.initialDraw();
+      const ash = this.initialAsh();
+      const balance = this.initialBalance();
+      const terroir = this.initialTerroir();
+      const power = this.initialPower();
+      const variety = this.initialVariety();
+      const impressions = this.initialImpressions();
+      const persistence = this.initialPersistence();
+
+      const hasTechnique = draw && ash && balance && terroir;
+      const hasImpression = (impressions && impressions.length > 0) && persistence;
+
+      if (!hasTechnique && !hasImpression) return;
+
+      this.#hasRestored = true;
+
+      if (draw) this.drawValue.set(draw);
+      if (ash) this.ashValue.set(ash);
+      if (balance) this.balanceValue.set(balance);
+      if (terroir) this.terroirValue.set(terroir);
+      if (power !== null && power !== undefined) this.powerValue.set(power);
+      if (variety !== null && variety !== undefined) this.varietyValue.set(variety);
+      if (impressions && impressions.length > 0) this.impressionsValue.set(impressions);
+      if (persistence) this.persistenceValue.set(persistence);
+
+      if (hasTechnique && hasImpression) {
+        this.currentStep.set('done');
+        this.done.emit();
+      } else if (hasTechnique) {
+        this.currentStep.set('impression');
+      }
+    });
   }
 
-  selectAsh(id: AshNature): void {
-    this.ashValue.set(id);
-    this.emitChange();
+  // Step 1: Technique
+  selectDraw(id: string): void { this.drawValue.set(id); this.emitData(); }
+  selectAsh(id: string): void { this.ashValue.set(id); this.emitData(); }
+  selectBalance(id: string): void { this.balanceValue.set(id); this.emitData(); }
+  selectTerroir(id: string): void { this.terroirValue.set(id); this.emitData(); }
+  isTechniqueValid(): boolean {
+    return !!(this.drawValue() && this.ashValue() && this.balanceValue() && this.terroirValue());
   }
+  goToCorps(): void { this.currentStep.set('corps'); }
 
-  selectBalance(id: Balance): void {
-    this.balanceValue.set(id);
-    this.emitChange();
+  // Step 2: Corps
+  onPowerInput(event: Event): void {
+    this.powerValue.set(parseInt((event.target as HTMLInputElement).value, 10));
+    this.emitData();
   }
-
-  selectTerroir(id: Terroir): void {
-    this.terroirValue.set(id);
-    this.emitChange();
+  onVarietyInput(event: Event): void {
+    this.varietyValue.set(parseInt((event.target as HTMLInputElement).value, 10));
+    this.emitData();
   }
+  goToImpression(): void { this.currentStep.set('impression'); }
 
-  setPower(value: string): void {
-    this.powerValue.set(parseInt(value, 10));
-    this.emitChange();
-  }
-
-  setVariety(value: string): void {
-    this.varietyValue.set(parseInt(value, 10));
-    this.emitChange();
-  }
-
-  isImpressionSelected(id: MouthImpression): boolean {
-    return this.impressionsValue().includes(id);
-  }
-
-  toggleImpression(id: MouthImpression): void {
+  // Step 3: Impression
+  isImpressionSelected(id: string): boolean { return this.impressionsValue().includes(id); }
+  toggleImpression(id: string): void {
     const current = this.impressionsValue();
-    const newValue = current.includes(id)
-      ? current.filter((i) => i !== id)
-      : [...current, id];
-    this.impressionsValue.set(newValue);
-    this.emitChange();
+    this.impressionsValue.set(current.includes(id) ? current.filter(i => i !== id) : [...current, id]);
+    this.emitData();
   }
+  selectPersistence(id: string): void { this.persistenceValue.set(id); this.emitData(); }
+  isImpressionValid(): boolean { return this.impressionsValue().length > 0 && !!this.persistenceValue(); }
+  goToDone(): void { this.currentStep.set('done'); this.done.emit(); }
 
-  selectPersistence(id: Persistence): void {
-    this.persistenceValue.set(id);
-    this.emitChange();
-  }
+  // Label Helpers
+  getDrawLabel(id: string): string { return this.draws.find(d => d.id === id)?.label ?? id; }
+  getAshLabel(id: string): string { return this.ashNatures.find(a => a.id === id)?.label ?? id; }
+  getBalanceLabel(id: string): string { return this.balances.find(b => b.id === id)?.label ?? id; }
+  getTerroirLabel(id: string): string { return this.terroirs.find(t => t.id === id)?.label ?? id; }
+  getPowerLabel(value: number): string { return this.powerLabels.find(l => l.value === value)?.label ?? ''; }
+  getVarietyLabel(value: number): string { return this.varietyLabels.find(l => l.value === value)?.label ?? ''; }
+  getImpressionLabel(id: string): string { return this.impressions.find(i => i.id === id)?.label ?? id; }
+  getPersistenceLabel(id: string): string { return this.persistences.find(p => p.id === id)?.label ?? id; }
 
-  getPowerLabel(value: number): string {
-    const label = this.powerLabels.find((l) => l.value === value);
-    return label ? label.label : '';
-  }
-
-  getVarietyLabel(value: number): string {
-    const label = this.varietyLabels.find((l) => l.value === value);
-    return label ? label.label : '';
-  }
-
-  private emitChange(): void {
+  private emitData(): void {
     this.dataChange.emit({
       draw: this.drawValue(),
       ashNature: this.ashValue(),

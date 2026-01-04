@@ -1,0 +1,149 @@
+<div class="flex flex-col gap-8">
+  <!-- Header Recap (construit progressivement) -->
+  @if (currentStep() !== 'aspect') {
+    <div class="header-summary flex flex-wrap items-center justify-center gap-3 text-sm text-smoke-400 pb-4 border-b border-zinc-800">
+      @if (aspectValue()) {
+        <div class="flex items-center gap-2">
+          <i name="check" class="w-4 h-4 text-gold-500"></i>
+          <span>Aspect : {{ formatAspect() }}</span>
+        </div>
+      }
+      @if (colorValue()) {
+        <div class="flex items-center gap-2">
+          <i name="check" class="w-4 h-4 text-gold-500"></i>
+          <span>Couleur : {{ formatColor() }}</span>
+        </div>
+      }
+      @if (touchValue()) {
+        <div class="flex items-center gap-2">
+          <i name="check" class="w-4 h-4 text-gold-500"></i>
+          <span>Toucher : {{ formatTouch() }}</span>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Question Active -->
+  <div class="flex flex-col gap-6 items-center">
+    @switch (currentStep()) {
+      <!-- Step 1: Wrapper Aspect (single-select + auto-advance) -->
+      @case ('aspect') {
+        <div class="question-step flex flex-col gap-8 items-center w-full max-w-md">
+          <p class="text-center text-lg md:text-xl text-smoke-300 italic max-w-md font-light tracking-wide">
+            Sous vos doigts, que révèle la cape ?
+          </p>
+
+          <div class="flex flex-col gap-3 w-full">
+            <label class="text-base font-display text-gold-500 tracking-wide text-center">
+              L'Apparence
+            </label>
+            <app-single-select-chips
+              [options]="aspectOptions()"
+              variant="pill"
+              (confirmed)="onAspectConfirmed($event)"
+            />
+          </div>
+        </div>
+      }
+
+      <!-- Step 2: Wrapper Color -->
+      @case ('color') {
+        <div class="question-step flex flex-col gap-8 items-center w-full max-w-2xl">
+          <p class="text-center text-lg md:text-xl text-smoke-300 italic max-w-md font-light tracking-wide">
+            Quelle teinte habille ce module ?
+          </p>
+
+          <div class="flex flex-col gap-3 w-full">
+            <label class="text-base font-display text-gold-500 tracking-wide text-center">
+              La Robe
+            </label>
+            <app-single-select-chips
+              [options]="colorOptions()"
+              [columns]="3"
+              [mobileColumns]="2"
+              variant="card"
+              size="md"
+              (confirmed)="onColorConfirmed($event)"
+            />
+          </div>
+        </div>
+      }
+
+      <!-- Step 3: Touch (single-select + auto-advance) -->
+      @case ('touch') {
+        <div class="question-step flex flex-col gap-8 items-center w-full max-w-md">
+          <p class="text-center text-lg md:text-xl text-smoke-300 italic max-w-md font-light tracking-wide">
+            Comment répond la cape sous la pression ?
+          </p>
+
+          <div class="flex flex-col gap-3 w-full">
+            <label class="text-base font-display text-gold-500 tracking-wide text-center">
+              Au Toucher
+            </label>
+            <app-single-select-chips
+              [options]="touchOptions()"
+              variant="pill"
+              (confirmed)="onTouchConfirmed($event)"
+            />
+          </div>
+        </div>
+      }
+
+      <!-- Step 4: Done (Recap) -->
+      @case ('done') {
+        <div class="question-step flex flex-col items-center gap-6 w-full max-w-md">
+          <!-- Titre -->
+          <div class="flex items-center gap-2 text-gold-500">
+            <i name="check" class="w-6 h-6"></i>
+            <span class="font-display text-xl">La Cape Se Dévoile</span>
+          </div>
+
+          <!-- Recap Card -->
+          <div class="w-full bg-zinc-900/50 rounded-xl border border-zinc-800 p-6 space-y-4">
+            <!-- Aspect -->
+            @if (aspectValue()) {
+              <div class="flex flex-col gap-2">
+                <span class="text-xs text-smoke-500 uppercase tracking-wide">Apparence</span>
+                <span class="text-sm text-gold-500 font-medium">{{ formatAspect() }}</span>
+              </div>
+            }
+
+            <!-- Couleur -->
+            @if (colorValue()) {
+              <div class="flex flex-col gap-2 pt-2 border-t border-zinc-800">
+                <span class="text-xs text-smoke-500 uppercase tracking-wide">Robe</span>
+                <span class="text-sm text-gold-500 font-medium">{{ formatColor() }}</span>
+              </div>
+            }
+
+            <!-- Toucher -->
+            @if (touchValue()) {
+              <div class="flex flex-col gap-2 pt-2 border-t border-zinc-800">
+                <span class="text-xs text-smoke-500 uppercase tracking-wide">Toucher</span>
+                <span class="text-sm text-gold-500 font-medium">{{ formatTouch() }}</span>
+              </div>
+            }
+          </div>
+
+          <!-- Accroche poétique -->
+          <p class="text-center text-smoke-400 italic text-sm px-4">
+            Les premières confidences sont saisies...
+          </p>
+
+          <!-- Bouton final -->
+          <ui-button
+            variant="primary"
+            size="lg"
+            fullWidth
+            icon="arrow-right"
+            iconPos="right"
+            customClass="!rounded-full !text-lg"
+            (clicked)="done.emit()"
+          >
+            Poursuivre
+          </ui-button>
+        </div>
+      }
+    }
+  </div>
+</div>

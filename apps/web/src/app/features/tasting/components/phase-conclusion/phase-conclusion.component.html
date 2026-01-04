@@ -1,0 +1,310 @@
+<div class="flex flex-col gap-8">
+  <!-- Header Recap (construit progressivement) -->
+  @if (currentStep() !== 'technique') {
+    <div class="header-summary flex flex-wrap items-center justify-center gap-3 text-sm text-smoke-400 pb-4 border-b border-zinc-800">
+      @if (drawValue()) {
+        <div class="flex items-center gap-2">
+          <i name="check" class="w-4 h-4 text-gold-500"></i>
+          <span>{{ getDrawLabel(drawValue()!) }}</span>
+        </div>
+      }
+      @if (ashValue()) {
+        <div class="flex items-center gap-2">
+          <i name="check" class="w-4 h-4 text-gold-500"></i>
+          <span>{{ getAshLabel(ashValue()!) }}</span>
+        </div>
+      }
+      @if (balanceValue()) {
+        <div class="flex items-center gap-2">
+          <i name="check" class="w-4 h-4 text-gold-500"></i>
+          <span>{{ getBalanceLabel(balanceValue()!) }}</span>
+        </div>
+      }
+      @if (powerValue() !== 5) {
+        <div class="flex items-center gap-2">
+          <i name="check" class="w-4 h-4 text-gold-500"></i>
+          <span>{{ getPowerLabel(powerValue()) }}</span>
+        </div>
+      }
+      @if (impressionsValue().length > 0) {
+        <div class="flex items-center gap-2">
+          <i name="check" class="w-4 h-4 text-gold-500"></i>
+          <span>{{ impressionsValue().length }} impression(s)</span>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Question Active -->
+  <div class="flex flex-col gap-6 items-center">
+    @switch (currentStep()) {
+      <!-- Step 1: Technique -->
+      @case ('technique') {
+        <div class="question-step flex flex-col gap-8 items-center w-full max-w-2xl">
+          <p class="text-center text-lg md:text-xl text-smoke-300 italic max-w-md font-light tracking-wide">
+            Le savoir-faire se révèle dans chaque détail...
+          </p>
+
+          <!-- Draw -->
+          <div class="flex flex-col gap-4 w-full">
+            <h3 class="text-center text-xl font-display text-gold-500 tracking-wide">Tirage</h3>
+            <app-single-select-chips
+              [options]="drawOptions()"
+              [value]="drawValue()"
+              variant="pill"
+              [immediate]="true"
+              (confirmed)="selectDraw($event)"
+            />
+          </div>
+
+          <!-- Ash Nature -->
+          <div class="flex flex-col gap-4 w-full">
+            <h3 class="text-center text-xl font-display text-gold-500 tracking-wide">Nature de la cendre</h3>
+            <app-single-select-chips
+              [options]="ashOptions()"
+              [value]="ashValue()"
+              variant="pill"
+              [immediate]="true"
+              (confirmed)="selectAsh($event)"
+            />
+          </div>
+
+          <!-- Balance -->
+          <div class="flex flex-col gap-4 w-full">
+            <h3 class="text-center text-xl font-display text-gold-500 tracking-wide">Équilibre</h3>
+            <app-single-select-chips
+              [options]="balanceOptions()"
+              [value]="balanceValue()"
+              variant="pill"
+              [immediate]="true"
+              (confirmed)="selectBalance($event)"
+            />
+          </div>
+
+          <!-- Terroir -->
+          <div class="flex flex-col gap-4 w-full">
+            <h3 class="text-center text-xl font-display text-gold-500 tracking-wide">Terroir</h3>
+            <app-single-select-chips
+              [options]="terroirOptions()"
+              [value]="terroirValue()"
+              variant="pill"
+              [immediate]="true"
+              (confirmed)="selectTerroir($event)"
+            />
+          </div>
+
+          @if (isTechniqueValid()) {
+            <ui-button
+              icon="arrow-right"
+              iconPos="right"
+              customClass="!rounded-full"
+              (clicked)="goToCorps()"
+            >
+              Continuer
+            </ui-button>
+          }
+        </div>
+      }
+
+      <!-- Step 2: Corps -->
+      @case ('corps') {
+        <div class="question-step flex flex-col gap-8 items-center w-full max-w-2xl">
+          <p class="text-center text-lg md:text-xl text-smoke-300 italic max-w-md font-light tracking-wide">
+            La puissance et la variété dessinent le caractère...
+          </p>
+
+          <!-- Power -->
+          <div class="flex flex-col gap-4 w-full">
+            <h3 class="text-center text-xl font-display text-gold-500 tracking-wide">
+              Puissance
+              <span class="text-sm font-normal text-gold-400 ml-2">{{ getPowerLabel(powerValue()) }}</span>
+            </h3>
+            <input
+              type="range"
+              min="1"
+              max="10"
+              [value]="powerValue()"
+              (input)="onPowerInput($event)"
+              class="w-full cursor-pointer"
+            />
+            <div class="flex justify-between text-xs text-smoke-500">
+              <span>Léger</span>
+              <span>Puissant</span>
+            </div>
+          </div>
+
+          <!-- Variety -->
+          <div class="flex flex-col gap-4 w-full">
+            <h3 class="text-center text-xl font-display text-gold-500 tracking-wide">
+              Variété
+              <span class="text-sm font-normal text-gold-400 ml-2">{{ getVarietyLabel(varietyValue()) }}</span>
+            </h3>
+            <input
+              type="range"
+              min="1"
+              max="10"
+              [value]="varietyValue()"
+              (input)="onVarietyInput($event)"
+              class="w-full cursor-pointer"
+            />
+            <div class="flex justify-between text-xs text-smoke-500">
+              <span>Simple</span>
+              <span>Complexe</span>
+            </div>
+          </div>
+
+          <ui-button
+            icon="arrow-right"
+            iconPos="right"
+            customClass="!rounded-full"
+            (clicked)="goToImpression()"
+          >
+            Continuer
+          </ui-button>
+        </div>
+      }
+
+      <!-- Step 3: Impression -->
+      @case ('impression') {
+        <div class="question-step flex flex-col gap-8 items-center w-full max-w-2xl">
+          <p class="text-center text-lg md:text-xl text-smoke-300 italic max-w-md font-light tracking-wide">
+            L'instant présent se grave dans la mémoire...
+          </p>
+
+          <!-- Mouth Impression (multi-select) -->
+          <div class="flex flex-col gap-4 w-full">
+            <h3 class="text-center text-xl font-display text-gold-500 tracking-wide">En bouche</h3>
+            <div class="flex flex-wrap justify-center gap-2">
+              @for (impression of impressions; track impression.id) {
+                <button
+                  type="button"
+                  class="px-4 py-2 text-sm rounded-full transition-all"
+                  [class]="isImpressionSelected(impression.id)
+                    ? 'bg-gold-500 text-zinc-900 font-medium'
+                    : 'bg-zinc-900 text-smoke-300 border border-zinc-800 hover:border-gold-500/30'"
+                  (click)="toggleImpression(impression.id)"
+                >
+                  {{ impression.label }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Persistence -->
+          <div class="flex flex-col gap-4 w-full">
+            <h3 class="text-center text-xl font-display text-gold-500 tracking-wide">Persistance aromatique</h3>
+            <app-single-select-chips
+              [options]="persistenceOptions()"
+              [value]="persistenceValue()"
+              variant="pill"
+              [immediate]="true"
+              (confirmed)="selectPersistence($event)"
+            />
+          </div>
+
+          @if (isImpressionValid()) {
+            <ui-button
+              icon="arrow-right"
+              iconPos="right"
+              customClass="!rounded-full"
+              (clicked)="goToDone()"
+            >
+              Continuer
+            </ui-button>
+          }
+        </div>
+      }
+
+      <!-- Step 4: Done (Recap) -->
+      @case ('done') {
+        <div class="question-step flex flex-col items-center gap-6 w-full max-w-2xl">
+          <!-- Titre -->
+          <div class="flex items-center gap-2 text-gold-500">
+            <i name="check" class="w-6 h-6"></i>
+            <span class="font-display text-xl">Conclusion capturée</span>
+          </div>
+
+          <!-- Recap Card -->
+          <div class="w-full bg-zinc-900/50 rounded-xl border border-zinc-800 p-6 space-y-4">
+            <!-- Technique -->
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-smoke-500 uppercase tracking-wide">Technique</span>
+              <div class="flex flex-wrap gap-2">
+                @if (drawValue()) {
+                  <span class="px-3 py-1 text-xs bg-gold-500/10 text-gold-500 rounded-full border border-gold-500/20">
+                    {{ getDrawLabel(drawValue()!) }}
+                  </span>
+                }
+                @if (ashValue()) {
+                  <span class="px-3 py-1 text-xs bg-gold-500/10 text-gold-500 rounded-full border border-gold-500/20">
+                    {{ getAshLabel(ashValue()!) }}
+                  </span>
+                }
+                @if (balanceValue()) {
+                  <span class="px-3 py-1 text-xs bg-gold-500/10 text-gold-500 rounded-full border border-gold-500/20">
+                    {{ getBalanceLabel(balanceValue()!) }}
+                  </span>
+                }
+                @if (terroirValue()) {
+                  <span class="px-3 py-1 text-xs bg-gold-500/10 text-gold-500 rounded-full border border-gold-500/20">
+                    {{ getTerroirLabel(terroirValue()!) }}
+                  </span>
+                }
+              </div>
+            </div>
+
+            <!-- Corps -->
+            <div class="flex flex-col gap-2 pt-2 border-t border-zinc-800">
+              <span class="text-xs text-smoke-500 uppercase tracking-wide">Corps</span>
+              <div class="flex flex-wrap gap-2">
+                <span class="px-3 py-1 text-xs bg-gold-500/10 text-gold-500 rounded-full border border-gold-500/20">
+                  Puissance: {{ getPowerLabel(powerValue()) }}
+                </span>
+                <span class="px-3 py-1 text-xs bg-gold-500/10 text-gold-500 rounded-full border border-gold-500/20">
+                  Variété: {{ getVarietyLabel(varietyValue()) }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Impression -->
+            @if (impressionsValue().length > 0 || persistenceValue()) {
+              <div class="flex flex-col gap-2 pt-2 border-t border-zinc-800">
+                <span class="text-xs text-smoke-500 uppercase tracking-wide">Impression finale</span>
+                <div class="flex flex-wrap gap-2">
+                  @for (imp of impressionsValue(); track imp) {
+                    <span class="px-3 py-1 text-xs bg-gold-500/10 text-gold-500 rounded-full border border-gold-500/20">
+                      {{ getImpressionLabel(imp) }}
+                    </span>
+                  }
+                  @if (persistenceValue()) {
+                    <span class="px-3 py-1 text-xs bg-gold-500/10 text-gold-500 rounded-full border border-gold-500/20">
+                      {{ getPersistenceLabel(persistenceValue()!) }}
+                    </span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Accroche poétique -->
+          <p class="text-center text-smoke-400 italic text-sm px-4">
+            Le bilan technique est scellé...
+          </p>
+
+          <!-- Bouton final -->
+          <ui-button
+            variant="primary"
+            size="lg"
+            fullWidth
+            icon="arrow-right"
+            iconPos="right"
+            customClass="!rounded-full !text-lg"
+            (clicked)="done.emit()"
+          >
+            Poursuivre
+          </ui-button>
+        </div>
+      }
+    }
+  </div>
+</div>

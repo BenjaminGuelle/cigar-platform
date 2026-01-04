@@ -135,9 +135,8 @@ export class TastingAutoSaveService implements OnDestroy {
       }
 
       this.showSavedStatus();
-    } catch (error) {
+    } catch {
       this.saveStatus.set('Erreur');
-      console.error('[TastingAutoSave] Error saving tasting data:', error);
     }
   }
 
@@ -159,9 +158,8 @@ export class TastingAutoSaveService implements OnDestroy {
       });
 
       this.showSavedStatus();
-    } catch (error) {
+    } catch {
       this.saveStatus.set('Erreur');
-      console.error('[TastingAutoSave] Error saving observation:', error);
     }
   }
 
