@@ -69,18 +69,36 @@ export class SingleSelectChipsComponent implements OnDestroy {
 
   /**
    * Grid classes based on columns input (responsive)
+   * Uses explicit mapping to ensure Tailwind JIT includes classes
    */
   gridClasses(): string {
     const cols = this.columns();
     const mobileCols = this.mobileColumns();
 
-    const desktopClass = `md:grid-cols-${cols}`;
+    // Explicit mapping for Tailwind JIT compatibility
+    const colsMap: Record<number, string> = {
+      1: 'grid-cols-1',
+      2: 'grid-cols-2',
+      3: 'grid-cols-3',
+      4: 'grid-cols-4',
+      5: 'grid-cols-5',
+      6: 'grid-cols-6',
+    };
+
+    const mdColsMap: Record<number, string> = {
+      1: 'md:grid-cols-1',
+      2: 'md:grid-cols-2',
+      3: 'md:grid-cols-3',
+      4: 'md:grid-cols-4',
+      5: 'md:grid-cols-5',
+      6: 'md:grid-cols-6',
+    };
 
     if (mobileCols !== null) {
-      return clsx('grid gap-3', `grid-cols-${mobileCols}`, desktopClass);
+      return clsx('grid gap-3', colsMap[mobileCols] ?? 'grid-cols-2', mdColsMap[cols] ?? 'md:grid-cols-3');
     }
 
-    return clsx('grid gap-3', `grid-cols-${cols}`);
+    return clsx('grid gap-3', colsMap[cols] ?? 'grid-cols-3');
   }
 
   /**
