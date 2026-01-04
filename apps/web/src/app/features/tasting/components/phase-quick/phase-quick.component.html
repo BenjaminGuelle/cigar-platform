@@ -45,6 +45,95 @@
         </div>
       }
 
+      <!-- Step 0.5: Club Association -->
+      @case ('club') {
+        <div class="question-step w-full max-w-md space-y-4">
+          <p class="text-center text-base text-smoke-200 italic">
+            Associer ce moment à un club ?
+          </p>
+
+          <!-- Selected Club Display -->
+          @if (selectedClub()) {
+            <div class="flex items-center gap-3 p-3 bg-zinc-900/70 rounded-xl border border-zinc-800">
+              <!-- Club Avatar -->
+              @if (selectedClub()?.imageUrl) {
+                <img
+                  [src]="selectedClub()?.imageUrl"
+                  [alt]="selectedClub()?.name"
+                  class="w-10 h-10 rounded-full object-cover"
+                />
+              } @else {
+                <div class="w-10 h-10 rounded-full bg-gold-500/10 flex items-center justify-center">
+                  <i name="users" class="w-5 h-5 text-gold-500"></i>
+                </div>
+              }
+              <!-- Club Name -->
+              <span class="flex-1 text-gold-500 font-medium">{{ selectedClub()?.name }}</span>
+              <!-- Clear Button -->
+              <button
+                type="button"
+                (click)="clearClub()"
+                class="p-1.5 text-smoke-500 hover:text-red-400 transition-colors"
+              >
+                <i name="x" class="w-4 h-4"></i>
+              </button>
+            </div>
+          } @else {
+            <!-- Club Selector (when no club selected) -->
+            @if (clubOptions().length > 0) {
+              <div class="space-y-2">
+                @for (club of clubOptions(); track club.id) {
+                  <button
+                    type="button"
+                    (click)="onClubSelected(club.id)"
+                    class="w-full flex items-center gap-3 p-3 bg-zinc-900/50 rounded-xl border border-zinc-800 hover:border-gold-500/30 transition-all"
+                  >
+                    @if (club.imageUrl) {
+                      <img
+                        [src]="club.imageUrl"
+                        [alt]="club.name"
+                        class="w-8 h-8 rounded-full object-cover"
+                      />
+                    } @else {
+                      <div class="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center">
+                        <i name="users" class="w-4 h-4 text-smoke-500"></i>
+                      </div>
+                    }
+                    <span class="text-smoke-200">{{ club.name }}</span>
+                  </button>
+                }
+              </div>
+            } @else {
+              <div class="text-center text-smoke-500 text-sm py-4">
+                Vous n'êtes membre d'aucun club
+              </div>
+            }
+          }
+
+          <!-- Action Buttons -->
+          <div class="flex justify-center gap-4 pt-2">
+            <button
+              type="button"
+              (click)="skipClub()"
+              class="text-sm text-smoke-500 italic hover:text-gold-500 transition-colors"
+            >
+              {{ selectedClub() ? 'Retirer l\'association' : 'Continuer sans club' }}
+            </button>
+            @if (selectedClub()) {
+              <ui-button
+                size="sm"
+                icon="arrow-right"
+                iconPos="right"
+                customClass="!rounded-full"
+                (clicked)="confirmClub()"
+              >
+                Continuer
+              </ui-button>
+            }
+          </div>
+        </div>
+      }
+
       <!-- Step 1: Situation (Single-select avec progress ring) -->
       @case ('situation') {
         <div class="question-step w-full max-w-lg space-y-4">
@@ -176,6 +265,14 @@
               <i name="calendar" class="w-4 h-4"></i>
               <span>{{ dateFormatted() }} • {{ timeFormatted() }}</span>
             </div>
+
+            <!-- Club Association -->
+            @if (selectedClub()) {
+              <div class="flex items-center gap-2 text-sm text-smoke-300">
+                <i name="users" class="w-4 h-4"></i>
+                <span>{{ selectedClub()?.name }}</span>
+              </div>
+            }
 
             <!-- Situation -->
             @if (situationValue()) {

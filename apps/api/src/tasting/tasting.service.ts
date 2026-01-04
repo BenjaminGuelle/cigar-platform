@@ -24,6 +24,7 @@ export class TastingService {
 
   /**
    * Create a new tasting (DRAFT status)
+   * If clubId is provided, also creates TastingOnClub to associate with club
    * @param createTastingDto - Tasting data
    * @param userId - Current user ID (will be set as tasting owner)
    * @returns Created tasting
@@ -32,31 +33,49 @@ export class TastingService {
     createTastingDto: CreateTastingDto,
     userId: string
   ): Promise<TastingResponseDto> {
-    const tasting = await this.prisma.tasting.create({
-      data: {
-        userId,
-        cigarId: createTastingDto.cigarId,
-        eventId: createTastingDto.eventId ?? null,
-        status: TastingStatus.DRAFT,
-        // Phase 1 - Quick (all optional)
-        moment: createTastingDto.moment ?? null,
-        situation: createTastingDto.situation ?? null,
-        pairing: createTastingDto.pairing ?? null,
-        pairingNote: createTastingDto.pairingNote ?? null,
-        location: createTastingDto.location ?? null,
-        photoUrl: createTastingDto.photoUrl ?? null,
-        duration: createTastingDto.duration ?? null,
-        // Phase Finale (will be filled on complete)
-        rating: 0, // Temporary value, will be set on complete
-        visibility: 'PUBLIC', // Default, will be set on complete
-      },
-      include: {
-        cigar: true,
-      },
+    // Use transaction to create tasting and club association atomically
+    const result = await this.prisma.$transaction(async (tx) => {
+      const tasting = await tx.tasting.create({
+        data: {
+          userId,
+          cigarId: createTastingDto.cigarId,
+          eventId: createTastingDto.eventId ?? null,
+          status: TastingStatus.DRAFT,
+          // Phase 1 - Quick (all optional)
+          moment: createTastingDto.moment ?? null,
+          situation: createTastingDto.situation ?? null,
+          pairing: createTastingDto.pairing ?? null,
+          pairingNote: createTastingDto.pairingNote ?? null,
+          location: createTastingDto.location ?? null,
+          photoUrl: createTastingDto.photoUrl ?? null,
+          duration: createTastingDto.duration ?? null,
+          // Phase Finale (will be filled on complete)
+          rating: 0, // Temporary value, will be set on complete
+          visibility: 'PUBLIC', // Default, will be set on complete
+        },
+        include: {
+          cigar: true,
+        },
+      });
+
+      // If clubId provided, create TastingOnClub association
+      if (createTastingDto.clubId) {
+        await tx.tastingOnClub.create({
+          data: {
+            tastingId: tasting.id,
+            clubId: createTastingDto.clubId,
+          },
+        });
+        this.logger.log(
+          `Tasting ${tasting.id} associated with club ${createTastingDto.clubId}`
+        );
+      }
+
+      return tasting;
     });
 
-    this.logger.log(`Tasting created: ${tasting.id} by user ${userId} (DRAFT)`);
-    return this.mapToResponse(tasting);
+    this.logger.log(`Tasting created: ${result.id} by user ${userId} (DRAFT)`);
+    return this.mapToResponse(result);
   }
 
   /**

@@ -5,11 +5,16 @@ import { ContextStore } from '../../../../core/stores/context.store';
 import { injectClubStore } from '../../../../core/stores/club.store';
 import {
   IconDirective,
-  PageSectionComponent,
   ButtonComponent,
   TooltipDirective,
 } from '@cigar-platform/shared/ui';
-import type { ClubResponseDto } from '@cigar-platform/types';
+import {
+  ParcoursSectionComponent,
+  AromaSignatureSectionComponent,
+  TerroirsSectionComponent,
+  JournalSectionComponent,
+} from '../components';
+import type { ClubResponseDto, ClubProfileStatsResponseDto } from '@cigar-platform/types';
 
 /**
  * Club Profile Private Page
@@ -20,15 +25,15 @@ import type { ClubResponseDto } from '@cigar-platform/types';
  *
  * Features:
  * - Display club information (avatar, name, description)
- * - Show club stats (members, events, etc.)
- * - Quick action CTAs (create event, invite member, etc.)
- * - Access to settings via CTA (admins/owners only)
+ * - Show parcours stats (tastings, members, events)
+ * - Show aroma signature (from Premium members' chronic data)
+ * - Show terroirs explored (from Premium members' chronic data)
+ * - Show journal (last 3 tastings shared with club)
+ * - Quick action CTAs
  *
- * Architecture: ALL STARS ⭐
- * - Template in separate .html file
- * - Clean separation of concerns
- * - Loaded by ProfileContextPage when context = club
- * - Never shown in public routes (public = club-profile.page)
+ * Architecture: ALL STARS
+ * - Uses profile-stats API for data
+ * - Section components for modularity
  */
 @Component({
   selector: 'app-club-profile-private',
@@ -37,9 +42,12 @@ import type { ClubResponseDto } from '@cigar-platform/types';
     CommonModule,
     RouterLink,
     IconDirective,
-    PageSectionComponent,
     ButtonComponent,
     TooltipDirective,
+    ParcoursSectionComponent,
+    AromaSignatureSectionComponent,
+    TerroirsSectionComponent,
+    JournalSectionComponent,
   ],
   templateUrl: './club-profile-private.page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -51,23 +59,38 @@ export class ClubProfilePrivatePage {
   // Context ID
   readonly clubId = signal<string>('');
 
-  // Reactive query with getter pattern
+  // Reactive queries with getter pattern
   readonly clubQuery = this.clubStore.getClubById(() => this.clubId());
+  readonly profileStatsQuery = this.clubStore.getClubProfileStats(() => this.clubId());
 
   // Computed states
-  readonly loading = this.clubQuery.loading;
+  readonly loading = computed(() => this.clubQuery.loading() || this.profileStatsQuery.loading());
   readonly error = this.clubQuery.error;
   readonly club: Signal<ClubResponseDto | null> = this.clubQuery.data;
+  readonly profileStats: Signal<ClubProfileStatsResponseDto | null> = this.profileStatsQuery.data;
 
-  // Computed values
+  // Club basic info
   readonly name = computed(() => this.club()?.name ?? 'Club');
   readonly description = computed(() => this.club()?.description ?? null);
   readonly slug = computed(() => this.club()?.slug ?? '');
-  readonly memberCount = computed(() => this.club()?.memberCount ?? 0);
 
-  // Stats (TODO: Implement real stats when backend ready)
-  readonly eventsCount = computed(() => 0);
-  readonly tastingsCount = computed(() => 0);
+  // Profile Stats computed values
+  readonly hasChronicData = computed(() => this.profileStats()?.hasChronicData ?? false);
+  readonly chronicTastingCount = computed(() => this.profileStats()?.chronicTastingCount ?? 0);
+
+  // Parcours stats
+  readonly tastingCount = computed(() => this.profileStats()?.parcours?.tastingCount ?? 0);
+  readonly memberCount = computed(() => this.profileStats()?.parcours?.memberCount ?? 0);
+  readonly eventCount = computed(() => this.profileStats()?.parcours?.eventCount ?? 0);
+
+  // Aroma signature
+  readonly aromaSignature = computed(() => this.profileStats()?.aromaSignature ?? null);
+
+  // Terroirs
+  readonly terroirs = computed(() => this.profileStats()?.terroirs ?? null);
+
+  // Journal
+  readonly journal = computed(() => this.profileStats()?.journal ?? null);
 
   // Profile URL for sharing
   readonly profileUrl = computed(() => {

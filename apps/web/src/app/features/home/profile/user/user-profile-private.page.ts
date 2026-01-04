@@ -4,11 +4,16 @@ import { RouterLink } from '@angular/router';
 import { injectUserStore, UserStore } from '../../../../core/stores';
 import {
   IconDirective,
-  PageSectionComponent,
   ButtonComponent,
   TooltipDirective,
 } from '@cigar-platform/shared/ui';
-import { UserDto } from '@cigar-platform/types';
+import {
+  ParcoursSectionComponent,
+  AromaSignatureSectionComponent,
+  TerroirsSectionComponent,
+  JournalSectionComponent,
+} from '../components';
+import { UserDto, UserProfileStatsResponseDto } from '@cigar-platform/types';
 
 /**
  * User Profile Private Page
@@ -18,15 +23,15 @@ import { UserDto } from '@cigar-platform/types';
  *
  * Features:
  * - Display user information (avatar, display name, username, bio)
- * - Show user stats (tastings, clubs, etc.)
- * - Quick action CTAs (create tasting, join club, etc.)
- * - Access to settings via CTA
+ * - Show parcours stats (tastings, brands, terroirs)
+ * - Show aroma signature (Premium only)
+ * - Show terroirs explored (Premium only)
+ * - Show journal (last 3 tastings)
+ * - Quick action CTAs
  *
- * Architecture: ALL STARS ⭐
- * - Template in separate .html file
- * - Clean separation of concerns
- * - Loaded by ProfileContextPage when context = solo
- * - Never shown in public routes (public = user-profile.page)
+ * Architecture: ALL STARS
+ * - Uses profile-stats API for data
+ * - Section components for modularity
  */
 @Component({
   selector: 'app-user-profile-private',
@@ -35,9 +40,12 @@ import { UserDto } from '@cigar-platform/types';
     CommonModule,
     RouterLink,
     IconDirective,
-    PageSectionComponent,
     ButtonComponent,
     TooltipDirective,
+    ParcoursSectionComponent,
+    AromaSignatureSectionComponent,
+    TerroirsSectionComponent,
+    JournalSectionComponent,
   ],
   templateUrl: './user-profile-private.page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -45,18 +53,31 @@ import { UserDto } from '@cigar-platform/types';
 export class UserProfilePrivatePage {
   readonly userStore: UserStore = injectUserStore();
   readonly currentUser: Signal<UserDto | null> = this.userStore.currentUser.data;
+  readonly profileStats: Signal<UserProfileStatsResponseDto | null> = this.userStore.profileStats.data;
+  readonly profileStatsLoading: Signal<boolean> = this.userStore.profileStats.loading;
 
-  // Computed values
+  // User computed values
   readonly displayName = computed(() => this.currentUser()?.displayName ?? 'Utilisateur');
   readonly username = computed(() => this.currentUser()?.username ?? '');
   readonly bio = computed(() => this.currentUser()?.bio ?? null);
-  readonly avatarUrl = computed(() => this.currentUser()?.avatarUrl ?? null);
-  readonly email = computed(() => this.currentUser()?.email ?? '');
 
-  // Stats (TODO: Implement real stats when backend ready)
-  readonly tastingsCount = computed(() => 0);
-  readonly clubsCount = computed(() => 0);
-  readonly reviewsCount = computed(() => 0);
+  // Profile Stats computed values
+  readonly isPremium = computed(() => this.profileStats()?.isPremium ?? false);
+  readonly hasChronicData = computed(() => this.profileStats()?.hasChronicData ?? false);
+
+  // Parcours stats
+  readonly tastingCount = computed(() => this.profileStats()?.parcours?.tastingCount ?? 0);
+  readonly brandCount = computed(() => this.profileStats()?.parcours?.brandCount ?? 0);
+  readonly terroirCount = computed(() => this.profileStats()?.parcours?.terroirCount ?? 0);
+
+  // Aroma signature
+  readonly aromaSignature = computed(() => this.profileStats()?.aromaSignature ?? null);
+
+  // Terroirs
+  readonly terroirs = computed(() => this.profileStats()?.terroirs ?? null);
+
+  // Journal
+  readonly journal = computed(() => this.profileStats()?.journal ?? null);
 
   // Profile URL for sharing
   readonly profileUrl = computed(() => {

@@ -173,6 +173,8 @@ export class TastingStateMachine {
               pairing: draft.pairing || null,
               pairingNote: draft.pairingNote || '',
               location: draft.location || 'Chez moi',
+              clubId: null, // Draft doesn't store club association
+              clubName: null,
             },
             finale: {
               rating: draft.rating || 0,

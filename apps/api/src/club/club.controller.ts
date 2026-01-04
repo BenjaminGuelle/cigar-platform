@@ -47,6 +47,7 @@ import {
   PaginatedBanResponseDto,
   JoinByCodeResponseDto,
 } from './dto';
+import { ClubProfileStatsResponseDto } from '../users/dto/profile-stats.dto';
 import { ClubRole } from '@cigar-platform/prisma-client';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -113,6 +114,21 @@ export class ClubController {
   })
   async findMyClubs(@CurrentUser('id') userId: string) {
     return this.clubService.findMyClubs(userId);
+  }
+
+  @Get(':id/profile-stats')
+  @UseGuards(ClubRolesGuard)
+  @ApiOperation({ summary: 'Get club profile stats (parcours, signature, terroirs, journal)' })
+  @ApiParam({ name: 'id', description: 'Club UUID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Profile stats retrieved successfully',
+    type: ClubProfileStatsResponseDto,
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden - Must be a club member' })
+  @ApiResponse({ status: 404, description: 'Club not found' })
+  async getProfileStats(@Param('id') clubId: string): Promise<ClubProfileStatsResponseDto> {
+    return this.clubService.getProfileStats(clubId);
   }
 
   @Get(':identifier')

@@ -49,6 +49,9 @@ export type IconName =
   | 'globe'
   | 'crown'
   | 'clock'
+  | 'sparkles'
+  | 'book-open'
+  | 'box'
   // Feedback
   | 'spinner'
   | 'check'

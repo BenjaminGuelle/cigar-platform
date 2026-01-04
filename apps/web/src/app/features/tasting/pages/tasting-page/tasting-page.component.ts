@@ -413,6 +413,8 @@ export class TastingPageComponent implements OnInit, OnDestroy {
     location?: string;
     cigar: string | null;
     cigarName: string | null;
+    clubId: string | null;
+    clubName: string | null;
   }): Promise<void> {
     // Cast to DTO types (types are compatible, just different enum declarations)
     await this.orchestrator.updateQuickData({
@@ -423,6 +425,8 @@ export class TastingPageComponent implements OnInit, OnDestroy {
       location: data.location || undefined,
       cigarId: data.cigar || undefined,
       cigarName: data.cigarName || undefined,
+      clubId: data.clubId || undefined,
+      clubName: data.clubName || undefined,
     });
   }
 

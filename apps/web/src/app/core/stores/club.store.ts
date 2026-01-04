@@ -12,6 +12,7 @@ import type {
   ClubMemberResponseDto,
   ClubJoinRequestResponseDto,
   ClubBanResponseDto,
+  ClubProfileStatsResponseDto,
 } from '@cigar-platform/types';
 
 /**
@@ -69,6 +70,12 @@ export interface ClubStore {
    * @param canManageGetter - Getter for permission check (optional, defaults to true)
    */
   getBannedMembers: (clubIdGetter: () => string, canManageGetter?: () => boolean) => Query<ClubBanResponseDto[]>;
+
+  /**
+   * Get club profile stats by club ID (reactive - pass a getter function)
+   * Includes parcours, aroma signature (from Premium members), terroirs, and journal
+   */
+  getClubProfileStats: (clubIdGetter: () => string) => Query<ClubProfileStatsResponseDto>;
 
   /**
    * Create club mutation
@@ -237,6 +244,19 @@ export function injectClubStore(): ClubStore {
       // Only fetch if club ID exists AND user has permission
       enabled: !!clubIdGetter() && (canManageGetter ? canManageGetter() : true),
       staleTime: 2 * 60 * 1000, // 2 minutes (bans don't change frequently)
+    }));
+  };
+
+  /**
+   * Get club profile stats by club ID (returns a reactive query)
+   * Includes parcours, aroma signature, terroirs, and journal
+   */
+  const getClubProfileStats = (clubIdGetter: () => string): Query<ClubProfileStatsResponseDto> => {
+    return injectQuery<ClubProfileStatsResponseDto>(() => ({
+      queryKey: ['clubs', 'profile-stats', clubIdGetter()],
+      queryFn: () => clubsService.clubControllerGetProfileStats(clubIdGetter()),
+      enabled: !!clubIdGetter(),
+      staleTime: 2 * 60 * 1000, // 2 minutes (stats may change after tastings)
     }));
   };
 
@@ -622,6 +642,7 @@ export function injectClubStore(): ClubStore {
     getClubMembers,
     getJoinRequests,
     getBannedMembers,
+    getClubProfileStats,
     createClub,
     updateClub,
     deleteClub,

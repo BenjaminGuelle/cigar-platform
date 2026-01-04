@@ -303,6 +303,70 @@ export interface PaginatedClubResponseDto {
   meta: PaginationMetaDto;
 }
 
+export interface ClubParcoursStatsDto {
+  /** Total number of tastings shared with club */
+  tastingCount: number;
+  /** Number of members */
+  memberCount: number;
+  /** Number of events */
+  eventCount: number;
+}
+
+export interface AromaStatDto {
+  /** Aroma name */
+  name: string;
+  /** Frequency percentage (0-100) */
+  percentage: number;
+}
+
+export interface TerroirStatDto {
+  /** Country name */
+  country: string;
+  /** ISO 3166-1 alpha-2 country code (lowercase) */
+  code: string;
+  /** Percentage of tastings from this country */
+  percentage: number;
+}
+
+export interface JournalTastingUserDto {
+  username: string;
+  displayName: string;
+  avatarUrl?: string;
+}
+
+export interface JournalTastingDto {
+  id: string;
+  /** Cigar name */
+  cigarName: string;
+  /** Brand name */
+  brandName: string;
+  /** Brand logo URL */
+  brandLogoUrl?: string;
+  /** Rating (0.5-5) */
+  rating: number;
+  /** Tasting date */
+  date: string;
+  /** Top 2-3 aromas from observations (null if no chronic observations) */
+  aromas?: string[];
+  /** User who made the tasting (for club context only) */
+  user?: JournalTastingUserDto;
+}
+
+export interface ClubProfileStatsResponseDto {
+  /** Club parcours stats */
+  parcours: ClubParcoursStatsDto;
+  /** Whether the club has chronic observation data (from Premium members) */
+  hasChronicData: boolean;
+  /** Number of chronic tastings contributing to signature (for transparency) */
+  chronicTastingCount: number;
+  /** Top 4 aromas aggregated from Premium members (null if no chronic data) */
+  aromaSignature?: AromaStatDto[];
+  /** Top 3 terroirs (null if no chronic data) */
+  terroirs?: TerroirStatDto[];
+  /** Last 3 completed tastings shared with the club */
+  journal: JournalTastingDto[];
+}
+
 /**
  * Club visibility
  */
@@ -508,6 +572,30 @@ export const UpdateJoinRequestDtoStatus = {
 export interface UpdateJoinRequestDto {
   /** Join request status */
   status?: UpdateJoinRequestDtoStatus;
+}
+
+export interface ParcoursStatsDto {
+  /** Total number of tastings */
+  tastingCount: number;
+  /** Number of unique brands tasted */
+  brandCount: number;
+  /** Number of unique terroirs/countries */
+  terroirCount: number;
+}
+
+export interface UserProfileStatsResponseDto {
+  /** Parcours stats */
+  parcours: ParcoursStatsDto;
+  /** Whether the user has Premium access (needed for frontend display logic) */
+  isPremium: boolean;
+  /** Whether the user has chronic observation data */
+  hasChronicData: boolean;
+  /** Top 4 aromas (null if not Premium or no chronic data) */
+  aromaSignature?: AromaStatDto[];
+  /** Top 3 terroirs (null if not Premium or no chronic data) */
+  terroirs?: TerroirStatDto[];
+  /** Last 3 completed tastings */
+  journal: JournalTastingDto[];
 }
 
 export interface UserStatsDto {
@@ -742,6 +830,8 @@ export const CreateTastingDtoPairing = {
 export interface CreateTastingDto {
   /** UUID of the cigar being tasted */
   cigarId: string;
+  /** UUID of the club to associate this tasting with */
+  clubId?: string;
   /** UUID of the event (if tasting during an event) */
   eventId?: string;
   /** Time of day */
@@ -896,6 +986,8 @@ export const UpdateTastingDtoPairing = {
 export interface UpdateTastingDto {
   /** UUID of the cigar being tasted */
   cigarId?: string;
+  /** UUID of the club to associate this tasting with */
+  clubId?: string;
   /** UUID of the event (if tasting during an event) */
   eventId?: string;
   /** Time of day */

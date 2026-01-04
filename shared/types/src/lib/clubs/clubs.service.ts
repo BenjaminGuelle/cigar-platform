@@ -26,6 +26,7 @@ import type {
   ClubControllerGetMembersParams,
   ClubControllerUploadAvatar200,
   ClubControllerUploadAvatarBody,
+  ClubProfileStatsResponseDto,
   ClubResponseDto,
   CreateClubDto,
   CreateJoinRequestDto,
@@ -86,6 +87,18 @@ export class ClubsService {
  ) {
       return customInstance<TData>(
       {url: `/api/clubs/me`, method: 'GET'
+    },
+      this.http,
+      );
+    }
+  /**
+ * @summary Get club profile stats (parcours, signature, terroirs, journal)
+ */
+ clubControllerGetProfileStats<TData = ClubProfileStatsResponseDto>(
+    id: string,
+ ) {
+      return customInstance<TData>(
+      {url: `/api/clubs/${id}/profile-stats`, method: 'GET'
     },
       this.http,
       );
@@ -338,6 +351,7 @@ if(clubControllerUploadAvatarBody.avatar !== undefined) {
 export type ClubControllerCreateClientResult = NonNullable<ClubResponseDto>
 export type ClubControllerFindAllClientResult = NonNullable<PaginatedClubResponseDto>
 export type ClubControllerFindMyClubsClientResult = NonNullable<void>
+export type ClubControllerGetProfileStatsClientResult = NonNullable<ClubProfileStatsResponseDto>
 export type ClubControllerFindOneClientResult = NonNullable<ClubResponseDto>
 export type ClubControllerUpdateClientResult = NonNullable<ClubResponseDto>
 export type ClubControllerRemoveClientResult = NonNullable<void>

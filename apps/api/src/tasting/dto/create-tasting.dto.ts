@@ -35,6 +35,14 @@ export class CreateTastingDto {
   @IsUUID()
   @IsOptional()
   @ApiPropertyOptional({
+    description: 'UUID of the club to associate this tasting with',
+    example: '550e8400-e29b-41d4-a716-446655440002',
+  })
+  clubId?: string;
+
+  @IsUUID()
+  @IsOptional()
+  @ApiPropertyOptional({
     description: 'UUID of the event (if tasting during an event)',
     example: '550e8400-e29b-41d4-a716-446655440001',
   })

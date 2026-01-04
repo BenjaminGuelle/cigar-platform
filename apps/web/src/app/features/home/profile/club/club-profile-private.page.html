@@ -85,84 +85,85 @@
       }
     </div>
 
-    <!-- Stats -->
-    <ui-page-section title="Statistiques">
-      <div class="grid grid-cols-3 gap-3 md:gap-4">
-        <!-- Members -->
-        <div class="flex flex-col items-center p-3 md:p-4 rounded-lg bg-smoke-800 border border-smoke-700">
-          <i name="users" class="w-5 h-5 md:w-6 md:h-6 text-gold-500 mb-2"></i>
-          <span class="text-xl md:text-2xl font-semibold text-smoke-50">{{ memberCount() }}</span>
-          <span class="text-xs md:text-sm text-smoke-400 text-center">Membres</span>
-        </div>
+    <!-- Parcours Section -->
+    <app-parcours-section
+      context="club"
+      [stat1Value]="tastingCount()"
+      [stat2Value]="memberCount()"
+      [stat3Value]="eventCount()"
+    />
 
-        <!-- Events -->
-        <div class="flex flex-col items-center p-3 md:p-4 rounded-lg bg-smoke-800 border border-smoke-700">
-          <i name="calendar" class="w-5 h-5 md:w-6 md:h-6 text-gold-500 mb-2"></i>
-          <span class="text-xl md:text-2xl font-semibold text-smoke-50">{{ eventsCount() }}</span>
-          <span class="text-xs md:text-sm text-smoke-400 text-center">Événements</span>
-        </div>
+    <!-- Aroma Signature Section -->
+    <app-aroma-signature-section
+      context="club"
+      [isPremium]="true"
+      [hasChronicData]="hasChronicData()"
+      [aromas]="aromaSignature()"
+      [chronicTastingCount]="chronicTastingCount()"
+    />
 
-        <!-- Tastings -->
-        <div class="flex flex-col items-center p-3 md:p-4 rounded-lg bg-smoke-800 border border-smoke-700">
-          <i name="flame" class="w-5 h-5 md:w-6 md:h-6 text-gold-500 mb-2"></i>
-          <span class="text-xl md:text-2xl font-semibold text-smoke-50">{{ tastingsCount() }}</span>
-          <span class="text-xs md:text-sm text-smoke-400 text-center">Dégustations</span>
-        </div>
-      </div>
-    </ui-page-section>
+    <!-- Terroirs Section (only visible if has chronic data) -->
+    <app-terroirs-section
+      context="club"
+      [isPremium]="true"
+      [hasChronicData]="hasChronicData()"
+      [terroirs]="terroirs()"
+    />
+
+    <!-- Journal Section -->
+    <app-journal-section
+      context="club"
+      [tastings]="journal()"
+    />
 
     <!-- Quick Actions -->
-    <ui-page-section title="Actions rapides" [bordered]="false">
+    <div class="pt-4">
+      <h3 class="text-lg font-semibold text-smoke-100 mb-4">Actions rapides</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
         <!-- View Members -->
         <a
           routerLink="/membres"
-          class="flex items-center gap-3 p-4 rounded-lg bg-smoke-800 border border-smoke-700 hover:border-gold-500/30 hover:bg-smoke-750 transition-all group"
+          class="flex items-center gap-3 p-4 rounded-lg bg-smoke-800 border border-smoke-700 hover:border-smoke-600 transition-colors"
         >
-          <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-smoke-700 group-hover:bg-gold-500/10 transition-colors">
+          <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-smoke-700">
             <i name="users" class="w-5 h-5 text-gold-500"></i>
           </div>
           <div class="flex-1 min-w-0">
             <h3 class="text-sm font-medium text-smoke-100 mb-0.5">Voir les membres</h3>
-            <p class="text-xs text-smoke-400">Gérer les membres du club</p>
+            <p class="text-xs text-smoke-400">Consulter la liste des membres</p>
           </div>
         </a>
 
-        <!-- Create Event (Coming Soon) -->
-        <div class="flex items-center gap-3 p-4 rounded-lg bg-smoke-800 border border-smoke-700 opacity-50 cursor-not-allowed">
+        <!-- Create Tasting for Club -->
+        <a
+          routerLink="/tasting/new"
+          class="flex items-center gap-3 p-4 rounded-lg bg-smoke-800 border border-smoke-700 hover:border-smoke-600 transition-colors"
+        >
           <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-smoke-700">
-            <i name="calendar" class="w-5 h-5 text-smoke-400"></i>
+            <i name="flame" class="w-5 h-5 text-gold-500"></i>
           </div>
           <div class="flex-1 min-w-0">
-            <h3 class="text-sm font-medium text-smoke-300 mb-0.5">Créer un événement</h3>
-            <p class="text-xs text-smoke-400">Bientôt disponible</p>
+            <h3 class="text-sm font-medium text-smoke-100 mb-0.5">Nouvelle dégustation</h3>
+            <p class="text-xs text-smoke-400">Partager avec le club</p>
           </div>
-        </div>
+        </a>
 
-        <!-- Invite Members (Coming Soon) -->
-        <div class="flex items-center gap-3 p-4 rounded-lg bg-smoke-800 border border-smoke-700 opacity-50 cursor-not-allowed">
-          <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-smoke-700">
-            <i name="users" class="w-5 h-5 text-smoke-400"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <h3 class="text-sm font-medium text-smoke-300 mb-0.5">Inviter des membres</h3>
-            <p class="text-xs text-smoke-400">Bientôt disponible</p>
-          </div>
-        </div>
-
-        <!-- Analytics (Coming Soon - Admins/Owners only) -->
-        @if (canManageClub()) {
-          <div class="flex items-center gap-3 p-4 rounded-lg bg-smoke-800 border border-smoke-700 opacity-50 cursor-not-allowed">
+        <!-- Settings (Admins/Owners only) -->
+        @if (canAccessSettings()) {
+          <a
+            routerLink="/settings"
+            class="flex items-center gap-3 p-4 rounded-lg bg-smoke-800 border border-smoke-700 hover:border-smoke-600 transition-colors"
+          >
             <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-smoke-700">
-              <i name="star" class="w-5 h-5 text-smoke-400"></i>
+              <i name="settings" class="w-5 h-5 text-gold-500"></i>
             </div>
             <div class="flex-1 min-w-0">
-              <h3 class="text-sm font-medium text-smoke-300 mb-0.5">Statistiques avancées</h3>
-              <p class="text-xs text-smoke-400">Bientôt disponible</p>
+              <h3 class="text-sm font-medium text-smoke-100 mb-0.5">Parametres du club</h3>
+              <p class="text-xs text-smoke-400">Gerer le club</p>
             </div>
-          </div>
+          </a>
         }
       </div>
-    </ui-page-section>
+    </div>
   }
 </div>

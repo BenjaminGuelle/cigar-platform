@@ -50,6 +50,17 @@ export class ObservationService {
       },
     });
 
+    // Determine aromas: use explicit aromas if provided, otherwise extract from organoleptic
+    let aromas: string[] = upsertObservationDto.aromas ?? [];
+    if (aromas.length === 0 && upsertObservationDto.organoleptic) {
+      aromas = this.extractAromasFromOrganoleptic(upsertObservationDto.organoleptic);
+      if (aromas.length > 0) {
+        this.logger.debug(
+          `Extracted ${aromas.length} aromas from organoleptic: ${aromas.join(', ')}`
+        );
+      }
+    }
+
     let observation: Observation;
 
     if (existingObservation) {
@@ -59,7 +70,7 @@ export class ObservationService {
         data: {
           intensity: upsertObservationDto.intensity ?? null,
           combustion: upsertObservationDto.combustion ?? null,
-          aromas: upsertObservationDto.aromas ?? [],
+          aromas,
           notes: upsertObservationDto.notes ?? null,
           organoleptic: upsertObservationDto.organoleptic
             ? (upsertObservationDto.organoleptic as Prisma.JsonObject)
@@ -78,7 +89,7 @@ export class ObservationService {
           phase,
           intensity: upsertObservationDto.intensity ?? null,
           combustion: upsertObservationDto.combustion ?? null,
-          aromas: upsertObservationDto.aromas ?? [],
+          aromas,
           notes: upsertObservationDto.notes ?? null,
           organoleptic: upsertObservationDto.organoleptic
             ? (upsertObservationDto.organoleptic as Prisma.JsonObject)
@@ -221,6 +232,51 @@ export class ObservationService {
         throw new TastingForbiddenException('view observations for');
       }
     }
+  }
+
+  /**
+   * Extract aromas from organoleptic JSON structure
+   * Handles nested structures like { coldDraw: { aromas: [{id: 'boise'}] } }
+   * FlavorTag format: { id: string, intensity: number }
+   *
+   * @param organoleptic - The organoleptic JSON object
+   * @returns Array of unique aroma ids (strings)
+   */
+  private extractAromasFromOrganoleptic(
+    organoleptic: Record<string, unknown> | null | undefined
+  ): string[] {
+    if (!organoleptic) return [];
+
+    const aromas: string[] = [];
+
+    const extractFromObject = (obj: unknown): void => {
+      if (!obj || typeof obj !== 'object') return;
+
+      const record = obj as Record<string, unknown>;
+
+      // Check if this object has an aromas array
+      if (Array.isArray(record['aromas'])) {
+        for (const aroma of record['aromas']) {
+          // FlavorTag format: { id: string, intensity: number }
+          if (aroma && typeof aroma === 'object' && 'id' in aroma) {
+            const aromaId = (aroma as { id: string }).id;
+            if (aromaId && !aromas.includes(aromaId)) {
+              aromas.push(aromaId);
+            }
+          }
+        }
+      }
+
+      // Recursively check nested objects (but not arrays)
+      for (const value of Object.values(record)) {
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          extractFromObject(value);
+        }
+      }
+    };
+
+    extractFromObject(organoleptic);
+    return aromas;
   }
 
   /**

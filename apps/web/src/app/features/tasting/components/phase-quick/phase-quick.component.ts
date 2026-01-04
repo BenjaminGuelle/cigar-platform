@@ -2,7 +2,7 @@ import { Component, output, input, OnInit, signal, inject, computed, effect } fr
 import { CommonModule } from '@angular/common';
 import { FormsModule, FormControl } from '@angular/forms';
 import { AutocompleteComponent, IconDirective, ButtonComponent, type AutocompleteOption, type IconName } from '@cigar-platform/shared/ui';
-import { ContextStore } from '../../../../core/stores/context.store';
+import { ContextStore, type ClubWithRole } from '../../../../core/stores/context.store';
 import { injectSearchStore } from '../../../../core/stores/search.store';
 import { SingleSelectChipsComponent, type SingleSelectOption } from '../shared/single-select-chips/single-select-chips.component';
 import {
@@ -18,7 +18,13 @@ interface CigarBasic {
   name: string;
 }
 
-type QuestionStep = 'cigar' | 'situation' | 'pairing' | 'pairingNote' | 'location' | 'done';
+interface ClubBasic {
+  id: string;
+  name: string;
+  imageUrl?: string | null;
+}
+
+type QuestionStep = 'cigar' | 'club' | 'situation' | 'pairing' | 'pairingNote' | 'location' | 'done';
 
 interface PhaseQuickData {
   moment: TastingMoment;
@@ -28,6 +34,8 @@ interface PhaseQuickData {
   location?: string;
   cigar: string | null;
   cigarName: string | null;
+  clubId: string | null;
+  clubName: string | null;
 }
 
 /**
@@ -85,11 +93,31 @@ export class PhaseQuickComponent implements OnInit {
   // State
   currentStep = signal<QuestionStep>('cigar');
   selectedCigar = signal<CigarBasic | null>(null);
+  selectedClub = signal<ClubBasic | null>(null);
   situationValue = signal<TastingSituation | null>(null);
   pairingValue = signal<PairingType | null>(null);
   pairingNoteValue = '';
   locationValue = '';
   cigarControl = new FormControl('');
+
+  // Club options from ContextStore
+  readonly clubOptions = computed<ClubBasic[]>(() => {
+    return this.#contextStore.userClubs().map(club => ({
+      id: club.id,
+      name: club.name,
+      imageUrl: club.imageUrl,
+    }));
+  });
+
+  // Check if in club context (for pre-filling)
+  readonly isClubContext = computed(() => this.#contextStore.context().type === 'club');
+  readonly contextClub = computed(() => {
+    const ctx = this.#contextStore.context();
+    if (ctx.type === 'club' && ctx.club) {
+      return { id: ctx.club.id, name: ctx.club.name, imageUrl: ctx.club.imageUrl };
+    }
+    return null;
+  });
 
   readonly #now = new Date();
 
@@ -190,7 +218,9 @@ export class PhaseQuickComponent implements OnInit {
         this.currentStep.set('done');
         this.done.emit();
       } else if (cigar) {
-        this.currentStep.set('situation');
+        // Go through club step first (user can select or skip)
+        this.currentStep.set('club');
+        this.#prefillClubFromContext();
       }
     });
 
@@ -213,11 +243,60 @@ export class PhaseQuickComponent implements OnInit {
     const cigar = results?.cigars?.find(c => c.id === cigarId);
     if (cigar) {
       this.selectedCigar.set(cigar);
-      this.currentStep.set('situation');
+      // Go to club step (user can select or skip)
+      this.currentStep.set('club');
+      // Pre-fill club from context if available
+      this.#prefillClubFromContext();
     }
   }
 
   editCigar(): void { this.currentStep.set('cigar'); }
+
+  // ==================== Club Selection ====================
+
+  /**
+   * Pre-fill club from context (Club context mode)
+   */
+  #prefillClubFromContext(): void {
+    const ctxClub = this.contextClub();
+    if (ctxClub && !this.selectedClub()) {
+      this.selectedClub.set(ctxClub);
+    }
+  }
+
+  /**
+   * Select a club from the list
+   */
+  onClubSelected(clubId: string): void {
+    const club = this.clubOptions().find(c => c.id === clubId);
+    if (club) {
+      this.selectedClub.set(club);
+      this.emitData();
+    }
+  }
+
+  /**
+   * Clear selected club
+   */
+  clearClub(): void {
+    this.selectedClub.set(null);
+    this.emitData();
+  }
+
+  /**
+   * Confirm club selection and proceed to situation
+   */
+  confirmClub(): void {
+    this.currentStep.set('situation');
+  }
+
+  /**
+   * Skip club selection and proceed to situation
+   */
+  skipClub(): void {
+    this.selectedClub.set(null);
+    this.currentStep.set('situation');
+  }
 
   /**
    * Handler quand une situation est confirmée (après le ring)
@@ -289,6 +368,8 @@ export class PhaseQuickComponent implements OnInit {
       location: this.locationValue || undefined,
       cigar: this.selectedCigar()?.id || null,
       cigarName: this.selectedCigar()?.name || null,
+      clubId: this.selectedClub()?.id || null,
+      clubName: this.selectedClub()?.name || null,
     });
   }
 }

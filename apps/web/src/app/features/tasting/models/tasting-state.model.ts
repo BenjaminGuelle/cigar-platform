@@ -33,6 +33,8 @@ export interface QuickPhaseData {
   pairing: PairingType | null;
   pairingNote: string;
   location: string;
+  clubId: string | null;
+  clubName: string | null;
 }
 
 /**
@@ -184,6 +186,8 @@ export function createInitialTastingData(): TastingData {
       pairing: null,
       pairingNote: '',
       location: 'Chez moi',
+      clubId: null,
+      clubName: null,
     },
     presentation: {
       wrapperAspect: null,

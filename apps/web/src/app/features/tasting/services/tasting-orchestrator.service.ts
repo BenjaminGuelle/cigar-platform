@@ -326,13 +326,14 @@ export class TastingOrchestratorService implements OnDestroy {
     }
   }
 
-  async #createNewDraft(cigarId: string, eventId?: string | null): Promise<void> {
+  async #createNewDraft(cigarId: string, eventId?: string | null, clubId?: string): Promise<void> {
     this.#autoSave.saveStatus.set('Création...');
 
     const context = this.#contextStore.context();
     const createDto: CreateTastingDto = {
       cigarId,
       eventId: eventId && eventId !== 'null' && eventId !== 'undefined' ? eventId : undefined,
+      clubId: clubId || undefined,
     };
 
     let defaultLocation = 'Chez moi';
@@ -470,11 +471,11 @@ export class TastingOrchestratorService implements OnDestroy {
 
   // ==================== Data Management ====================
 
-  async updateQuickData(data: UpdateTastingDto & { cigarName?: string }): Promise<void> {
+  async updateQuickData(data: UpdateTastingDto & { cigarName?: string; clubId?: string; clubName?: string }): Promise<void> {
     const isValidUuid = data.cigarId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.cigarId);
 
     if (!this.tastingId() && isValidUuid && data.cigarId) {
-      await this.#createNewDraft(data.cigarId, this.eventId());
+      await this.#createNewDraft(data.cigarId, this.eventId(), data.clubId);
     }
 
     this.#machine.dispatch({
@@ -487,11 +488,13 @@ export class TastingOrchestratorService implements OnDestroy {
         pairing: data.pairing || null,
         pairingNote: data.pairingNote || '',
         location: data.location || '',
+        clubId: data.clubId || null,
+        clubName: data.clubName || null,
       },
     });
 
     if (this.tastingId()) {
-      const { cigarName, ...backendData } = data;
+      const { cigarName, clubName, ...backendData } = data;
       this.#autoSave.saveTastingData(backendData);
     }
   }
