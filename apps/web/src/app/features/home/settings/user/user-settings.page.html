@@ -125,6 +125,101 @@
       </div>
     </div>
 
+    <!-- Mon abonnement Section -->
+    <div class="space-y-4">
+      <h2 class="text-base md:text-lg font-medium text-smoke-50">Mon abonnement</h2>
+      <div class="rounded-xl border border-smoke-700 bg-smoke-850 p-4 md:p-6">
+        <!-- Plan Header -->
+        <div class="flex items-start justify-between">
+          <div class="flex items-center gap-3">
+            <!-- Plan Badge -->
+            @if (planService.isPremium()) {
+              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-gold-500 to-gold-600">
+                <i name="crown" class="w-5 h-5 text-smoke-900"></i>
+              </div>
+            } @else {
+              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-smoke-700">
+                <i name="user" class="w-5 h-5 text-smoke-400"></i>
+              </div>
+            }
+            <div>
+              <p class="text-base font-medium text-smoke-50">{{ planService.planLabel() }}</p>
+              @if (planService.isBetaTester()) {
+                <p class="text-sm text-gold-500">Merci d'avoir rejoint la Beta !</p>
+              } @else if (planService.isLifetime()) {
+                <p class="text-sm text-gold-500">Accès permanent</p>
+              } @else if (!planService.isPremium()) {
+                <p class="text-sm text-smoke-400">Accès aux fonctionnalités de base</p>
+              }
+            </div>
+          </div>
+
+          <!-- Status Badge -->
+          @if (planService.isPremium()) {
+            <span class="rounded-full bg-gold-500/10 px-3 py-1 text-sm font-medium text-gold-500">
+              Actif
+            </span>
+          } @else {
+            <span class="rounded-full bg-smoke-700 px-3 py-1 text-sm font-medium text-smoke-400">
+              Gratuit
+            </span>
+          }
+        </div>
+
+        <!-- Expiration Info (for expiring plans) -->
+        @if (planService.isPremium() && planService.expiresAt()) {
+          <div class="mt-4 pt-4 border-t border-smoke-700">
+            @if (planService.isInGracePeriod()) {
+              <!-- Grace Period Warning -->
+              <div class="flex items-start gap-3 rounded-lg bg-warning-500/10 p-3">
+                <i name="alert-circle" class="w-5 h-5 text-warning-500 mt-0.5"></i>
+                <div>
+                  <p class="text-sm font-medium text-warning-500">Votre abonnement a expiré</p>
+                  <p class="text-sm text-smoke-400 mt-1">
+                    Vous avez encore quelques jours d'accès. Renouvelez pour conserver vos avantages Premium.
+                  </p>
+                </div>
+              </div>
+            } @else if (planService.isExpiringSoon()) {
+              <!-- Expiring Soon Warning -->
+              <div class="flex items-start gap-3 rounded-lg bg-gold-500/10 p-3">
+                <i name="calendar" class="w-5 h-5 text-gold-500 mt-0.5"></i>
+                <div>
+                  <p class="text-sm font-medium text-gold-500">Expire bientôt</p>
+                  <p class="text-sm text-smoke-400 mt-1">
+                    Votre accès Premium expire le {{ planService.formattedExpiresAt() }}
+                    ({{ planService.daysRemaining() }} jours restants)
+                  </p>
+                </div>
+              </div>
+            } @else {
+              <!-- Normal expiration display -->
+              <div class="flex items-center justify-between">
+                <p class="text-sm text-smoke-400">Valide jusqu'au</p>
+                <p class="text-sm text-smoke-100">{{ planService.formattedExpiresAt() }}</p>
+              </div>
+              @if (planService.daysRemaining() !== null) {
+                <div class="flex items-center justify-between mt-2">
+                  <p class="text-sm text-smoke-400">Jours restants</p>
+                  <p class="text-sm text-smoke-100">{{ planService.daysRemaining() }}</p>
+                </div>
+              }
+            }
+          </div>
+        }
+
+        <!-- Gift Reason (if applicable) -->
+        @if (planService.giftReason()) {
+          <div class="mt-4 pt-4 border-t border-smoke-700">
+            <div class="flex items-center justify-between">
+              <p class="text-sm text-smoke-400">Raison</p>
+              <p class="text-sm text-smoke-100">{{ planService.giftReason() }}</p>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
     <!-- Compte Section -->
     <div class="space-y-4">
       <h2 class="text-base md:text-lg font-medium text-smoke-50">Compte</h2>

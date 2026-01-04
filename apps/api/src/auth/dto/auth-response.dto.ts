@@ -1,15 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Expose } from 'class-transformer';
-import type { User } from '@cigar-platform/prisma-client';
+import { Expose, Type } from 'class-transformer';
 import { Role, UserVisibility } from '@cigar-platform/prisma-client';
 import type { AuthProvider } from '@cigar-platform/types';
 import type { Session } from '@supabase/supabase-js';
+import { UserPlanDto } from '../../plan/dto';
 
 /**
  * User data returned in authentication responses
- * Implements Prisma User type to ensure consistency with database and frontend
+ * Includes user profile data plus computed fields like plan
  */
-export class UserDto implements User {
+export class UserDto {
   @Expose()
   @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000' })
   id: string;
@@ -64,6 +64,14 @@ export class UserDto implements User {
     description: 'Authentication provider (from Supabase metadata)',
   })
   authProvider?: AuthProvider;
+
+  @Expose()
+  @Type(() => UserPlanDto)
+  @ApiPropertyOptional({
+    type: () => UserPlanDto,
+    description: 'User subscription plan with computed fields (isPremium, label, etc.)',
+  })
+  plan?: UserPlanDto;
 }
 
 /**

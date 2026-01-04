@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { injectTastingStore } from '../../../core/stores/tasting.store';
 import { injectObservationStore } from '../../../core/stores/observation.store';
 import { ContextStore } from '../../../core/stores/context.store';
-import { PremiumAccessService } from '../../../core/services/premium-access.service';
+import { PlanService } from '../../../core/services/plan.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { TastingAutoSaveService } from './tasting-auto-save.service';
 import { TastingScrollService } from './tasting-scroll.service';
@@ -53,7 +53,7 @@ export class TastingOrchestratorService implements OnDestroy {
   readonly #observationStore = injectObservationStore();
   readonly #tastingsService = inject(TastingsService);
   readonly #contextStore = inject(ContextStore);
-  readonly #premiumAccess = inject(PremiumAccessService);
+  readonly #planService = inject(PlanService);
   readonly #toast = inject(ToastService);
   readonly #autoSave = inject(TastingAutoSaveService);
   readonly #scroll = inject(TastingScrollService);
@@ -445,7 +445,7 @@ export class TastingOrchestratorService implements OnDestroy {
   }
 
   async handleCtaB_Chronique(): Promise<void> {
-    if (this.#premiumAccess.isPremium()) {
+    if (this.#planService.isPremium()) {
       this.#machine.dispatch({ type: 'START_CHRONIQUE', isDiscovery: false });
       this.#scroll.scrollTo('phase-presentation');
     } else {

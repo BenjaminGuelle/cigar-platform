@@ -23,6 +23,8 @@ import {
   slugify,
 } from '../common/utils/username.utils';
 import { mapRole } from '../common/utils/role.utils';
+import { PlanService } from '../plan/plan.service';
+import { UserPlanDto } from '../plan/dto';
 
 /**
  * Service handling authentication business logic
@@ -32,7 +34,8 @@ import { mapRole } from '../common/utils/role.utils';
 export class AuthService {
   constructor(
     private supabaseService: SupabaseService,
-    private prismaService: PrismaService
+    private prismaService: PrismaService,
+    private planService: PlanService
   ) {}
 
   /**
@@ -78,7 +81,10 @@ export class AuthService {
       },
     });
 
-    return this.buildAuthResponse(user, data.session);
+    // Create plan for new user (Beta or Default based on current date)
+    const plan = await this.planService.createPlanForNewUser(user.id);
+
+    return this.buildAuthResponse(user, data.session, plan);
   }
 
   /**
@@ -154,6 +160,9 @@ export class AuthService {
     if (authProvider) {
       userDto.authProvider = authProvider as 'google' | 'apple' | 'email';
     }
+
+    // Add plan
+    userDto.plan = await this.planService.getOrCreatePlan(user.id);
 
     return userDto;
   }
@@ -265,9 +274,22 @@ export class AuthService {
   /**
    * Build authentication response with user and session data
    */
-  private buildAuthResponse(user: User, session: Session): AuthResponseDto {
+  private async buildAuthResponse(
+    user: User,
+    session: Session,
+    plan?: UserPlanDto
+  ): Promise<AuthResponseDto> {
+    const userDto = this.mapUserToDto(user);
+
+    // If plan not provided, fetch it (for signIn case)
+    if (!plan) {
+      plan = await this.planService.getOrCreatePlan(user.id);
+    }
+
+    userDto.plan = plan;
+
     return {
-      user: this.mapUserToDto(user),
+      user: userDto,
       session,
     };
   }

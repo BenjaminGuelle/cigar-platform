@@ -9,7 +9,7 @@ import {
 } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { take } from 'rxjs/operators';
-import { AuthService, FormService, ToastService } from '../../../../core/services';
+import { AuthService, FormService, ToastService, PlanService } from '../../../../core/services';
 import { injectUserStore, UserStore } from '../../../../core/stores';
 import {
   ButtonComponent,
@@ -70,6 +70,9 @@ export class UserSettingsPage {
   #toastService = inject(ToastService);
   #fb = inject(FormBuilder);
   #router = inject(Router);
+
+  // Plan service for subscription section
+  readonly planService = inject(PlanService);
 
   readonly userStore: UserStore = injectUserStore();
   readonly currentUser: Signal<UserDto | null> = this.userStore.currentUser.data;

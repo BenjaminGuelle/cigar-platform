@@ -35,6 +35,165 @@ async function main() {
     console.log(`✅ Using existing user: ${systemUser.displayName} (${systemUser.id})`);
   }
 
+  // === SEED TEST USERS WITH DIFFERENT PLANS ===
+  console.log('\n👥 Seeding test users with different plans...');
+
+  // User FREE (default) - test the basic free plan
+  const userFree = await prisma.user.upsert({
+    where: { email: 'free@test.local' },
+    update: {},
+    create: {
+      email: 'free@test.local',
+      displayName: 'User Free',
+      username: 'userfree',
+      role: 'USER',
+      visibility: 'PUBLIC',
+      shareEvaluationsPublicly: true,
+    },
+  });
+  await prisma.userPlan.upsert({
+    where: { userId: userFree.id },
+    update: { type: 'FREE', source: 'DEFAULT', status: 'ACTIVE' },
+    create: { userId: userFree.id, type: 'FREE', source: 'DEFAULT', status: 'ACTIVE' },
+  });
+  console.log('  ✓ User FREE: free@test.local');
+
+  // User PREMIUM BETA - test beta tester experience
+  const userBeta = await prisma.user.upsert({
+    where: { email: 'beta@test.local' },
+    update: {},
+    create: {
+      email: 'beta@test.local',
+      displayName: 'Beta Tester',
+      username: 'betatester',
+      role: 'USER',
+      visibility: 'PUBLIC',
+      shareEvaluationsPublicly: true,
+    },
+  });
+  await prisma.userPlan.upsert({
+    where: { userId: userBeta.id },
+    update: {
+      type: 'PREMIUM',
+      source: 'BETA',
+      status: 'ACTIVE',
+      expiresAt: new Date('2026-12-31T23:59:59.999Z'),
+      giftReason: 'Beta Tester',
+    },
+    create: {
+      userId: userBeta.id,
+      type: 'PREMIUM',
+      source: 'BETA',
+      status: 'ACTIVE',
+      expiresAt: new Date('2026-12-31T23:59:59.999Z'),
+      giftReason: 'Beta Tester',
+    },
+  });
+  console.log('  ✓ User PREMIUM BETA: beta@test.local (expires 2026-12-31)');
+
+  // User PREMIUM LIFETIME - test lifetime access
+  const userLifetime = await prisma.user.upsert({
+    where: { email: 'lifetime@test.local' },
+    update: {},
+    create: {
+      email: 'lifetime@test.local',
+      displayName: 'Lifetime User',
+      username: 'lifetimeuser',
+      role: 'USER',
+      visibility: 'PUBLIC',
+      shareEvaluationsPublicly: true,
+    },
+  });
+  await prisma.userPlan.upsert({
+    where: { userId: userLifetime.id },
+    update: {
+      type: 'PREMIUM',
+      source: 'LIFETIME',
+      status: 'ACTIVE',
+      expiresAt: null,
+      giftReason: 'Early Adopter',
+    },
+    create: {
+      userId: userLifetime.id,
+      type: 'PREMIUM',
+      source: 'LIFETIME',
+      status: 'ACTIVE',
+      expiresAt: null,
+      giftReason: 'Early Adopter',
+    },
+  });
+  console.log('  ✓ User PREMIUM LIFETIME: lifetime@test.local (never expires)');
+
+  // User PREMIUM expiring soon (7 days) - test expiration warning UI
+  const userExpiring = await prisma.user.upsert({
+    where: { email: 'expiring@test.local' },
+    update: {},
+    create: {
+      email: 'expiring@test.local',
+      displayName: 'Expiring User',
+      username: 'expiringuser',
+      role: 'USER',
+      visibility: 'PUBLIC',
+      shareEvaluationsPublicly: true,
+    },
+  });
+  const expiringDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  await prisma.userPlan.upsert({
+    where: { userId: userExpiring.id },
+    update: {
+      type: 'PREMIUM',
+      source: 'GIFT',
+      status: 'ACTIVE',
+      expiresAt: expiringDate,
+      giftReason: 'Test expiration',
+    },
+    create: {
+      userId: userExpiring.id,
+      type: 'PREMIUM',
+      source: 'GIFT',
+      status: 'ACTIVE',
+      expiresAt: expiringDate,
+      giftReason: 'Test expiration',
+    },
+  });
+  console.log(`  ✓ User PREMIUM GIFT (expiring): expiring@test.local (expires in 7 days)`);
+
+  // User in GRACE PERIOD - test grace period UI
+  const userGrace = await prisma.user.upsert({
+    where: { email: 'grace@test.local' },
+    update: {},
+    create: {
+      email: 'grace@test.local',
+      displayName: 'Grace Period User',
+      username: 'graceuser',
+      role: 'USER',
+      visibility: 'PUBLIC',
+      shareEvaluationsPublicly: true,
+    },
+  });
+  const graceDate = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000); // Expired 1 day ago (within 3-day grace)
+  await prisma.userPlan.upsert({
+    where: { userId: userGrace.id },
+    update: {
+      type: 'PREMIUM',
+      source: 'GIFT',
+      status: 'ACTIVE',
+      expiresAt: graceDate,
+      giftReason: 'Test grace period',
+    },
+    create: {
+      userId: userGrace.id,
+      type: 'PREMIUM',
+      source: 'GIFT',
+      status: 'ACTIVE',
+      expiresAt: graceDate,
+      giftReason: 'Test grace period',
+    },
+  });
+  console.log(`  ✓ User PREMIUM in GRACE PERIOD: grace@test.local (expired 1 day ago)`);
+
+  console.log('✅ Test users with plans created');
+
   // Premium Cigar Brands
   const brands = [
     // === CUBA ===
@@ -491,14 +650,18 @@ async function main() {
 
   console.log('\n✨ Seed completed successfully!');
   console.log(`\n📊 Summary:`);
+  console.log(`  - 5 test users with different plans created`);
   console.log(`  - ${brands.length} brands created`);
   console.log(`  - ${cigars.length} cigars created`);
   console.log(`  - ${cigars.filter(c => c.status === 'VERIFIED').length} verified cigars`);
-  console.log(`  - ${cigars.filter(c => c.status === 'PENDING').length} pending cigars (test verification workflow)`);
-  console.log(`\n💡 Next steps:`);
-  console.log(`  1. View in Prisma Studio: npm run prisma:studio`);
-  console.log(`  2. Implement Omnisearch (search brands/cigars/clubs/users)`);
-  console.log(`  3. Implement Tasting CRUD with Observation system`);
+  console.log(`  - ${cigars.filter(c => c.status === 'PENDING').length} pending cigars`);
+  console.log(`\n🎫 Test Users for Plan Feature:`);
+  console.log(`  - free@test.local       → FREE plan`);
+  console.log(`  - beta@test.local       → PREMIUM BETA (expires 2026-12-31)`);
+  console.log(`  - lifetime@test.local   → PREMIUM LIFETIME (never expires)`);
+  console.log(`  - expiring@test.local   → PREMIUM GIFT (expires in 7 days)`);
+  console.log(`  - grace@test.local      → PREMIUM GIFT (in grace period)`);
+  console.log(`\n💡 View in Prisma Studio: npm run prisma:studio`);
 }
 
 main()

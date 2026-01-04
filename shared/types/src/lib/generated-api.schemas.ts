@@ -17,6 +17,74 @@ export interface SignUpDto {
   displayName: string;
 }
 
+/**
+ * The effective access level (FREE or PREMIUM)
+ */
+export type UserPlanDtoType = typeof UserPlanDtoType[keyof typeof UserPlanDtoType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UserPlanDtoType = {
+  FREE: 'FREE',
+  PREMIUM: 'PREMIUM',
+} as const;
+
+/**
+ * How the user obtained this plan
+ */
+export type UserPlanDtoSource = typeof UserPlanDtoSource[keyof typeof UserPlanDtoSource];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UserPlanDtoSource = {
+  DEFAULT: 'DEFAULT',
+  SUBSCRIPTION: 'SUBSCRIPTION',
+  TRIAL: 'TRIAL',
+  BETA: 'BETA',
+  GIFT: 'GIFT',
+  LIFETIME: 'LIFETIME',
+} as const;
+
+/**
+ * Current status of the plan
+ */
+export type UserPlanDtoStatus = typeof UserPlanDtoStatus[keyof typeof UserPlanDtoStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UserPlanDtoStatus = {
+  ACTIVE: 'ACTIVE',
+  EXPIRED: 'EXPIRED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface UserPlanDto {
+  id: string;
+  userId: string;
+  /** The effective access level (FREE or PREMIUM) */
+  type: UserPlanDtoType;
+  /** How the user obtained this plan */
+  source: UserPlanDtoSource;
+  /** Current status of the plan */
+  status: UserPlanDtoStatus;
+  /** When this plan started */
+  startedAt: string;
+  /** When this plan expires (null = never) */
+  expiresAt?: string;
+  /** Reason for gift/beta access */
+  giftReason?: string;
+  /** Whether the user currently has Premium access (considering expiration and grace period) */
+  isPremium: boolean;
+  /** User-friendly label for the plan */
+  label: string;
+  /** Days remaining until expiration (null if no expiration) */
+  daysRemaining?: number;
+  /** Whether the plan is expiring within 30 days */
+  isExpiringSoon: boolean;
+  /** Whether the user is in grace period (expired but still has access) */
+  isInGracePeriod: boolean;
+}
+
 export type UserDtoVisibility = typeof UserDtoVisibility[keyof typeof UserDtoVisibility];
 
 
@@ -63,6 +131,8 @@ export interface UserDto {
   createdAt: string;
   /** Authentication provider (from Supabase metadata) */
   authProvider?: UserDtoAuthProvider;
+  /** User subscription plan with computed fields (isPremium, label, etc.) */
+  plan?: UserPlanDto;
 }
 
 /**

@@ -47,6 +47,8 @@ export type IconName =
   | 'bell'
   | 'lock'
   | 'globe'
+  | 'crown'
+  | 'clock'
   // Feedback
   | 'spinner'
   | 'check'
