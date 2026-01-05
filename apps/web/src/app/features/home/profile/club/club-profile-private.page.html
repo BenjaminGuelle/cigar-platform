@@ -88,6 +88,7 @@
     <!-- Parcours Section -->
     <app-parcours-section
       context="club"
+      [loading]="profileStatsLoading()"
       [stat1Value]="tastingCount()"
       [stat2Value]="memberCount()"
       [stat3Value]="eventCount()"
@@ -96,6 +97,7 @@
     <!-- Aroma Signature Section -->
     <app-aroma-signature-section
       context="club"
+      [loading]="profileStatsLoading()"
       [isPremium]="true"
       [hasChronicData]="hasChronicData()"
       [aromas]="aromaSignature()"
@@ -105,6 +107,7 @@
     <!-- Terroirs Section (only visible if has chronic data) -->
     <app-terroirs-section
       context="club"
+      [loading]="profileStatsLoading()"
       [isPremium]="true"
       [hasChronicData]="hasChronicData()"
       [terroirs]="terroirs()"
@@ -113,6 +116,7 @@
     <!-- Journal Section -->
     <app-journal-section
       context="club"
+      [loading]="profileStatsLoading()"
       [tastings]="journal()"
     />
 

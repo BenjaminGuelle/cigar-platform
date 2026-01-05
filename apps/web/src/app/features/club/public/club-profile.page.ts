@@ -10,6 +10,7 @@ import {
   PageSectionComponent,
   ButtonComponent,
   ModalComponent,
+  SkeletonComponent,
 } from '@cigar-platform/shared/ui';
 
 /**
@@ -43,6 +44,7 @@ import {
     PageSectionComponent,
     ButtonComponent,
     ModalComponent,
+    SkeletonComponent,
   ],
   templateUrl: './club-profile.page.html',
 })

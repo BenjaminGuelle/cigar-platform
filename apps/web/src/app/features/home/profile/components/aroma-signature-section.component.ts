@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, input, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { IconDirective, PageSectionComponent, ButtonComponent } from '@cigar-platform/shared/ui';
+import { IconDirective, PageSectionComponent, ButtonComponent, SkeletonComponent } from '@cigar-platform/shared/ui';
 import { AROMAS, TASTES } from '@cigar-platform/shared/constants';
 import type { AromaStatDto } from '@cigar-platform/types';
 
@@ -36,11 +36,27 @@ function getFlavorLabel(id: string): string {
 @Component({
   selector: 'app-aroma-signature-section',
   standalone: true,
-  imports: [CommonModule, RouterLink, IconDirective, PageSectionComponent, ButtonComponent],
+  imports: [CommonModule, RouterLink, IconDirective, PageSectionComponent, ButtonComponent, SkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ui-page-section title="Signature Aromatique" [subtitle]="subtitleText()">
-      @if (showUpgradeCta()) {
+      @if (loading()) {
+        <!-- Skeleton State -->
+        <div class="space-y-3">
+          @for (i of [1, 2, 3, 4, 5]; track i) {
+            <div class="space-y-1">
+              <div class="flex items-center justify-between">
+                <ui-skeleton variant="text" width="80px" height="16px" />
+                <ui-skeleton variant="text" width="32px" height="16px" />
+              </div>
+              <ui-skeleton variant="rounded" width="100%" height="8px" />
+            </div>
+          }
+        </div>
+        <div class="mt-4 flex justify-center">
+          <ui-skeleton variant="text" width="180px" height="12px" />
+        </div>
+      } @else if (showUpgradeCta()) {
         <!-- Empty State: Not Premium or No Data -->
         <div class="flex flex-col items-center justify-center py-8 px-4 rounded-lg bg-smoke-800 border border-smoke-700 text-center">
           <div class="w-12 h-12 rounded-full bg-smoke-700 flex items-center justify-center mb-4">
@@ -89,6 +105,7 @@ function getFlavorLabel(id: string): string {
 })
 export class AromaSignatureSectionComponent {
   readonly context = input<'solo' | 'club'>('solo');
+  readonly loading = input<boolean>(false);
   readonly isPremium = input<boolean>(false);
   readonly hasChronicData = input<boolean>(false);
   readonly aromas = input<AromaStatDto[] | null>(null);

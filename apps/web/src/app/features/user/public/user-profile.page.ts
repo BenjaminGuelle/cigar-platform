@@ -8,6 +8,7 @@ import {
   PageSectionComponent,
   AvatarComponent,
   TooltipDirective,
+  SkeletonComponent,
 } from '@cigar-platform/shared/ui';
 
 /**
@@ -39,6 +40,7 @@ import {
     PageSectionComponent,
     AvatarComponent,
     TooltipDirective,
+    SkeletonComponent,
   ],
   templateUrl: './user-profile.page.html',
 })

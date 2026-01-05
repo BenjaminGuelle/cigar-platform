@@ -64,7 +64,8 @@ export class ClubProfilePrivatePage {
   readonly profileStatsQuery = this.clubStore.getClubProfileStats(() => this.clubId());
 
   // Computed states
-  readonly loading = computed(() => this.clubQuery.loading() || this.profileStatsQuery.loading());
+  readonly loading = computed(() => this.clubQuery.loading());
+  readonly profileStatsLoading = computed(() => this.profileStatsQuery.loading());
   readonly error = this.clubQuery.error;
   readonly club: Signal<ClubResponseDto | null> = this.clubQuery.data;
   readonly profileStats: Signal<ClubProfileStatsResponseDto | null> = this.profileStatsQuery.data;

@@ -64,6 +64,7 @@
   <!-- Parcours Section -->
   <app-parcours-section
     context="solo"
+    [loading]="profileStatsLoading()"
     [stat1Value]="tastingCount()"
     [stat2Value]="brandCount()"
     [stat3Value]="terroirCount()"
@@ -72,6 +73,7 @@
   <!-- Aroma Signature Section -->
   <app-aroma-signature-section
     context="solo"
+    [loading]="profileStatsLoading()"
     [isPremium]="isPremium()"
     [hasChronicData]="hasChronicData()"
     [aromas]="aromaSignature()"
@@ -80,6 +82,7 @@
   <!-- Terroirs Section (only visible if Premium + has data) -->
   <app-terroirs-section
     context="solo"
+    [loading]="profileStatsLoading()"
     [isPremium]="isPremium()"
     [hasChronicData]="hasChronicData()"
     [terroirs]="terroirs()"
@@ -88,6 +91,7 @@
   <!-- Journal Section -->
   <app-journal-section
     context="solo"
+    [loading]="profileStatsLoading()"
     [tastings]="journal()"
   />
 
