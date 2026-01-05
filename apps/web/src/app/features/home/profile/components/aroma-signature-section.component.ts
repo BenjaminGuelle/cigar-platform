@@ -2,7 +2,27 @@ import { Component, ChangeDetectionStrategy, input, computed } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { IconDirective, PageSectionComponent, ButtonComponent } from '@cigar-platform/shared/ui';
+import { AROMAS, TASTES } from '@cigar-platform/shared/constants';
 import type { AromaStatDto } from '@cigar-platform/types';
+
+/**
+ * Map for translating aroma/taste IDs to French labels
+ */
+const FLAVOR_LABELS_MAP = new Map<string, string>([
+  ...AROMAS.map(a => [a.id, a.label] as const),
+  ...TASTES.map(t => [t.id, t.label] as const),
+]);
+
+/**
+ * Get French label for a flavor ID
+ * Falls back to the ID if not found (capitalize first letter)
+ */
+function getFlavorLabel(id: string): string {
+  const label = FLAVOR_LABELS_MAP.get(id);
+  if (label) return label;
+  // Fallback: capitalize first letter
+  return id.charAt(0).toUpperCase() + id.slice(1).replace(/_/g, ' ');
+}
 
 /**
  * Aroma Signature Section Component
@@ -19,7 +39,7 @@ import type { AromaStatDto } from '@cigar-platform/types';
   imports: [CommonModule, RouterLink, IconDirective, PageSectionComponent, ButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <ui-page-section title="Signature Aromatique">
+    <ui-page-section title="Signature Aromatique" [subtitle]="subtitleText()">
       @if (showUpgradeCta()) {
         <!-- Empty State: Not Premium or No Data -->
         <div class="flex flex-col items-center justify-center py-8 px-4 rounded-lg bg-smoke-800 border border-smoke-700 text-center">
@@ -43,10 +63,10 @@ import type { AromaStatDto } from '@cigar-platform/types';
       } @else {
         <!-- Aroma Bars -->
         <div class="space-y-3">
-          @for (aroma of aromas(); track aroma.name) {
+          @for (aroma of aromasWithLabels(); track aroma.name) {
             <div class="space-y-1">
               <div class="flex items-center justify-between">
-                <span class="text-sm text-smoke-200">{{ aroma.name }}</span>
+                <span class="text-sm text-smoke-200">{{ aroma.label }}</span>
                 <span class="text-sm font-medium text-gold-500">{{ aroma.percentage }}%</span>
               </div>
               <div class="h-2 bg-smoke-700 rounded-full overflow-hidden">
@@ -59,12 +79,10 @@ import type { AromaStatDto } from '@cigar-platform/types';
           }
         </div>
 
-        <!-- Hint for club context -->
-        @if (context() === 'club' && chronicTastingCount() > 0) {
-          <p class="text-xs text-smoke-500 mt-4 text-center">
-            Basé sur {{ chronicTastingCount() }} dégustations chroniques des membres Premium
-          </p>
-        }
+        <!-- Hint text -->
+        <p class="text-xs text-smoke-400 mt-4 text-center">
+          {{ hintText() }}
+        </p>
       }
     </ui-page-section>
   `,
@@ -75,6 +93,18 @@ export class AromaSignatureSectionComponent {
   readonly hasChronicData = input<boolean>(false);
   readonly aromas = input<AromaStatDto[] | null>(null);
   readonly chronicTastingCount = input<number>(0);
+
+  /**
+   * Transform aromas with French labels
+   */
+  readonly aromasWithLabels = computed(() => {
+    const aromasList = this.aromas();
+    if (!aromasList) return [];
+    return aromasList.map(aroma => ({
+      ...aroma,
+      label: getFlavorLabel(aroma.name),
+    }));
+  });
 
   readonly showUpgradeCta = computed(() => {
     // Solo: Show CTA if not Premium OR no chronic data
@@ -103,5 +133,19 @@ export class AromaSignatureSectionComponent {
       return 'Complétez des fiches de dégustation chroniques pour découvrir votre signature aromatique.';
     }
     return 'Les membres Premium peuvent contribuer des dégustations chroniques pour révéler la signature du club.';
+  });
+
+  readonly hintText = computed(() => {
+    if (this.context() === 'club') {
+      const count = this.chronicTastingCount();
+      return `Basé sur ${count} dégustation${count > 1 ? 's' : ''} chronique${count > 1 ? 's' : ''} des membres Premium`;
+    }
+    return 'Basé sur vos dégustations chroniques';
+  });
+
+  readonly subtitleText = computed(() => {
+    return this.context() === 'club'
+      ? 'L\'empreinte aromatique du club'
+      : 'Les arômes qui vous définissent';
   });
 }

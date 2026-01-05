@@ -100,7 +100,7 @@ export type { FlavorTag } from '../../models/tasting-state.model';
             >
               <span class="text-sm font-medium text-smoke-200">{{ flavor.label }}</span>
               @if (flavor.description) {
-                <span class="text-xs text-smoke-500">{{ flavor.description }}</span>
+                <span class="text-xs text-smoke-400">{{ flavor.description }}</span>
               }
             </button>
           }

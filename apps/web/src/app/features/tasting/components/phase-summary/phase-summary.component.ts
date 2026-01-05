@@ -1,6 +1,7 @@
-import { Component, input, signal } from '@angular/core';
+import { Component, input, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IconDirective } from '@cigar-platform/shared/ui';
+import { ToastService } from '../../../../core/services/toast.service';
 import type { TastingPhase } from '../../services/tasting-orchestrator.service';
 import { PhaseQuickRecapComponent } from '../shared/phase-quick-recap.component';
 import { PhasePresentationRecapComponent } from '../shared/phase-presentation-recap.component';
@@ -251,6 +252,8 @@ type SummaryState = 'collapsed' | 'expanded';
   `],
 })
 export class PhaseSummaryComponent {
+  readonly #toast = inject(ToastService);
+
   // Inputs
   phaseId = input.required<TastingPhase>();
   summary = input.required<string>();
@@ -275,8 +278,7 @@ export class PhaseSummaryComponent {
   }
 
   handleModifier(): void {
-    // For now: just show alert message
-    alert('Modification à venir');
-    // Future: this.state.set('editing');
+    this.#toast.info('La modification des phases sera disponible prochainement');
+    this.collapse();
   }
 }

@@ -3,10 +3,16 @@
 > **Project**: Cigar club tasting platform (NestJS API + Angular PWA)
 > **Stack**: NestJS + Angular 20 + Prisma + Supabase + NX Monorepo
 
-test avec pupeteer use claude : 
+## USERS DE TEST
+
+test avec pupeteer use claude :
+// user plan mode : free
 email: claude-ai@yopmail.com
 password: Claude14&
 
+// user plan mode : premium
+email: bob-cigar@yopmail.com
+password: BGenjamin14&
 ---
 
 ## 🎯 MAIN ARCHITECTURE GUIDE

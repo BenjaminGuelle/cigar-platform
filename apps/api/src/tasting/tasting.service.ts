@@ -16,6 +16,34 @@ import {
   TastingForbiddenException,
 } from './exceptions';
 
+/**
+ * Common include for tasting queries
+ * Includes cigar with brand, observations, and associated clubs
+ */
+const TASTING_INCLUDE = {
+  cigar: {
+    include: {
+      brand: true,
+    },
+  },
+  observations: {
+    orderBy: {
+      createdAt: 'asc' as const,
+    },
+  },
+  sharedClubs: {
+    include: {
+      club: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
+    },
+  },
+};
+
 @Injectable()
 export class TastingService {
   private readonly logger = new Logger(TastingService.name);
@@ -91,9 +119,7 @@ export class TastingService {
   ): Promise<TastingResponseDto> {
     const tasting = await this.prisma.tasting.findUnique({
       where: { id },
-      include: {
-        cigar: true,
-      },
+      include: TASTING_INCLUDE,
     });
 
     if (!tasting) {
@@ -531,10 +557,27 @@ export class TastingService {
 
   /**
    * Map Prisma entity to Response DTO
-   * @param tasting - Prisma tasting entity (with cigar relation)
+   * @param tasting - Prisma tasting entity (with relations)
    * @returns TastingResponseDto
    */
   private mapToResponse(tasting: any): TastingResponseDto {
+    // Map observations if present
+    const observations = (tasting.observations ?? []).map((obs: any) => ({
+      id: obs.id,
+      phase: obs.phase,
+      intensity: obs.intensity,
+      combustion: obs.combustion,
+      aromas: obs.aromas ?? [],
+      notes: obs.notes,
+    }));
+
+    // Map clubs from sharedClubs if present
+    const clubs = (tasting.sharedClubs ?? []).map((sc: any) => ({
+      id: sc.club.id,
+      name: sc.club.name,
+      slug: sc.club.slug,
+    }));
+
     return {
       id: tasting.id,
       userId: tasting.userId,
@@ -555,6 +598,8 @@ export class TastingService {
       visibility: tasting.visibility,
       createdAt: tasting.createdAt,
       updatedAt: tasting.updatedAt,
+      observations,
+      clubs,
     };
   }
 }

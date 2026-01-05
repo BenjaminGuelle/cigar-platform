@@ -22,7 +22,7 @@ import type { JournalTastingDto } from '@cigar-platform/types';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <a
-      [routerLink]="['/tasting', tasting().id]"
+      [routerLink]="['/tastings', tasting().id]"
       class="block p-4 rounded-lg bg-smoke-800 border border-smoke-700 hover:border-smoke-600 transition-colors"
     >
       <div class="flex items-start gap-3">

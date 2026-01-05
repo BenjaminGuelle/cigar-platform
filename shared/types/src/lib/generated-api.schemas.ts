@@ -854,6 +854,28 @@ export interface CreateTastingDto {
   duration?: number;
 }
 
+export type ObservationResponseDtoOrganoleptic = { [key: string]: unknown };
+
+export interface ObservationResponseDto {
+  id: string;
+  tastingId: string;
+  /** Phase: presentation | fumage_cru | foin | divin | purin | conclusion */
+  phase: string;
+  intensity?: number;
+  combustion?: number;
+  aromas?: string[];
+  notes?: string;
+  organoleptic?: ObservationResponseDtoOrganoleptic;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TastingClubDto {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export type TastingResponseDtoStatus = typeof TastingResponseDtoStatus[keyof typeof TastingResponseDtoStatus];
 
 
@@ -929,6 +951,10 @@ export interface TastingResponseDto {
   visibility: TastingResponseDtoVisibility;
   createdAt: string;
   updatedAt: string;
+  /** Tasting observations by phase (chronic mode) */
+  observations: ObservationResponseDto[];
+  /** Clubs this tasting is shared with */
+  clubs: TastingClubDto[];
 }
 
 export interface PaginatedTastingResponseDto {
@@ -1060,22 +1086,6 @@ export interface UpsertObservationDto {
   notes?: string;
   /** Detailed organoleptic profile (JSON) */
   organoleptic?: UpsertObservationDtoOrganoleptic;
-}
-
-export type ObservationResponseDtoOrganoleptic = { [key: string]: unknown };
-
-export interface ObservationResponseDto {
-  id: string;
-  tastingId: string;
-  /** Phase: presentation | fumage_cru | foin | divin | purin | conclusion */
-  phase: string;
-  intensity?: number;
-  combustion?: number;
-  aromas?: string[];
-  notes?: string;
-  organoleptic?: ObservationResponseDtoOrganoleptic;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export type ClubControllerFindAllParams = {

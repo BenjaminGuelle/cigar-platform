@@ -145,16 +145,15 @@
   <!-- Sticky CTA: Passer au verdict (chronique flow only) -->
   @if (orchestrator.flowMode() === 'chronique' && orchestrator.currentPhase() !== 'finale') {
     <div class="fixed bottom-0 left-0 right-0 z-50 flex justify-center pb-safe md:ml-20">
-      <button
-        type="button"
-        (click)="handlePasserAuVerdict()"
-        class="flex items-center gap-2 px-6 py-3 text-sm text-gold-500/70 hover:text-gold-400 transition-colors
-               bg-zinc-900/80 backdrop-blur-sm rounded-t-xl
-               border-t border-x border-gold-500/10"
+      <ui-button
+        variant="link"
+        size="sm"
+        icon="arrow-down"
+        customClass="!text-gold-500/60 hover:!text-gold-400 bg-zinc-900/60 backdrop-blur-sm !rounded-t-xl !rounded-b-none !px-6 !py-3"
+        (clicked)="handlePasserAuVerdict()"
       >
-        <i name="arrow-down" class="w-4 h-4"></i>
-        <span>Passer au verdict</span>
-      </button>
+        Passer au verdict
+      </ui-button>
     </div>
   }
 

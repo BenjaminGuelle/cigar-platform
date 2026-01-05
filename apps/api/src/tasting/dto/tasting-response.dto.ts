@@ -8,6 +8,8 @@ import {
   TastingVisibility,
 } from '@cigar-platform/prisma-client';
 import { CigarResponseDto } from '../../cigar/dto/cigar-response.dto';
+import { ObservationResponseDto } from './observation-response.dto';
+import { TastingClubDto } from './tasting-club.dto';
 
 /**
  * Tasting Response DTO
@@ -94,4 +96,22 @@ export class TastingResponseDto {
   @Expose()
   @ApiProperty({ example: '2024-12-31T21:15:00.000Z' })
   updatedAt: Date;
+
+  // Observations (chronic tasting data)
+  @Expose()
+  @Type(() => ObservationResponseDto)
+  @ApiProperty({
+    type: [ObservationResponseDto],
+    description: 'Tasting observations by phase (chronic mode)',
+  })
+  observations: ObservationResponseDto[];
+
+  // Associated clubs
+  @Expose()
+  @Type(() => TastingClubDto)
+  @ApiProperty({
+    type: [TastingClubDto],
+    description: 'Clubs this tasting is shared with',
+  })
+  clubs: TastingClubDto[];
 }

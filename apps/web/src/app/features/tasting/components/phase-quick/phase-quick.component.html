@@ -134,7 +134,41 @@
         </div>
       }
 
-      <!-- Step 1: Situation (Single-select avec progress ring) -->
+      <!-- Step 1: Location (Solo mode only - before situation) -->
+      @case ('location') {
+        <div class="question-step w-full max-w-md space-y-4">
+          <p class="text-center text-base text-smoke-200 italic">
+            Le Refuge ?
+          </p>
+          <input
+            type="text"
+            [(ngModel)]="locationValue"
+            placeholder="Ex: Terrasse, Bureau, Salon..."
+            class="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg text-smoke-200 placeholder:text-smoke-600 focus:outline-none focus:border-gold-500/50 transition-colors"
+            (keyup.enter)="submitLocation()"
+          />
+          <div class="flex justify-center gap-4">
+            <button
+              type="button"
+              (click)="skipLocation()"
+              class="text-sm text-smoke-500 italic hover:text-gold-500 transition-colors"
+            >
+              Sauter
+            </button>
+            <ui-button
+              size="sm"
+              icon="arrow-right"
+              iconPos="right"
+              customClass="!rounded-full"
+              (clicked)="submitLocation()"
+            >
+              Continuer
+            </ui-button>
+          </div>
+        </div>
+      }
+
+      <!-- Step 2: Situation (Single-select avec progress ring) -->
       @case ('situation') {
         <div class="question-step w-full max-w-lg space-y-4">
           <p class="text-center text-base text-smoke-200 italic">
@@ -200,40 +234,6 @@
               iconPos="right"
               customClass="!rounded-full"
               (clicked)="submitPairingNote()"
-            >
-              Continuer
-            </ui-button>
-          </div>
-        </div>
-      }
-
-      <!-- Step 4: Location (conditionnel Solo) -->
-      @case ('location') {
-        <div class="question-step w-full max-w-md space-y-4">
-          <p class="text-center text-base text-smoke-200 italic">
-            Le Refuge ?
-          </p>
-          <input
-            type="text"
-            [(ngModel)]="locationValue"
-            placeholder="Ex: Terrasse, Bureau, Salon..."
-            class="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg text-smoke-200 placeholder:text-smoke-600 focus:outline-none focus:border-gold-500/50 transition-colors"
-            (keyup.enter)="submitLocation()"
-          />
-          <div class="flex justify-center gap-4">
-            <button
-              type="button"
-              (click)="skipLocation()"
-              class="text-sm text-smoke-500 italic hover:text-gold-500 transition-colors"
-            >
-              Sauter
-            </button>
-            <ui-button
-              size="sm"
-              icon="arrow-right"
-              iconPos="right"
-              customClass="!rounded-full"
-              (clicked)="submitLocation()"
             >
               Continuer
             </ui-button>

@@ -32,16 +32,13 @@ import type { JournalTastingDto } from '@cigar-platform/types';
           }
         </div>
 
-        <!-- View All Button (disabled for now) -->
+        <!-- View All Button -->
         <div class="mt-4 text-center">
-          <ui-button
-            size="sm"
-            variant="ghost"
-            [disabled]="true"
-            customClass="opacity-50 cursor-not-allowed"
-          >
-            Voir tout (bientot)
-          </ui-button>
+          <a routerLink="/tastings">
+            <ui-button size="sm" variant="ghost">
+              Voir tout
+            </ui-button>
+          </a>
         </div>
       } @else {
         <!-- Empty State -->

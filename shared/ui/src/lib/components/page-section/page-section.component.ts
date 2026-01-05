@@ -28,10 +28,15 @@ import { CommonModule } from '@angular/common';
   imports: [CommonModule],
   template: `
     <section [class]="this.bordered() ? 'border-b border-smoke-500 pb-10' : ''">
-      <div class="mb-8 flex items-baseline gap-4">
-        <h2 class="heading-section">{{ title() }}</h2>
-        @if (showDivider()) {
-          <div class="h-px flex-1 bg-gradient-to-r from-smoke-700 to-transparent"></div>
+      <div class="mb-8">
+        <div class="flex items-baseline gap-4">
+          <h2 class="heading-section">{{ title() }}</h2>
+          @if (showDivider()) {
+            <div class="h-px flex-1 bg-gradient-to-r from-smoke-700 to-transparent"></div>
+          }
+        </div>
+        @if (subtitle()) {
+          <p class="mt-1 text-sm text-smoke-400 italic">{{ subtitle() }}</p>
         }
       </div>
 
@@ -46,7 +51,7 @@ import { CommonModule } from '@angular/common';
 })
 export class PageSectionComponent {
   title = input.required<string>();
+  subtitle = input<string>('');
   showDivider = input<boolean>(true);
   bordered = input<boolean>(true);
-
 }

@@ -18,7 +18,7 @@ import { ExitConfirmationModalComponent } from '../../components/exit-confirmati
 import { DiscoveryBottomSheetComponent } from '../../components/discovery-bottom-sheet/discovery-bottom-sheet.component';
 import { TastingTimelineComponent } from '../../components/tasting-timeline/tasting-timeline.component';
 import { PhaseSummaryComponent } from '../../components/phase-summary/phase-summary.component';
-import { IconDirective } from '@cigar-platform/shared/ui';
+import { IconDirective, ButtonComponent } from '@cigar-platform/shared/ui';
 import type { TastingSituation, PairingType } from '@cigar-platform/shared/constants';
 import type { FlavorTag, PhaseData } from '../../models/tasting-state.model';
 
@@ -55,6 +55,7 @@ import type { FlavorTag, PhaseData } from '../../models/tasting-state.model';
     DiscoveryBottomSheetComponent,
     TastingTimelineComponent,
     IconDirective,
+    ButtonComponent,
   ],
   providers: [TastingStateMachine, TastingOrchestratorService, TastingAutoSaveService, TastingScrollService, TastingFormService],
   templateUrl: './tasting-page.component.html',
@@ -293,10 +294,11 @@ export class TastingPageComponent implements OnInit, OnDestroy {
 
   /**
    * Handle Decision: Sceller le verdict
+   * Uses skipToFinale() to bypass accessibility check (legitimate path after phase quick)
    */
   handleSceller(): void {
     this.#showDecisionCardSignal.set(false);
-    this.orchestrator.navigateToPhase('finale');
+    this.orchestrator.skipToFinale();
   }
 
   /**

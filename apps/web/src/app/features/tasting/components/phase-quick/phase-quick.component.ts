@@ -284,18 +284,32 @@ export class PhaseQuickComponent implements OnInit {
   }
 
   /**
-   * Confirm club selection and proceed to situation
+   * Confirm club selection and proceed to next step
+   * Solo mode: location first, then situation
+   * Club mode: skip location, go directly to situation
    */
   confirmClub(): void {
-    this.currentStep.set('situation');
+    const ctx = this.#contextStore.context();
+    if (ctx.type === 'solo') {
+      this.currentStep.set('location');
+    } else {
+      this.currentStep.set('situation');
+    }
   }
 
   /**
-   * Skip club selection and proceed to situation
+   * Skip club selection and proceed to next step
+   * Solo mode: location first
+   * Club mode: skip location, go directly to situation
    */
   skipClub(): void {
     this.selectedClub.set(null);
-    this.currentStep.set('situation');
+    const ctx = this.#contextStore.context();
+    if (ctx.type === 'solo') {
+      this.currentStep.set('location');
+    } else {
+      this.currentStep.set('situation');
+    }
   }
 
   /**
@@ -343,20 +357,22 @@ export class PhaseQuickComponent implements OnInit {
     return icons[id];
   }
 
-  submitPairingNote(): void { this.goToNextAfterPairing(); }
-  skipPairingNote(): void { this.pairingNoteValue = ''; this.goToNextAfterPairing(); }
+  submitPairingNote(): void { this.emitData(); this.goToNextAfterPairing(); }
+  skipPairingNote(): void { this.pairingNoteValue = ''; this.emitData(); this.goToNextAfterPairing(); }
 
-  submitLocation(): void { this.currentStep.set('done'); this.done.emit(); }
-  skipLocation(): void { this.locationValue = ''; this.currentStep.set('done'); this.done.emit(); }
+  /**
+   * Location is now BEFORE situation in solo mode
+   * After location → situation
+   */
+  submitLocation(): void { this.emitData(); this.currentStep.set('situation'); }
+  skipLocation(): void { this.locationValue = ''; this.emitData(); this.currentStep.set('situation'); }
 
+  /**
+   * After pairing note → done (location is already handled before situation)
+   */
   goToNextAfterPairing(): void {
-    const ctx = this.#contextStore.context();
-    if (ctx.type === 'solo') {
-      this.currentStep.set('location');
-    } else {
-      this.currentStep.set('done');
-      this.done.emit();
-    }
+    this.currentStep.set('done');
+    this.done.emit();
   }
 
   emitData(): void {
