@@ -236,6 +236,17 @@ export function injectTastingStore(): TastingStore {
       if (completedTasting.cigarId) {
         queryCache.invalidateQueriesMatching(['tastings', 'by-cigar', completedTasting.cigarId]);
       }
+
+      // Invalidate user profile-stats (new completed tasting affects stats & journal)
+      queryCache.invalidateQuery(['users', 'profile-stats', 'me']);
+
+      // Invalidate club profile-stats if tasting is shared with clubs
+      const sharedClubs = (completedTasting as TastingResponseDto & { sharedClubs?: Array<{ club: { id: string } }> }).sharedClubs;
+      if (sharedClubs && sharedClubs.length > 0) {
+        for (const shared of sharedClubs) {
+          queryCache.invalidateQuery(['clubs', 'profile-stats', shared.club.id]);
+        }
+      }
     },
   });
 
@@ -255,6 +266,10 @@ export function injectTastingStore(): TastingStore {
 
       // Invalidate all club tastings (we don't know which club this tasting belonged to)
       queryCache.invalidateQueriesMatching(['tastings', 'by-club']);
+
+      // Invalidate profile-stats (deleted tasting may affect stats & journal)
+      queryCache.invalidateQuery(['users', 'profile-stats', 'me']);
+      queryCache.invalidateQueriesMatching(['clubs', 'profile-stats']);
     },
   });
 
