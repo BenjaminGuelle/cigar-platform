@@ -1,14 +1,18 @@
-import { Component, ChangeDetectionStrategy, input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, computed, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { IconDirective } from '@cigar-platform/shared/ui';
+import { AROMAS } from '@cigar-platform/shared/constants';
 import type { JournalTastingDto } from '@cigar-platform/types';
 
 /**
  * Tasting Card Component
  *
- * Displays a single tasting in the profile journal section.
- * Shows cigar name, brand, rating, date, and optional aromas.
+ * Premium display of a single tasting in the profile journal section.
+ * Features:
+ * - Brand avatar (logo or gold initials fallback)
+ * - High contrast user attribution
+ * - Elegant inline aromas display
  *
  * Usage:
  * ```html
@@ -23,60 +27,58 @@ import type { JournalTastingDto } from '@cigar-platform/types';
   template: `
     <a
       [routerLink]="['/tastings', tasting().id]"
-      class="block p-4 rounded-lg bg-smoke-800 border border-smoke-700 hover:border-smoke-600 transition-colors"
+      class="block p-3 rounded-lg bg-smoke-800/50 border border-smoke-700/50 hover:border-gold-500/30 hover:bg-smoke-800 transition-all duration-200"
     >
-      <div class="flex items-start gap-3">
-        <!-- Brand Logo or Placeholder -->
-        <div class="flex-shrink-0 w-10 h-10 rounded bg-smoke-700 flex items-center justify-center overflow-hidden">
-          @if (tasting().brandLogoUrl) {
-            <img
-              [src]="tasting().brandLogoUrl"
-              [alt]="tasting().brandName"
-              class="w-full h-full object-contain"
-            />
+      <div class="flex items-center gap-3">
+        <!-- Brand Avatar (Logo or Gold Initials) -->
+        <div class="flex-shrink-0">
+          @if (tasting().brandLogoUrl && !imageError()) {
+            <div class="w-10 h-10 rounded-full bg-smoke-700 flex items-center justify-center overflow-hidden ring-1 ring-smoke-600">
+              <img
+                [src]="tasting().brandLogoUrl"
+                [alt]="tasting().brandName"
+                class="w-full h-full object-contain p-1"
+                (error)="onImageError()"
+              />
+            </div>
           } @else {
-            <i name="box" class="w-5 h-5 text-smoke-500"></i>
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gold-500 to-gold-600 flex items-center justify-center shadow-lg shadow-gold-500/20">
+              <span class="text-sm font-bold text-smoke-950">{{ brandInitials() }}</span>
+            </div>
           }
         </div>
 
         <!-- Content -->
         <div class="flex-1 min-w-0">
-          <!-- Cigar Name -->
-          <h4 class="text-sm font-medium text-smoke-100 truncate">
-            {{ tasting().cigarName }}
-          </h4>
-
-          <!-- Brand Name -->
-          <p class="text-xs text-smoke-400 truncate">{{ tasting().brandName }}</p>
-
-          <!-- User (for club context) -->
-          @if (showUser() && tasting().user) {
-            <p class="text-xs text-smoke-500 mt-1">
-              par {{ tasting().user?.displayName }}
-            </p>
-          }
-
-          <!-- Aromas -->
-          @if (tasting().aromas && (tasting().aromas?.length ?? 0) > 0) {
-            <div class="flex flex-wrap gap-1 mt-2">
-              @for (aroma of tasting().aromas ?? []; track aroma) {
-                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-smoke-700 text-smoke-300">
-                  {{ aroma }}
-                </span>
-              }
+          <!-- First Row: Cigar Name + Rating -->
+          <div class="flex items-center justify-between gap-2">
+            <h4 class="text-sm font-medium text-smoke-100 truncate">
+              {{ tasting().cigarName }}
+            </h4>
+            <div class="flex items-center gap-1 text-gold-500 flex-shrink-0">
+              <i name="star" class="w-3.5 h-3.5 fill-current"></i>
+              <span class="text-sm font-semibold">{{ tasting().rating }}</span>
             </div>
-          }
-        </div>
-
-        <!-- Rating & Date -->
-        <div class="flex-shrink-0 text-right">
-          <div class="flex items-center gap-1 text-gold-500">
-            <i name="star" class="w-4 h-4 fill-current"></i>
-            <span class="text-sm font-semibold">{{ tasting().rating }}</span>
           </div>
-          <p class="text-xs text-smoke-500 mt-1">
-            {{ tasting().date | date:'dd/MM/yy' }}
-          </p>
+
+          <!-- Second Row: Brand + Aromas -->
+          <div class="flex items-center gap-1.5 mt-0.5">
+            <span class="text-xs text-smoke-300 truncate">{{ tasting().brandName }}</span>
+
+            @if (hasAromas()) {
+              <span class="text-smoke-600">·</span>
+              <span class="text-xs text-smoke-400 truncate italic">{{ aromasPreview() }}</span>
+            }
+          </div>
+
+          <!-- Third Row: User (if club) + Date -->
+          <div class="flex items-center gap-1.5 mt-1">
+            @if (showUser() && tasting().user) {
+              <span class="text-[11px] text-gold-600/70">par {{ tasting().user?.displayName }}</span>
+              <span class="text-smoke-600">·</span>
+            }
+            <span class="text-[11px] text-smoke-400">{{ tasting().date | date:'d MMM yyyy' }}</span>
+          </div>
         </div>
       </div>
     </a>
@@ -85,4 +87,56 @@ import type { JournalTastingDto } from '@cigar-platform/types';
 export class TastingCardComponent {
   readonly tasting = input.required<JournalTastingDto>();
   readonly showUser = input<boolean>(false);
+
+  // Track image loading error
+  readonly #imageError = signal(false);
+  readonly imageError = this.#imageError.asReadonly();
+
+  /**
+   * Get brand initials (1-2 letters)
+   * "Arturo Fuente" → "AF"
+   * "Cohiba" → "C"
+   */
+  readonly brandInitials = computed(() => {
+    const name = this.tasting().brandName;
+    if (!name) return '?';
+
+    const words = name.trim().split(/\s+/);
+    if (words.length >= 2) {
+      return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
+    }
+    return words[0].charAt(0).toUpperCase();
+  });
+
+  /**
+   * Check if tasting has aromas
+   */
+  readonly hasAromas = computed(() => {
+    const aromas = this.tasting().aromas;
+    return aromas && aromas.length > 0;
+  });
+
+  /**
+   * Get aromas preview (comma separated, truncated, translated to French)
+   */
+  readonly aromasPreview = computed(() => {
+    const aromas = this.tasting().aromas;
+    if (!aromas || aromas.length === 0) return '';
+
+    // Translate aroma IDs to French labels
+    const translatedAromas = aromas.slice(0, 2).map(aromaId => {
+      const aroma = AROMAS.find(a => a.id === aromaId);
+      return aroma?.label ?? aromaId;
+    });
+
+    const preview = translatedAromas.join(', ');
+    return aromas.length > 2 ? `${preview}...` : preview;
+  });
+
+  /**
+   * Handle image load error
+   */
+  onImageError(): void {
+    this.#imageError.set(true);
+  }
 }
