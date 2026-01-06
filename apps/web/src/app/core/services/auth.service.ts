@@ -39,26 +39,24 @@ export class AuthService {
   }
 
   #initializeAuth(): void {
-    from(this.#supabaseService.client.auth.getSession())
-      .pipe(
-        tap(({ data: { session } }) => {
-          if (session) {
-            this.#sessionSignal.set(session);
-          }
-        }),
-        switchMap(({ data: { session } }) =>
-          session ? this.#loadUserProfile() : of(null)
-        ),
-        catchError((error) => {
-          // Error handled silently
-          return of(null);
-        }),
-        finalize(() => this.#loadingSignal.set(false)),
-        takeUntilDestroyed(this.#destroyRef)
-      )
-      .subscribe();
+    // Detect if returning from OAuth callback (URL contains auth tokens)
+    const isOAuthCallback = this.#isOAuthCallback();
 
-    const { data } = this.#supabaseService.client.auth.onAuthStateChange((_event, session) => {
+    if (isOAuthCallback) {
+      // OAuth callback: wait for Supabase to parse tokens and fire SIGNED_IN
+      this.#handleOAuthCallback();
+    } else {
+      // Normal flow: check existing session
+      this.#handleNormalAuth();
+    }
+
+    // Setup auth state change listener for future changes
+    const { data } = this.#supabaseService.client.auth.onAuthStateChange((event, session) => {
+      // Skip if we're handling OAuth callback (handled separately)
+      if (isOAuthCallback && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
+        return;
+      }
+
       this.#sessionSignal.set(session);
 
       if (session?.user) {
@@ -72,6 +70,99 @@ export class AuthService {
     this.#destroyRef.onDestroy(() => {
       data.subscription.unsubscribe();
     });
+  }
+
+  /**
+   * Detect if current URL is an OAuth callback
+   * Checks for access_token in fragment or code in query params
+   */
+  #isOAuthCallback(): boolean {
+    const hash = window.location.hash;
+    const search = window.location.search;
+
+    // Check fragment for implicit flow (#access_token=...)
+    const hasAccessToken = hash.includes('access_token=');
+    // Check query for PKCE flow (?code=...)
+    const hasCode = search.includes('code=');
+    // Check for error in callback
+    const hasError = hash.includes('error=') || search.includes('error=');
+
+    return hasAccessToken || hasCode || hasError;
+  }
+
+  /**
+   * Handle OAuth callback - wait for Supabase to parse tokens
+   */
+  #handleOAuthCallback(): void {
+    // Subscribe to auth state change for SIGNED_IN event
+    const { data: { subscription } } = this.#supabaseService.client.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          // Successfully authenticated
+          this.#sessionSignal.set(session);
+          this.#loadUserProfile()
+            .pipe(
+              take(1),
+              finalize(() => {
+                this.#loadingSignal.set(false);
+                subscription.unsubscribe();
+                // Clean URL fragment/params after successful auth
+                this.#cleanOAuthUrl();
+              })
+            )
+            .subscribe();
+        } else if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
+          // Auth failed or no session
+          this.#loadingSignal.set(false);
+          subscription.unsubscribe();
+          this.#cleanOAuthUrl();
+        }
+      }
+    );
+
+    // Fallback timeout: if no event fires within 10 seconds, stop loading
+    setTimeout(() => {
+      if (this.#loadingSignal()) {
+        this.#loadingSignal.set(false);
+        subscription.unsubscribe();
+      }
+    }, 10000);
+  }
+
+  /**
+   * Handle normal auth initialization (not OAuth callback)
+   */
+  #handleNormalAuth(): void {
+    from(this.#supabaseService.client.auth.getSession())
+      .pipe(
+        tap(({ data: { session } }) => {
+          if (session) {
+            this.#sessionSignal.set(session);
+          }
+        }),
+        switchMap(({ data: { session } }) =>
+          session ? this.#loadUserProfile() : of(null)
+        ),
+        catchError(() => {
+          return of(null);
+        }),
+        finalize(() => this.#loadingSignal.set(false)),
+        takeUntilDestroyed(this.#destroyRef)
+      )
+      .subscribe();
+  }
+
+  /**
+   * Clean OAuth tokens from URL after authentication
+   */
+  #cleanOAuthUrl(): void {
+    // Remove hash fragment and query params related to OAuth
+    const url = new URL(window.location.href);
+    url.hash = '';
+    url.searchParams.delete('code');
+    url.searchParams.delete('error');
+    url.searchParams.delete('error_description');
+    window.history.replaceState({}, '', url.pathname + url.search);
   }
 
   #loadUserProfile(): Observable<UserWithAuth | null> {
