@@ -232,28 +232,44 @@ body {
   }
 
   [data-sonner-toast] {
-    @apply bg-smoke-800 border border-smoke-700 text-smoke-50 shadow-2xl shadow-smoke-950/50 backdrop-blur-sm;
+    @apply bg-smoke-800 border border-gold-500/30 text-smoke-50 shadow-2xl shadow-smoke-950/50 backdrop-blur-sm rounded-lg;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   }
 
   [data-sonner-toast][data-type='success'] {
-    @apply bg-success-900/30 border-success-500/30 text-success-400;
+    @apply bg-smoke-800 border-success-500/50 text-smoke-50;
+  }
+
+  [data-sonner-toast][data-type='success'] [data-icon] svg {
+    @apply text-success-500;
   }
 
   [data-sonner-toast][data-type='error'] {
-    @apply bg-error-900/30 border-error-500/30 text-error-400;
+    @apply bg-smoke-800 border-error-500/50 text-smoke-50;
+  }
+
+  [data-sonner-toast][data-type='error'] [data-icon] svg {
+    @apply text-error-500;
   }
 
   [data-sonner-toast][data-type='warning'] {
-    @apply bg-warning-900/30 border-warning-500/30 text-warning-400;
+    @apply bg-smoke-800 border-warning-500/50 text-smoke-50;
+  }
+
+  [data-sonner-toast][data-type='warning'] [data-icon] svg {
+    @apply text-warning-500;
   }
 
   [data-sonner-toast][data-type='info'] {
-    @apply bg-info-900/30 border-info-500/30 text-info-400;
+    @apply bg-smoke-800 border-info-500/50 text-smoke-50;
+  }
+
+  [data-sonner-toast][data-type='info'] [data-icon] svg {
+    @apply text-info-500;
   }
 
   [data-sonner-toast] [data-title] {
-    @apply text-sm leading-normal text-smoke-400 font-medium;
+    @apply text-sm leading-normal text-smoke-50 font-medium;
   }
 
   [data-sonner-toast] [data-description] {

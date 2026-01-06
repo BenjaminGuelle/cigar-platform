@@ -1,7 +1,7 @@
 {
   "name": "Cigar & Club",
   "short_name": "C&C",
-  "description": "Application de d\u00e9gustation de cigares pour clubs - \u00c9valuez, partagez et d\u00e9couvrez",
+  "description": "Application de dégustation de cigares pour clubs - Évaluez, partagez et découvrez",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
@@ -13,44 +13,8 @@
   "categories": ["lifestyle", "social", "food"],
   "icons": [
     {
-      "src": "icons/pwa/icon-72x72.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/pwa/icon-96x96.png",
-      "sizes": "96x96",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/pwa/icon-128x128.png",
-      "sizes": "128x128",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/pwa/icon-144x144.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/pwa/icon-152x152.png",
-      "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
       "src": "icons/pwa/icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/pwa/icon-384x384.png",
-      "sizes": "384x384",
       "type": "image/png",
       "purpose": "any"
     },
@@ -67,34 +31,18 @@
       "purpose": "maskable"
     }
   ],
-  "screenshots": [
-    {
-      "src": "screenshots/home-mobile.png",
-      "sizes": "390x844",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Accueil - D\u00e9couvrez vos clubs"
-    },
-    {
-      "src": "screenshots/tasting-mobile.png",
-      "sizes": "390x844",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "D\u00e9gustation - \u00c9valuez vos cigares"
-    }
-  ],
   "shortcuts": [
     {
       "name": "Mes Clubs",
       "short_name": "Clubs",
-      "description": "Acc\u00e9der \u00e0 mes clubs",
+      "description": "Accéder à mes clubs",
       "url": "/home/clubs",
       "icons": [{ "src": "icons/pwa/shortcut-clubs.png", "sizes": "96x96" }]
     },
     {
-      "name": "D\u00e9gustations",
+      "name": "Dégustations",
       "short_name": "Tastings",
-      "description": "Voir mes d\u00e9gustations",
+      "description": "Voir mes dégustations",
       "url": "/home/tastings",
       "icons": [{ "src": "icons/pwa/shortcut-tastings.png", "sizes": "96x96" }]
     }
