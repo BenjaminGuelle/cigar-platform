@@ -1,12 +1,80 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="utf-8" />
     <title>Cigar & Club</title>
     <base href="/" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Viewport & Mobile -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="description" content="Application de d\u00e9gustation de cigares pour clubs - \u00c9valuez, partagez et d\u00e9couvrez" />
+    <meta name="application-name" content="Cigar & Club" />
+
+    <!-- iOS Specific -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="C&C" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Android Specific -->
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- Manifest -->
+    <link rel="manifest" href="manifest.webmanifest" />
+
+    <!-- Favicons -->
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/pwa/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/pwa/icon-192x192.png" />
+
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="icons/pwa/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="icons/pwa/icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/pwa/apple-touch-icon.png" />
+
+    <!-- Apple Splash Screens (iPhone/iPad) -->
+    <!-- iPhone SE, 8, 7, 6s, 6 (320x568 @2x) -->
+    <link rel="apple-touch-startup-image"
+          media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)"
+          href="icons/pwa/splash-640x1136.png" />
+    <!-- iPhone X, XS, 11 Pro, 12 mini, 13 mini (375x812 @3x) -->
+    <link rel="apple-touch-startup-image"
+          media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)"
+          href="icons/pwa/splash-1125x2436.png" />
+    <!-- iPhone XR, 11, 12, 13, 14 (390x844 @3x) -->
+    <link rel="apple-touch-startup-image"
+          media="screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)"
+          href="icons/pwa/splash-1170x2532.png" />
+    <!-- iPhone 14 Pro, 15, 15 Pro (393x852 @3x) -->
+    <link rel="apple-touch-startup-image"
+          media="screen and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)"
+          href="icons/pwa/splash-1179x2556.png" />
+    <!-- iPhone XS Max, 11 Pro Max (414x896 @3x) -->
+    <link rel="apple-touch-startup-image"
+          media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)"
+          href="icons/pwa/splash-1242x2688.png" />
+    <!-- iPhone 14 Plus, 15 Plus (430x932 @3x) -->
+    <link rel="apple-touch-startup-image"
+          media="screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)"
+          href="icons/pwa/splash-1290x2796.png" />
+    <!-- iPhone 14 Pro Max, 15 Pro Max (430x932 @3x) - different ratio -->
+    <link rel="apple-touch-startup-image"
+          media="screen and (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)"
+          href="icons/pwa/splash-1284x2778.png" />
+
+    <!-- CSS Variables for Safe Areas (iOS) -->
     <style>
+      :root {
+        --sat: env(safe-area-inset-top);
+        --sar: env(safe-area-inset-right);
+        --sab: env(safe-area-inset-bottom);
+        --sal: env(safe-area-inset-left);
+      }
+
       /* App Loader - Premium Loading Screen */
       #app-loader {
         position: fixed;
@@ -22,6 +90,7 @@
         z-index: 9999;
         opacity: 1;
         transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
       }
 
       #app-loader.fade-out {
@@ -118,6 +187,11 @@
           transform: translateY(-20px) scale(1.1);
         }
       }
+
+      /* PWA Install Banner padding adjustment */
+      body.pwa-banner-visible {
+        padding-bottom: calc(env(safe-area-inset-bottom) + 80px);
+      }
     </style>
   </head>
   <body>
@@ -126,11 +200,21 @@
       <div id="app-loader">
         <div class="loader-smoke"></div>
         <div class="loader-logo">C&C</div>
-        <div class="loader-text">Chargement de votre expérience...</div>
+        <div class="loader-text">Chargement de votre exp\u00e9rience...</div>
         <div class="loader-progress">
           <div class="loader-progress-bar"></div>
         </div>
       </div>
     </app-root>
+
+    <!-- No-JS fallback -->
+    <noscript>
+      <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0a0a0a;color:#d4af37;font-family:Georgia,serif;text-align:center;padding:20px;">
+        <div>
+          <h1>Cigar & Club</h1>
+          <p style="color:#9ca3af;">Cette application n\u00e9cessite JavaScript pour fonctionner.</p>
+        </div>
+      </div>
+    </noscript>
   </body>
 </html>

@@ -5,6 +5,7 @@ import { injectObservationStore } from '../../../core/stores/observation.store';
 import { ContextStore } from '../../../core/stores/context.store';
 import { PlanService } from '../../../core/services/plan.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { AnalyticsTrackingService } from '../../../core/services/analytics.service';
 import { TastingAutoSaveService } from './tasting-auto-save.service';
 import { TastingScrollService } from './tasting-scroll.service';
 import { TastingFormService } from './tasting-form.service';
@@ -55,6 +56,7 @@ export class TastingOrchestratorService implements OnDestroy {
   readonly #contextStore = inject(ContextStore);
   readonly #planService = inject(PlanService);
   readonly #toast = inject(ToastService);
+  readonly #analytics = inject(AnalyticsTrackingService);
   readonly #autoSave = inject(TastingAutoSaveService);
   readonly #scroll = inject(TastingScrollService);
   readonly #formService = inject(TastingFormService);
@@ -355,6 +357,14 @@ export class TastingOrchestratorService implements OnDestroy {
       // Auto-save initial location
       this.#autoSave.saveTastingData({ location: defaultLocation });
       this.#autoSave.saveStatus.set('');
+
+      // Track analytics
+      this.#analytics.track('tasting_started', {
+        tastingId: result.id,
+        cigarId: cigarId,
+        contextType: context.type,
+        hasEvent: !!eventId,
+      });
     }
   }
 
@@ -393,6 +403,14 @@ export class TastingOrchestratorService implements OnDestroy {
 
       this.#autoSave.saveStatus.set('Terminé');
       this.#machine.dispatch({ type: 'COMPLETE_TASTING_SUCCESS' });
+
+      // Track analytics
+      this.#analytics.track('tasting_completed', {
+        tastingId: id,
+        rating: finaleData.rating,
+        flowMode: this.flowMode(),
+        isDiscovery: this.isDiscoveryMode(),
+      });
     } catch {
       this.#autoSave.saveStatus.set('Erreur');
       this.#machine.dispatch({ type: 'COMPLETE_TASTING_ERROR' });
@@ -650,6 +668,16 @@ export class TastingOrchestratorService implements OnDestroy {
   }
 
   confirmExit(): void {
+    // Track abandonment before navigating away
+    const id = this.tastingId();
+    if (id) {
+      this.#analytics.track('tasting_abandoned', {
+        tastingId: id,
+        currentPhase: this.currentPhase(),
+        flowMode: this.flowMode(),
+      });
+    }
+
     this.#machine.dispatch({ type: 'SHOW_EXIT_CONFIRMATION', show: false });
     this.close();
   }

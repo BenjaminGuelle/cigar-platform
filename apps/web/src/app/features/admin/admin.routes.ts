@@ -37,4 +37,14 @@ export const adminChildRoutes: Route[] = [
     loadComponent: () =>
       import('./security/security.component').then((m) => m.SecurityComponent),
   },
+  {
+    path: 'feedbacks',
+    loadComponent: () =>
+      import('./feedbacks/feedbacks.component').then((m) => m.FeedbacksComponent),
+  },
+  {
+    path: 'analytics',
+    loadComponent: () =>
+      import('./analytics/analytics.component').then((m) => m.AnalyticsComponent),
+  },
 ];

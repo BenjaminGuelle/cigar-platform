@@ -9,6 +9,7 @@ export type IconName =
   | 'arrow-left'
   | 'arrow-right'
   | 'arrow-down'
+  | 'arrow-up'
   | 'chevron-down'
   | 'chevron-left'
   | 'chevron-right'
@@ -33,6 +34,8 @@ export type IconName =
   | 'plus'
   | 'minus'
   | 'book-copy'
+  | 'share'
+  | 'download'
   // Social
   | 'heart'
   | 'star'

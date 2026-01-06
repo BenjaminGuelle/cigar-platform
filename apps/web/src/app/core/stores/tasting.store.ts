@@ -1,4 +1,4 @@
-import { inject } from '@angular/core';
+import { inject, signal, computed } from '@angular/core';
 import { injectQuery, injectMutation, QueryCacheService } from '../query';
 import type { Query, Mutation } from '../query';
 import { TastingsService } from '@cigar-platform/types/lib/tastings/tastings.service';
@@ -9,6 +9,9 @@ import type {
   CompleteTastingDto,
   PaginatedTastingResponseDto,
 } from '@cigar-platform/types';
+import { PwaService } from '../services/pwa.service';
+
+const TASTINGS_PER_PAGE = 20;
 
 /**
  * Tasting Store
@@ -39,9 +42,29 @@ import type {
  */
 export interface TastingStore {
   /**
-   * My tastings query (paginated)
+   * My tastings query (paginated with load more)
    */
   myTastings: Query<PaginatedTastingResponseDto>;
+
+  /**
+   * All loaded tastings (accumulated across pages)
+   */
+  allMyTastings: () => TastingResponseDto[];
+
+  /**
+   * Check if there are more tastings to load
+   */
+  hasMoreTastings: () => boolean;
+
+  /**
+   * Load more tastings (next page)
+   */
+  loadMoreTastings: () => Promise<void>;
+
+  /**
+   * Loading state for load more
+   */
+  loadingMore: () => boolean;
 
   /**
    * Get tasting by ID (reactive - pass a getter function)
@@ -92,13 +115,22 @@ export interface TastingStore {
 export function injectTastingStore(): TastingStore {
   const tastingsService = inject(TastingsService);
   const queryCache = inject(QueryCacheService);
+  const pwaService = inject(PwaService);
 
-  // Query: My Tastings (paginated)
+  // Load more state
+  const currentPage = signal(1);
+  const additionalTastings = signal<TastingResponseDto[]>([]);
+  const loadingMore = signal(false);
+
+  // Query: My Tastings (first page)
   const myTastings = injectQuery<PaginatedTastingResponseDto>(() => ({
     queryKey: ['tastings', 'me'],
     queryFn: async () => {
+      // Reset additional tastings when first page is refetched
+      additionalTastings.set([]);
+      currentPage.set(1);
       const response = await tastingsService.tastingControllerFindMine({
-        limit: 50,
+        limit: TASTINGS_PER_PAGE,
         page: 1,
         sortBy: 'date',
         order: 'desc',
@@ -107,6 +139,41 @@ export function injectTastingStore(): TastingStore {
     },
     staleTime: 2 * 60 * 1000, // 2 minutes
   }));
+
+  // All tastings (first page + additional pages)
+  const allMyTastings = computed(() => {
+    const firstPage = myTastings.data()?.data ?? [];
+    return [...firstPage, ...additionalTastings()];
+  });
+
+  // Check if there are more tastings to load
+  const hasMoreTastings = computed(() => {
+    const meta = myTastings.data()?.meta;
+    if (!meta) return false;
+    const totalLoaded = allMyTastings().length;
+    return totalLoaded < meta.total;
+  });
+
+  // Load more tastings
+  const loadMoreTastings = async (): Promise<void> => {
+    if (loadingMore() || !hasMoreTastings()) return;
+
+    loadingMore.set(true);
+    try {
+      const nextPage = currentPage() + 1;
+      const response = await tastingsService.tastingControllerFindMine({
+        limit: TASTINGS_PER_PAGE,
+        page: nextPage,
+        sortBy: 'date',
+        order: 'desc',
+      });
+
+      additionalTastings.update((prev) => [...prev, ...(response.data ?? [])]);
+      currentPage.set(nextPage);
+    } finally {
+      loadingMore.set(false);
+    }
+  };
 
   /**
    * Get tasting by ID (returns a reactive query)
@@ -247,6 +314,9 @@ export function injectTastingStore(): TastingStore {
           queryCache.invalidateQuery(['clubs', 'profile-stats', shared.club.id]);
         }
       }
+
+      // Mark tasting completed for PWA install prompt trigger
+      pwaService.markTastingCompleted();
     },
   });
 
@@ -275,6 +345,10 @@ export function injectTastingStore(): TastingStore {
 
   return {
     myTastings,
+    allMyTastings: () => allMyTastings(),
+    hasMoreTastings: () => hasMoreTastings(),
+    loadMoreTastings,
+    loadingMore: () => loadingMore(),
     getTastingById,
     getTastingsByCigar,
     getTastingsByClub,

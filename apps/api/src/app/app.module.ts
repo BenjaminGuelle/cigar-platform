@@ -13,6 +13,9 @@ import { BrandModule } from '../brand/brand.module';
 import { CigarModule } from '../cigar/cigar.module';
 import { TastingModule } from '../tasting/tasting.module';
 import { PlanModule } from '../plan/plan.module';
+import { HealthModule } from '../health/health.module';
+import { FeedbackModule } from '../feedback/feedback.module';
+import { AnalyticsModule } from '../analytics/analytics.module';
 
 @Global()
 @Module({
@@ -23,8 +26,9 @@ import { PlanModule } from '../plan/plan.module';
     }),
     ThrottlerModule.forRoot([
       {
+        name: 'default',
         ttl: 60000, // 1 minute
-        limit: 100, // 100 requests per minute per IP
+        limit: 200, // 200 requests per minute per IP (global safety net)
       },
     ]),
     AuthModule,
@@ -35,6 +39,9 @@ import { PlanModule } from '../plan/plan.module';
     CigarModule,
     TastingModule,
     PlanModule,
+    HealthModule,
+    FeedbackModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [

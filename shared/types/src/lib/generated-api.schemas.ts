@@ -1088,6 +1088,226 @@ export interface UpsertObservationDto {
   organoleptic?: UpsertObservationDtoOrganoleptic;
 }
 
+/**
+ * Type of feedback
+ */
+export type CreateFeedbackDtoType = typeof CreateFeedbackDtoType[keyof typeof CreateFeedbackDtoType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CreateFeedbackDtoType = {
+  BUG: 'BUG',
+  FEATURE: 'FEATURE',
+  OTHER: 'OTHER',
+} as const;
+
+/**
+ * Client metadata (auto-collected)
+ */
+export type CreateFeedbackDtoMetadata = { [key: string]: unknown };
+
+export interface CreateFeedbackDto {
+  /** Type of feedback */
+  type: CreateFeedbackDtoType;
+  /**
+   * Feedback message
+   * @maxLength 2000
+   */
+  message: string;
+  /**
+   * Page URL where the feedback was submitted
+   * @maxLength 255
+   */
+  page: string;
+  /** Client metadata (auto-collected) */
+  metadata?: CreateFeedbackDtoMetadata;
+}
+
+export type FeedbackUserDtoAvatarUrl = { [key: string]: unknown };
+
+export interface FeedbackUserDto {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl?: FeedbackUserDtoAvatarUrl;
+}
+
+export type FeedbackResponseDtoType = typeof FeedbackResponseDtoType[keyof typeof FeedbackResponseDtoType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const FeedbackResponseDtoType = {
+  BUG: 'BUG',
+  FEATURE: 'FEATURE',
+  OTHER: 'OTHER',
+} as const;
+
+export type FeedbackResponseDtoMetadata = { [key: string]: unknown };
+
+export type FeedbackResponseDtoStatus = typeof FeedbackResponseDtoStatus[keyof typeof FeedbackResponseDtoStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const FeedbackResponseDtoStatus = {
+  NEW: 'NEW',
+  READ: 'READ',
+  IN_PROGRESS: 'IN_PROGRESS',
+  RESOLVED: 'RESOLVED',
+  WONT_FIX: 'WONT_FIX',
+} as const;
+
+export type FeedbackResponseDtoAdminNote = { [key: string]: unknown };
+
+export interface FeedbackResponseDto {
+  id: string;
+  userId: string;
+  type: FeedbackResponseDtoType;
+  message: string;
+  page: string;
+  metadata?: FeedbackResponseDtoMetadata;
+  status: FeedbackResponseDtoStatus;
+  adminNote?: FeedbackResponseDtoAdminNote;
+  createdAt: string;
+  updatedAt: string;
+  user?: FeedbackUserDto;
+}
+
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface PaginatedFeedbackResponseDto {
+  data: FeedbackResponseDto[];
+  meta: PaginationMeta;
+}
+
+/**
+ * New status for the feedback
+ */
+export type UpdateFeedbackStatusDtoStatus = typeof UpdateFeedbackStatusDtoStatus[keyof typeof UpdateFeedbackStatusDtoStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UpdateFeedbackStatusDtoStatus = {
+  NEW: 'NEW',
+  READ: 'READ',
+  IN_PROGRESS: 'IN_PROGRESS',
+  RESOLVED: 'RESOLVED',
+  WONT_FIX: 'WONT_FIX',
+} as const;
+
+export interface UpdateFeedbackStatusDto {
+  /** New status for the feedback */
+  status: UpdateFeedbackStatusDtoStatus;
+  /**
+   * Admin note (internal)
+   * @maxLength 1000
+   */
+  adminNote?: string;
+}
+
+/**
+ * Event-specific data
+ */
+export type TrackEventDtoData = { [key: string]: unknown };
+
+export interface TrackEventDto {
+  /**
+   * Event name
+   * @maxLength 100
+   */
+  event: string;
+  /** Event-specific data */
+  data?: TrackEventDtoData;
+  /**
+   * Page URL where the event occurred
+   * @maxLength 255
+   */
+  page: string;
+  /**
+   * Platform (desktop, android, ios)
+   * @maxLength 50
+   */
+  platform?: string;
+  /** Screen width in pixels */
+  screenWidth?: number;
+  /** Screen height in pixels */
+  screenHeight?: number;
+}
+
+export type AnalyticsEventUserDtoAvatarUrl = { [key: string]: unknown };
+
+export interface AnalyticsEventUserDto {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl?: AnalyticsEventUserDtoAvatarUrl;
+}
+
+export type AnalyticsEventResponseDtoUserId = { [key: string]: unknown };
+
+/**
+ * Event-specific data
+ */
+export type AnalyticsEventResponseDtoData = { [key: string]: unknown };
+
+export type AnalyticsEventResponseDtoPlatform = { [key: string]: unknown };
+
+export type AnalyticsEventResponseDtoScreenWidth = { [key: string]: unknown };
+
+export type AnalyticsEventResponseDtoScreenHeight = { [key: string]: unknown };
+
+export interface AnalyticsEventResponseDto {
+  id: string;
+  userId?: AnalyticsEventResponseDtoUserId;
+  event: string;
+  /** Event-specific data */
+  data?: AnalyticsEventResponseDtoData;
+  page: string;
+  platform?: AnalyticsEventResponseDtoPlatform;
+  screenWidth?: AnalyticsEventResponseDtoScreenWidth;
+  screenHeight?: AnalyticsEventResponseDtoScreenHeight;
+  createdAt: string;
+  user?: AnalyticsEventUserDto;
+}
+
+export interface PaginatedAnalyticsEventsDto {
+  data: AnalyticsEventResponseDto[];
+  meta: PaginationMeta;
+}
+
+export interface EventCountDto {
+  event: string;
+  count: number;
+}
+
+export interface DailyCountDto {
+  date: string;
+  count: number;
+}
+
+export interface PlatformCountDto {
+  platform: string;
+  count: number;
+}
+
+export interface AnalyticsSummaryDto {
+  totalEvents: number;
+  uniqueUsers: number;
+  eventCounts: EventCountDto[];
+  dailyCounts: DailyCountDto[];
+  platformCounts: PlatformCountDto[];
+}
+
+export interface PlatformStatsDto {
+  totalUsers: number;
+  totalClubs: number;
+  totalTastings: number;
+  totalEvents: number;
+}
+
 export type ClubControllerFindAllParams = {
 /**
  * Page number
@@ -1398,5 +1618,90 @@ export type TastingControllerFindByClubStatus = typeof TastingControllerFindByCl
 export const TastingControllerFindByClubStatus = {
   DRAFT: 'DRAFT',
   COMPLETED: 'COMPLETED',
+} as const;
+
+export type FeedbackControllerFindAllParams = {
+/**
+ * Page number
+ */
+page?: number;
+/**
+ * Items per page
+ */
+limit?: number;
+/**
+ * Filter by status
+ */
+status?: FeedbackControllerFindAllStatus;
+/**
+ * Filter by type
+ */
+type?: FeedbackControllerFindAllType;
+/**
+ * Sort by field
+ */
+sortBy?: string;
+/**
+ * Sort order
+ */
+order?: string;
+};
+
+export type FeedbackControllerFindAllStatus = typeof FeedbackControllerFindAllStatus[keyof typeof FeedbackControllerFindAllStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const FeedbackControllerFindAllStatus = {
+  NEW: 'NEW',
+  READ: 'READ',
+  IN_PROGRESS: 'IN_PROGRESS',
+  RESOLVED: 'RESOLVED',
+  WONT_FIX: 'WONT_FIX',
+} as const;
+
+export type FeedbackControllerFindAllType = typeof FeedbackControllerFindAllType[keyof typeof FeedbackControllerFindAllType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const FeedbackControllerFindAllType = {
+  BUG: 'BUG',
+  FEATURE: 'FEATURE',
+  OTHER: 'OTHER',
+} as const;
+
+export type AnalyticsControllerFindAllParams = {
+/**
+ * Page number
+ */
+page?: number;
+/**
+ * Items per page
+ */
+limit?: number;
+/**
+ * Filter by event name
+ */
+event?: string;
+/**
+ * Filter by user ID
+ */
+userId?: string;
+/**
+ * Sort by field
+ */
+sortBy?: string;
+/**
+ * Sort order
+ */
+order?: AnalyticsControllerFindAllOrder;
+};
+
+export type AnalyticsControllerFindAllOrder = typeof AnalyticsControllerFindAllOrder[keyof typeof AnalyticsControllerFindAllOrder];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AnalyticsControllerFindAllOrder = {
+  asc: 'asc',
+  desc: 'desc',
 } as const;
 

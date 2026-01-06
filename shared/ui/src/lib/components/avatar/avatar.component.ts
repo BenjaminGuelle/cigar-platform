@@ -69,24 +69,15 @@ export class AvatarComponent {
   readonly size = input<AvatarSize>('md');
 
   #imageError: WritableSignal<boolean> = signal<boolean>(false);
-  #urlVersion: WritableSignal<number> = signal<number>(Date.now());
+  #previousUrl: string | null = null;
 
   constructor() {
-    // Update version timestamp when user/club data changes to bust cache
-    // This ensures cache is busted even if URL string is the same
+    // Reset image error when URL actually changes
     effect(() => {
-      // Track the entire object, not just the URL
-      const entity = this.club() ?? this.user();
-      if (entity) {
-        this.#urlVersion.set(Date.now());
-      }
-    });
-
-    // Reset image error when user/club data changes
-    effect(() => {
-      const entity = this.club() ?? this.user();
-      if (entity) {
+      const currentUrl = this.club()?.imageUrl ?? this.user()?.avatarUrl;
+      if (currentUrl !== this.#previousUrl) {
         this.#imageError.set(false);
+        this.#previousUrl = currentUrl ?? null;
       }
     });
   }
@@ -100,15 +91,12 @@ export class AvatarComponent {
   });
 
   /**
-   * Get avatarUrl from user or imageUrl from club with cache-busting parameter
+   * Get avatarUrl from user or imageUrl from club
+   * No cache-busting - browser cache handles external URLs naturally
+   * For Supabase uploads, URL changes include a new path/token
    */
   readonly avatarUrl: Signal<string | null> = computed<string | null>(() => {
-    const baseUrl = this.club()?.imageUrl ?? this.user()?.avatarUrl;
-    if (!baseUrl) return null;
-
-    // Add cache-busting parameter to force browser to reload image
-    const separator = baseUrl.includes('?') ? '&' : '?';
-    return `${baseUrl}${separator}v=${this.#urlVersion()}`;
+    return this.club()?.imageUrl ?? this.user()?.avatarUrl ?? null;
   });
 
   /**

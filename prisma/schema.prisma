@@ -120,6 +120,22 @@ enum PairingType {
   AUTRE
 }
 
+// Feedback type
+enum FeedbackType {
+  BUG
+  FEATURE
+  OTHER
+}
+
+// Feedback status
+enum FeedbackStatus {
+  NEW
+  READ
+  IN_PROGRESS
+  RESOLVED
+  WONT_FIX
+}
+
 // ============================================
 // MODELS
 // ============================================
@@ -151,6 +167,8 @@ model User {
   bannedFromClubs  ClubBan[]         @relation("BannedFromClubs")
   bannedMembers    ClubBan[]         @relation("BannedMembers")
   verifiedCigars   Cigar[]           @relation("VerifiedCigars")
+  feedbacks        Feedback[]
+  analyticsEvents  AnalyticsEvent[]
 
   @@index([username])
   @@map("users")
@@ -453,4 +471,46 @@ model UserPlan {
   @@index([status])
   @@index([expiresAt])
   @@map("user_plans")
+}
+
+model Feedback {
+  id        String         @id @default(uuid()) @db.Uuid
+  userId    String         @db.Uuid
+  type      FeedbackType
+  message   String         @db.Text
+  page      String
+  metadata  Json? // { userAgent, screenWidth, screenHeight, platform, isPwa }
+  status    FeedbackStatus @default(NEW)
+  adminNote String?        @db.Text
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+  @@map("feedbacks")
+}
+
+model AnalyticsEvent {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String?  @db.Uuid
+  event        String // Event name (tasting_started, pwa_installed, etc.)
+  data         Json? // Event-specific data
+  page         String
+  platform     String?
+  screenWidth  Int?
+  screenHeight Int?
+  createdAt    DateTime @default(now())
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([event])
+  @@index([createdAt])
+  @@map("analytics_events")
 }

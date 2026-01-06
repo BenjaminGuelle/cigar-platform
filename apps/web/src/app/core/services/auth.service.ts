@@ -7,6 +7,7 @@ import { tap, map, catchError, switchMap, take, finalize } from 'rxjs/operators'
 import { SupabaseService } from './supabase.service';
 import { AuthenticationService } from '@cigar-platform/types/lib/authentication/authentication.service';
 import { QueryCacheService } from '../query/services/query-cache.service';
+import { AnalyticsTrackingService } from './analytics.service';
 import type { UserWithAuth } from '@cigar-platform/types';
 
 export interface AuthResult {
@@ -20,6 +21,7 @@ export class AuthService {
   #supabaseService = inject(SupabaseService);
   #authenticationService = inject(AuthenticationService);
   #queryCache = inject(QueryCacheService);
+  #analytics = inject(AnalyticsTrackingService);
   #router = inject(Router);
   #destroyRef = inject(DestroyRef);
 
@@ -94,6 +96,11 @@ export class AuthService {
       tap((result) => {
         this.#sessionSignal.set(result.session as any as Session);
         this.#currentUserSignal.set(result.user);
+
+        // Track signup
+        this.#analytics.track('signup', {
+          provider: 'email',
+        });
       }),
       map(() => ({ error: null })),
       catchError((httpError) => {
@@ -125,6 +132,12 @@ export class AuthService {
         this.#sessionSignal.set(data.session);
 
         return this.#loadUserProfile().pipe(
+          tap(() => {
+            // Track login after successful profile load
+            this.#analytics.track('login', {
+              provider: 'email',
+            });
+          }),
           map(() => ({ error: null }))
         );
       }),

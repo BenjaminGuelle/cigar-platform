@@ -20,6 +20,7 @@ import {
 } from '@cigar-platform/shared/ui';
 import { UserDto } from '@cigar-platform/types';
 import { ConfirmationModalComponent } from '../../../../shared/components/confirmation-modal/confirmation-modal.component';
+import { FeedbackModalComponent } from '../../../../shared/components/feedback-modal/feedback-modal.component';
 import { usernameAvailabilityValidator } from '../../../../core/validators/username-availability.validator';
 
 /**
@@ -61,6 +62,7 @@ interface UserProfileFormValue {
     AvatarUploadComponent,
     SwitchComponent,
     ConfirmationModalComponent,
+    FeedbackModalComponent,
   ],
   templateUrl: './user-settings.page.html',
 })
@@ -113,6 +115,7 @@ export class UserSettingsPage {
 
   // Confirmation modals
   readonly showLogoutConfirm = signal<boolean>(false);
+  readonly showFeedbackModal = signal<boolean>(false);
 
   readonly isOAuthUser: Signal<boolean> = computed<boolean>(() => {
     const provider = this.currentUser()?.authProvider;

@@ -15,6 +15,7 @@ import {
   ApiBearerAuth,
   ApiBody,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -41,6 +42,7 @@ export class AuthController {
    * POST /api/auth/signup
    */
   @Post('signup')
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 req/min - Anti spam
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Sign up a new user' })
   @ApiBody({ type: SignUpDto })
@@ -59,6 +61,7 @@ export class AuthController {
    * POST /api/auth/signin
    */
   @Post('signin')
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 req/min - Anti brute-force
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Sign in an existing user' })
   @ApiBody({ type: SignInDto })

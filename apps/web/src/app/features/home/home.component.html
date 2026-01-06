@@ -61,6 +61,15 @@
       route="/profile"
       icon="user"
     />
+
+    <!-- 6. Admin (visible si ADMIN/SUPER_ADMIN/MODERATOR) -->
+    @if (isAdmin()) {
+      <ui-desktop-top-tab-item
+        label="Admin"
+        route="/admin"
+        icon="lock"
+      />
+    }
   </ui-desktop-top-tabs>
 
   <!-- Main Content Area -->
@@ -118,6 +127,15 @@
       label="Profil"
       route="/profile"
     />
+
+    <!-- 6. Admin (visible si ADMIN/SUPER_ADMIN/MODERATOR) -->
+    @if (isAdmin()) {
+      <ui-bottom-tab-item
+        icon="lock"
+        label="Admin"
+        route="/admin"
+      />
+    }
   </ui-bottom-tab-bar>
 
   <!-- FAB Menu - Quick Actions (Mobile + Desktop) -->

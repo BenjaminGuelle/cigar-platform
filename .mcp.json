@@ -3,7 +3,42 @@
     "nx-mcp": {
       "type": "stdio",
       "command": "npx",
-      "args": ["nx", "mcp"]
+      "args": [
+        "nx",
+        "mcp"
+      ]
+    },
+    "vercel": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@open-mcp/vercel"
+      ],
+      "env": {
+        "VERCEL_API_TOKEN": "gXyIqpHo39Lwc6rGeJDJyfwf"
+      }
+    },
+    "cloudflare": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@cloudflare/mcp-server-cloudflare",
+        "run",
+        "de1566262f6b2b7dacdce31f65747164"
+      ],
+      "env": {
+        "CLOUDFLARE_API_TOKEN": "DXlI9hZtah1ePY2nU-rjjFZ6dFkRIQTnU2fvvlku"
+      }
+    },
+    "puppeteer": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-puppeteer"
+      ]
     }
   }
 }

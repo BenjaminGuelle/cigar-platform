@@ -6,3 +6,4 @@ export * from './toast.service';
 export * from './global-search.service';
 export * from './search-modal.service';
 export * from './plan.service';
+export * from './pwa.service';

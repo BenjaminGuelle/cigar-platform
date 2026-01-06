@@ -1,4 +1,4 @@
-import { Component, inject, Signal, signal, WritableSignal, computed, effect, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, Signal, signal, WritableSignal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -60,6 +60,13 @@ export class HomeComponent {
   readonly currentUser: Signal<UserWithAuth | null> = this.#authService.currentUser;
   readonly context = this.contextStore.context;
   readonly userClubs = this.contextStore.userClubs;
+
+  // Admin check for navigation visibility
+  readonly isAdmin: Signal<boolean> = computed(() => {
+    const user = this.currentUser();
+    if (!user?.role) return false;
+    return user.role === 'SUPER_ADMIN' || user.role === 'ADMIN' || user.role === 'MODERATOR';
+  });
 
   // Global search modal state (shared service)
   readonly searchModalOpen = this.#searchModal.isOpen;

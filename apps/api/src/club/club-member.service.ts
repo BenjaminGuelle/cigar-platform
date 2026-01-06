@@ -10,6 +10,7 @@ import {
   ClubMemberResponseDto,
   PaginatedBanResponseDto,
   ClubBanResponseDto,
+  FilterMemberDto,
 } from './dto';
 import {
   ClubNotFoundException,
@@ -20,12 +21,6 @@ import {
   CannotRemoveOwnerException,
   CannotTransferToSelfException,
 } from './exceptions';
-
-interface FilterMemberDto {
-  page?: number;
-  limit?: number;
-  role?: ClubRole;
-}
 
 
 @Injectable()

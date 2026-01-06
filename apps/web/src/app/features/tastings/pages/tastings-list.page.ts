@@ -137,11 +137,17 @@ import type { TastingResponseDto } from '@cigar-platform/types';
             }
           </div>
 
-          <!-- Load More (TODO: implement pagination) -->
+          <!-- Load More -->
           @if (hasMore()) {
             <div class="text-center pt-4">
-              <ui-button variant="ghost" size="sm" [disabled]="true">
-                Charger plus (bientot)
+              <ui-button
+                variant="ghost"
+                size="sm"
+                [loading]="loadingMore()"
+                [disabled]="loadingMore()"
+                (click)="loadMore()"
+              >
+                Voir plus
               </ui-button>
             </div>
           }
@@ -199,20 +205,14 @@ export class TastingsListPage {
 
   // Tastings data - filter out DRAFT tastings
   readonly tastings = computed(() => {
-    let data: unknown;
+    let tastings: TastingResponseDto[] = [];
 
     if (this.isClubContext()) {
-      data = this.#clubTastingsQuery.data();
+      const data = this.#clubTastingsQuery.data();
+      tastings = Array.isArray(data) ? data : [];
     } else {
-      data = this.#myTastingsQuery.data();
-    }
-
-    // Handle both paginated and array response
-    let tastings: TastingResponseDto[] = [];
-    if (data && typeof data === 'object' && 'data' in data) {
-      tastings = (data as { data: TastingResponseDto[] }).data ?? [];
-    } else if (Array.isArray(data)) {
-      tastings = data;
+      // Use allMyTastings for accumulated load more results
+      tastings = this.#tastingStore.allMyTastings();
     }
 
     // Filter out DRAFT tastings - only show COMPLETED
@@ -224,13 +224,16 @@ export class TastingsListPage {
     if (this.isClubContext()) {
       return false; // Club tastings are not paginated
     }
-    const data = this.#myTastingsQuery.data();
-    if (data && 'meta' in data) {
-      const meta = data.meta;
-      return (meta.page * meta.limit) < meta.total;
-    }
-    return false;
+    return this.#tastingStore.hasMoreTastings();
   });
+
+  // Loading state for load more
+  readonly loadingMore = computed(() => this.#tastingStore.loadingMore());
+
+  // Load more handler
+  async loadMore(): Promise<void> {
+    await this.#tastingStore.loadMoreTastings();
+  }
 
   // Page content based on context
   readonly pageTitle = computed(() =>

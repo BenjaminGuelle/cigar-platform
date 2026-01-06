@@ -1,0 +1,1 @@
+export * from './pwa-install-prompt.component';

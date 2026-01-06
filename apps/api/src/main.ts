@@ -77,10 +77,26 @@ async function bootstrap() {
     })
   );
 
-  // Enable CORS for frontend communication
+  // Enable CORS with strict origin whitelist
+  const allowedOrigins = [
+    'http://localhost:4200', // Development
+    process.env.FRONTEND_URL, // Production (https://app.cigar-club.fr)
+  ].filter(Boolean) as string[];
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:4200',
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      // Allow requests with no origin (mobile apps, Postman, etc.) in development only
+      if (!origin && process.env.NODE_ENV !== 'production') {
+        return callback(null, true);
+      }
+      if (origin && allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   });
 
   const port = process.env.PORT || 3000;

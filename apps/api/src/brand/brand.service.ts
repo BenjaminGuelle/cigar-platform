@@ -9,9 +9,11 @@ export class BrandService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  private readonly MAX_BRANDS = 100;
+
   /**
    * Find all brands with optional search filter
-   * No pagination - autocomplete needs all matches
+   * Limited to MAX_BRANDS for security
    */
   async findAll(filter: BrandFilterDto): Promise<BrandResponseDto[]> {
     const { search } = filter;
@@ -39,6 +41,7 @@ export class BrandService {
         { isVerified: 'desc' }, // Verified brands first
         { name: 'asc' },
       ],
+      take: this.MAX_BRANDS,
     });
 
     return brands;
