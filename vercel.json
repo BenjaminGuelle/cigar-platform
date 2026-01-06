@@ -8,7 +8,7 @@
   },
   "framework": null,
   "installCommand": "npm ci",
-  "buildCommand": "npx nx build web --configuration=production",
+  "buildCommand": "npx nx build web --configuration=production --skip-nx-cache",
   "outputDirectory": "dist/apps/web/browser",
   "rewrites": [
     {
