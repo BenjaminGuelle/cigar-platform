@@ -1,7 +1,6 @@
 export const environment = {
   production: true,
-  supabaseUrl: 'https://cypfpiliinrfchokcnrt.supabase.co',
-  supabasePublishableKey: 'sb_publishable_W4RYnfAOAj3Pbssz_dCYNQ_Tegxq6qM',
-  // URL de l'API Railway - Remplacer avec ton URL Railway
-  apiUrl: 'https://cigar-platform-api.up.railway.app/api',
+  supabaseUrl: 'https://rtmgnseqiwmcaxzqzcmh.supabase.co',
+  supabasePublishableKey: 'sb_publishable_IBJ1TJb1wtm-UJmx_29nPg_SYKlPfVG',
+  apiUrl: 'https://api.cigar-club.fr/api',
 };
