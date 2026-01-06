@@ -1,7 +1,7 @@
 {
   "name": "Cigar & Club",
   "short_name": "C&C",
-  "description": "Application de dégustation de cigares pour clubs - Évaluez, partagez et découvrez",
+  "description": "Transformez chaque cigare en souvenir. App de dégustation avec notes par tiers, profil aromatique personnel et clubs privés.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
