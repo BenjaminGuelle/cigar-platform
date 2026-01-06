@@ -30,6 +30,9 @@ export const customInstance = <T>(
   const { url, method, params, data, headers } = config;
   const fullUrl = `${baseUrl}${url}`;
 
+  // DEBUG: Remove after fixing
+  console.log('[API DEBUG]', { apiUrl: environment.apiUrl, baseUrl, url, fullUrl });
+
   // Fix FormData uploads: Remove Content-Type header to let browser set it with boundary
   let finalHeaders = headers;
   if (data instanceof FormData && headers?.['Content-Type'] === 'multipart/form-data') {
