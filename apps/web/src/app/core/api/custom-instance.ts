@@ -25,13 +25,12 @@ export const customInstance = <T>(
   },
   http: HttpClient
 ): Promise<T> => {
-  // Prefix URL with API base URL (http://localhost:3000)
-  const baseUrl = environment.apiUrl.replace('/api', ''); // Remove /api suffix if present
+  // Prefix URL with API base URL - remove trailing /api suffix only
+  const baseUrl = environment.apiUrl.endsWith('/api')
+    ? environment.apiUrl.slice(0, -4)
+    : environment.apiUrl;
   const { url, method, params, data, headers } = config;
   const fullUrl = `${baseUrl}${url}`;
-
-  // DEBUG: Remove after fixing
-  console.log('[API DEBUG]', { apiUrl: environment.apiUrl, baseUrl, url, fullUrl });
 
   // Fix FormData uploads: Remove Content-Type header to let browser set it with boundary
   let finalHeaders = headers;
