@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { ContextSwitcherComponent } from '../../../shared/components/context-switcher/context-switcher.component';
 import { DashboardUserPage } from './user/dashboard-user.page';
 import { DashboardClubPage } from './club/dashboard-club.page';
+import { PwaInstallPromptComponent } from '../../../shared/components/pwa-install-prompt';
 
 /**
  * Dashboard Context Page (Shell)
@@ -25,12 +26,14 @@ import { DashboardClubPage } from './club/dashboard-club.page';
     ContextSwitcherComponent,
     DashboardUserPage,
     DashboardClubPage,
+    PwaInstallPromptComponent,
   ],
   template: `
     <app-context-switcher>
       <app-dashboard-user solo />
       <app-dashboard-club club />
     </app-context-switcher>
+    <app-pwa-install-prompt />
   `,
 })
 export class DashboardComponent {}

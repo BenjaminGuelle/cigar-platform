@@ -11,7 +11,7 @@ import { PwaService } from '../../../core/services/pwa.service';
  * - iOS : Instructions pour "Ajouter à l'écran d'accueil"
  * - Desktop : Bouton d'installation Chrome/Edge
  *
- * Design : Smoke & Gold, utilise ui-modal bottomSheet
+ * Design : Smoke & Gold, utilise ui-modal centered
  */
 @Component({
   selector: 'app-pwa-install-prompt',
@@ -22,8 +22,7 @@ import { PwaService } from '../../../core/services/pwa.service';
     <!-- Modal d'installation PWA -->
     <ui-modal
       [isOpen]="showPrompt()"
-      variant="bottomSheet"
-      desktopPosition="centered"
+      variant="dialog"
       size="sm"
       [showCloseButton]="false"
       (close)="onDismiss()"

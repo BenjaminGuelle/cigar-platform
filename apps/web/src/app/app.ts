@@ -2,10 +2,9 @@ import { Component, inject, effect } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { NgxSonnerToaster } from 'ngx-sonner';
 import { LoadingService, AuthService } from './core/services';
-import { PwaInstallPromptComponent } from './shared/components/pwa-install-prompt';
 
 @Component({
-  imports: [RouterModule, NgxSonnerToaster, PwaInstallPromptComponent],
+  imports: [RouterModule, NgxSonnerToaster],
   selector: 'app-root',
   templateUrl: './app.html',
   styleUrl: './app.css',
