@@ -1,5 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": {
+    "deploymentEnabled": {
+      "main": false,
+      "prod": true
+    }
+  },
   "framework": null,
   "installCommand": "npm ci",
   "buildCommand": "npx nx build web --configuration=production",
