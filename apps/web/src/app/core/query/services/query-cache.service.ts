@@ -109,15 +109,48 @@ export class QueryCacheService {
   }
 
   /**
-   * Clear all queries
+   * Refresh all active queries (TanStack Query pattern)
+   *
+   * This is the ALL STARS ⭐ pattern used by Google, Twitter, Gmail:
+   * - Active queries (refs > 0): refetch in background (data stays visible)
+   * - Inactive queries (refs = 0): just mark as stale (lazy refetch on next use)
+   *
+   * NEVER clears data - keeps UI responsive during refresh
+   *
+   * @returns Promise that resolves when all active refetches complete
+   */
+  async refreshActiveQueries(): Promise<void> {
+    const refetchPromises: Promise<void>[] = [];
+
+    for (const [, entry] of this.#cache.entries()) {
+      if (entry.refs > 0) {
+        // Active query: refetch in background (keeps current data visible)
+        refetchPromises.push(
+          entry.instance.refetchInBackground().catch(() => {
+            // Silent fail - error is stored in query state
+          })
+        );
+      } else {
+        // Inactive query: just mark as stale (will refetch on next mount)
+        entry.instance.invalidate();
+      }
+    }
+
+    // Wait for all active refetches to complete
+    await Promise.all(refetchPromises);
+  }
+
+  /**
+   * Clear all queries (LOGOUT ONLY)
+   *
+   * ⚠️ DESTRUCTIVE: Only use on logout/session end
+   * For pull-to-refresh, use refreshActiveQueries() instead
+   *
    * Clears data and invalidates all cached queries
-   * Important: We invalidate but DON'T delete entries to preserve query references
-   * This ensures fresh state after logout without breaking active queries
    */
   clear(): void {
     for (const [, entry] of this.#cache.entries()) {
-      entry.instance.setData(null); // Clear data
-      entry.instance.invalidate();  // Mark as stale
+      entry.instance.reset(); // Full reset (data = null, stale)
     }
   }
 

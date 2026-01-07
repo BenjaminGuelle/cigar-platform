@@ -222,7 +222,13 @@ export class PullToRefreshDirective implements OnInit, OnDestroy {
     this.renderer.setStyle(this.indicatorElement, 'boxShadow', 'none');
   }
 
-  private triggerRefresh(): void {
+  /**
+   * Trigger refresh using ALL STARS pattern
+   * - Background refetch (data stays visible)
+   * - Never clears data
+   * - Waits for refetch to complete before hiding indicator
+   */
+  private async triggerRefresh(): Promise<void> {
     // Show loading state
     if (this.indicatorElement) {
       const arrow = this.indicatorElement.firstChild as HTMLElement;
@@ -238,25 +244,17 @@ export class PullToRefreshDirective implements OnInit, OnDestroy {
       );
     }
 
-    // Invalidate queries using custom QueryCacheService
-    const keys = this.queryKeys();
-    if (keys.length > 0) {
-      // Invalidate specific query keys
-      for (const key of keys) {
-        this.queryCache.invalidateQueriesMatching(key);
-      }
-    } else {
-      // Invalidate all queries
-      this.queryCache.clear();
-    }
+    // Refresh all active queries (TanStack Query pattern)
+    // - Active queries: refetch in background (data stays visible)
+    // - Inactive queries: just mark stale (lazy refetch on next use)
+    // NEVER clears data - keeps UI responsive during refresh
+    await this.queryCache.refreshActiveQueries();
 
     // Emit event
     this.refreshed.emit();
 
-    // Hide indicator after short delay
-    setTimeout(() => {
-      this.hideIndicator();
-    }, 500);
+    // Hide indicator after refresh completes
+    this.hideIndicator();
   }
 
   private isMobile(): boolean {
