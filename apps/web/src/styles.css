@@ -1,11 +1,16 @@
 /* Parisienne font with proper iOS Safari support */
 @import url('https://fonts.googleapis.com/css2?family=Parisienne&display=swap');
 
-/* iOS font rendering fix */
+/* iOS font rendering fix + lowercase for Parisienne (script font) */
 @supports (-webkit-touch-callout: none) {
   .font-display {
     -webkit-text-stroke: 0.25px; /* Improves rendering on iOS */
   }
+}
+
+/* Parisienne font: force lowercase (uppercase renders poorly on iOS) */
+.font-display {
+  text-transform: lowercase;
 }
 @import url('https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css');
 @import "tailwindcss";
@@ -365,6 +370,19 @@ body {
   .main-content {
     /* Desktop: fixed padding (no mobile header) */
     padding-top: 6rem; /* pt-24 equivalent */
+  }
+}
+
+/* Explore page: no header, only safe-area */
+.main-content-no-header {
+  /* Mobile: only safe-area (no header) */
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+@media (min-width: 768px) {
+  .main-content-no-header {
+    /* Desktop: fixed padding for top tabs */
+    padding-top: 4.5rem;
   }
 }
 

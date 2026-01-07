@@ -162,10 +162,15 @@
     opacity: 0 !important;
 }
 
-/* Mobile: Reduced bottom padding for bottomSheet */
+/* Mobile: Bottom sheet with safe area support (Instagram-style) */
 @media (max-width: 767px) {
     .modal-content.modal-bottom-sheet {
-        padding-bottom: 1.5rem; /* Reduced padding (was 6rem) */
+        /* Content padding */
+        padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+        /* Remove bottom border to avoid white line in safe area */
+        border-bottom: none;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
     }
 }
 

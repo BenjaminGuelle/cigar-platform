@@ -103,23 +103,8 @@ import { PwaService } from '../../../core/services/pwa.service';
       </div>
     </ui-modal>
 
-    <!-- Banner de mise à jour disponible -->
-    @if (pwaService.updateAvailable()) {
-      <div class="fixed top-0 left-0 right-0 z-50 bg-gold-500 text-smoke-950 px-4 py-3 flex items-center justify-between"
-           [style.padding-top]="'calc(env(safe-area-inset-top) + 0.75rem)'">
-        <div class="flex items-center gap-2">
-          <i name="sparkles" class="w-5 h-5"></i>
-          <span class="font-medium text-sm">Nouvelle version disponible</span>
-        </div>
-        <ui-button
-          variant="secondary"
-          size="sm"
-          (clicked)="onUpdate()"
-        >
-          Mettre à jour
-        </ui-button>
-      </div>
-    }
+    <!-- Auto-update: silencieux, pas de banner moche -->
+    <!-- Future: modal avec release notes pour les grosses updates -->
   `,
 })
 export class PwaInstallPromptComponent {

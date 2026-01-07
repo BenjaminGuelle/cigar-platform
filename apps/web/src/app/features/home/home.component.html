@@ -1,14 +1,16 @@
 <div class="min-h-screen" appPullToRefresh>
-  <!-- Mobile Header (< 768px) -->
-  <app-mobile-header
-    [contextType]="context().type"
-    [user]="currentUser()"
-    [club]="context().club"
-    [notificationsBadge]="3"
-    (contextClick)="onContextClick()"
-    (notificationsClick)="onNotificationsOpen()"
-    (settingsClick)="onSettingsOpen()"
-  />
+  <!-- Mobile Header (< 768px) - Hidden on /explore -->
+  @if (!isExplorePage()) {
+    <app-mobile-header
+      [contextType]="context().type"
+      [user]="currentUser()"
+      [club]="context().club"
+      [notificationsBadge]="3"
+      (contextClick)="onContextClick()"
+      (notificationsClick)="onNotificationsOpen()"
+      (settingsClick)="onSettingsOpen()"
+    />
+  }
 
   <!-- Desktop Context Sidebar (≥ 768px) - Left avatar stack -->
   <app-desktop-sidebar
@@ -33,12 +35,11 @@
       [exact]="true"
     />
 
-    <!-- 2. Search (modal omnisearch) -->
+    <!-- 2. Search (navigate to /explore) -->
     <app-desktop-top-tab-item
       label="Recherche"
-      [route]="null"
+      route="/explore"
       icon="search"
-      (clicked)="onSearchOpen()"
     />
 
     <!-- 3. Tasting (navigation vers liste) -->
@@ -76,7 +77,12 @@
   <!-- Main Content Area -->
   <!-- Mobile: padding-top includes safe-area + header height (~68px) -->
   <!-- Desktop: fixed padding (no mobile header) -->
-  <main class="main-content min-h-screen overflow-auto scroll-touch px-4 pb-24 md:pb-8 md:pl-18 md:pr-8">
+  <!-- Explore page: no header padding (header is hidden, page handles its own safe-area) -->
+  <main
+    class="min-h-screen overflow-auto scroll-touch px-4 pb-24 md:pb-8 md:pl-18 md:pr-8"
+    [class.main-content]="!isExplorePage()"
+    [class.main-content-no-header]="isExplorePage()"
+  >
     <router-outlet />
   </main>
 
@@ -100,11 +106,10 @@
       [exact]="true"
     />
 
-    <!-- 2. Search -->
+    <!-- 2. Search (navigate to /explore) -->
     <app-mobile-tab-item
       icon="search"
-      [route]="null"
-      (clicked)="onSearchOpen()"
+      route="/explore"
     />
 
     <!-- 3. Create (FAB menu) -->
@@ -162,12 +167,6 @@
     [contextClubName]="context().club?.name || null"
     (close)="onCreateContentModalClose()"
     (eventCreated)="onEventCreated()"
-  />
-
-  <!-- Global Search Modal -->
-  <app-global-search
-    [isOpen]="searchModalOpen()"
-    (close)="onSearchClose()"
   />
 
   <!-- Coming Soon Modal -->

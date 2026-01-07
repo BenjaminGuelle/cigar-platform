@@ -1,8 +1,9 @@
 import { Component, inject, Signal, signal, WritableSignal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
-import { filter } from 'rxjs/operators';
-import { AuthService, SearchModalService } from '../../core/services';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { filter, map, startWith } from 'rxjs';
+import { AuthService } from '../../core/services';
 import { ContextStore, type ClubWithRole } from '../../core/stores/context.store';
 import type { UserWithAuth } from '@cigar-platform/types';
 import {
@@ -23,7 +24,6 @@ import {
 import { PullToRefreshDirective } from '../../shared/directives';
 import { CreateJoinClubModalComponent } from '../../shared/components/create-join-club-modal';
 import { CreateContentModalComponent } from '../../shared/components/create-content-modal';
-import { GlobalSearchComponent } from '../../shared/components/global-search';
 import { NotificationsDrawerComponent } from '../../shared/components/notifications-drawer';
 import { SettingsDrawerComponent } from '../../shared/components/settings-drawer';
 
@@ -52,7 +52,6 @@ import { SettingsDrawerComponent } from '../../shared/components/settings-drawer
     CreateJoinClubModalComponent,
     CreateContentModalComponent,
     FabMenuComponent,
-    GlobalSearchComponent,
     ComingSoonModalComponent,
     // Drawer components
     NotificationsDrawerComponent,
@@ -63,7 +62,6 @@ import { SettingsDrawerComponent } from '../../shared/components/settings-drawer
 })
 export class HomeComponent {
   #authService = inject(AuthService);
-  #searchModal = inject(SearchModalService);
   #router = inject(Router);
 
   // Expose contextStore for template access to permission methods
@@ -80,8 +78,18 @@ export class HomeComponent {
     return user.role === 'SUPER_ADMIN' || user.role === 'ADMIN' || user.role === 'MODERATOR';
   });
 
-  // Global search modal state (shared service)
-  readonly searchModalOpen = this.#searchModal.isOpen;
+  // Route-based visibility: hide mobile header on /explore
+  readonly #currentUrl = toSignal(
+    this.#router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map(e => e.urlAfterRedirects),
+      startWith(this.#router.url)
+    )
+  );
+  readonly isExplorePage: Signal<boolean> = computed(() => {
+    const url = this.#currentUrl();
+    return url?.startsWith('/explore') ?? false;
+  });
 
   // Context switcher state (mobile bottom sheet)
   readonly contextSwitcherOpen: WritableSignal<boolean> = signal<boolean>(false);
@@ -137,13 +145,6 @@ export class HomeComponent {
         this.contextStore.hydrateClubContext(context.clubId);
       }
     });
-
-    // Close search modal on navigation (mobile bottom tab clicks)
-    this.#router.events
-      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
-      .subscribe(() => {
-        this.#searchModal.close();
-      });
   }
 
   onSignOut(): void {
@@ -193,8 +194,6 @@ export class HomeComponent {
   }
 
   onFabMenuToggle(): void {
-    // Close search modal when opening FAB menu
-    this.#searchModal.close();
     this.fabMenuOpen.update(open => !open);
   }
 
@@ -211,22 +210,7 @@ export class HomeComponent {
     }
   }
 
-  onSearchOpen(): void {
-    // Toggle search modal (open if closed, close if open)
-    if (this.searchModalOpen()) {
-      this.#searchModal.close();
-    } else {
-      this.#searchModal.open();
-    }
-  }
-
-  onSearchClose(): void {
-    this.#searchModal.close();
-  }
-
   onComingSoonOpen(featureName: string): void {
-    // Close search modal when opening coming soon modal (mobile bottom tab)
-    this.#searchModal.close();
     this.comingSoonFeature.set(featureName);
     this.comingSoonModalOpen.set(true);
   }
@@ -237,7 +221,6 @@ export class HomeComponent {
 
   // Notifications drawer handlers
   onNotificationsOpen(): void {
-    this.#searchModal.close();
     this.notificationsDrawerOpen.set(true);
   }
 
@@ -247,7 +230,6 @@ export class HomeComponent {
 
   // Settings drawer handlers
   onSettingsOpen(): void {
-    this.#searchModal.close();
     this.settingsDrawerOpen.set(true);
   }
 
