@@ -1,151 +1,239 @@
-import { Component, signal, computed, inject, OnInit } from '@angular/core';
+import {
+  Component,
+  signal,
+  computed,
+  inject,
+  effect,
+  WritableSignal,
+  Signal,
+  ChangeDetectionStrategy,
+  ViewChild,
+  ElementRef,
+  AfterViewInit,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import type { ClubResponseDto } from '@cigar-platform/types';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import type { SearchResultDto } from '@cigar-platform/types';
 import {
-  PageHeaderComponent,
-  PageSectionComponent,
-  InputComponent,
   IconDirective,
-  ClubCardComponent,
+  InputComponent,
+  SearchResultGroupComponent,
+  SearchResultItemComponent,
 } from '@cigar-platform/shared/ui';
-import { SearchModalService } from '../../../core/services';
-import { injectClubStore } from '../../../core/stores/club.store';
+import { injectSearchStore } from '../../../core/stores/search.store';
+import { AuthService } from '../../../core/services/auth.service';
+import { CreateCigarModalComponent } from '../../../shared/components/create-cigar-modal/create-cigar-modal.component';
 
 /**
- * Explore Page - Technical Fallback Only
+ * Explore Page - Search Experience
  *
- * ⚠️ IMPORTANT: This is NOT a primary navigation destination
+ * Full-page search interface (replacing the old modal pattern)
  *
- * Product Decision:
- * - App is usage-first, not browsing-first
- * - Discovery = Global Search Modal (accessible via search icon)
- * - This page exists ONLY as a technical fallback for:
- *   1. Deep-link support (/explore URLs from external sources)
- *   2. Auto-opens Global Search Modal on mount
- *   3. Shows minimal browse UI if modal is closed
+ * Features:
+ * - Omnisearch with prefix filtering (@username, #slug)
+ * - Grouped results (brands, cigars, clubs, users)
+ * - Keyboard navigation
+ * - Smart caching (5 min stale time)
+ * - Auto-focus on search input
  *
- * Primary UX Entry Points:
- * - Search icon (mobile header + desktop top bar)
- * - Cmd+K keyboard shortcut (future)
- *
- * Architecture:
- * - Opens Global Search Modal by default (ngOnInit)
- * - Fallback browse page if user closes modal
- * - NOT in primary navigation (removed from tabs)
- *
- * MVP Scope: Clubs only
- * Future: Users, Cigars, Events
+ * ALL STARS Architecture:
+ * - Uses search.store (not service)
+ * - Reactive with getter functions
+ * - Query layer for caching
+ * - Debounced search (300ms)
  */
-
-type ExploreFilter = 'clubs' | 'users' | 'cigars' | 'events';
-
 @Component({
   selector: 'app-explore',
   standalone: true,
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    PageHeaderComponent,
-    PageSectionComponent,
-    InputComponent,
     IconDirective,
-    ClubCardComponent,
+    InputComponent,
+    SearchResultGroupComponent,
+    SearchResultItemComponent,
+    CreateCigarModalComponent,
   ],
   templateUrl: './explore.page.html',
-  styleUrls: ['./explore.page.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ExplorePage implements OnInit {
-  #router = inject(Router);
-  #searchModal = inject(SearchModalService);
-  #clubStore = injectClubStore();
+export class ExplorePage implements AfterViewInit {
+  @ViewChild('searchInput') searchInputRef!: ElementRef<HTMLInputElement>;
 
-  // State - Entity filter (MVP: clubs only)
-  #entityFilter = signal<ExploreFilter>('clubs');
-  readonly entityFilter = this.#entityFilter.asReadonly();
+  readonly #router = inject(Router);
+  readonly #searchStore = injectSearchStore();
+  readonly #authService = inject(AuthService);
 
-  // State - Clubs (using club store query for automatic cache invalidation)
-  searchControl = new FormControl('');
-  #searchQuery = signal<string>('');
+  // Search input control
+  readonly searchControl = new FormControl('');
 
-  // Use club store's publicClubs query (auto-invalidates on auth changes)
-  readonly publicClubsQuery = this.#clubStore.publicClubs;
-  readonly loading = this.publicClubsQuery.loading;
+  // Internal state
+  readonly #searchQuery: WritableSignal<string> = signal<string>('');
+  readonly #debouncedQuery: WritableSignal<string> = signal<string>('');
 
-  // Computed - Smart search (name, description, visibility)
-  filteredClubs = computed(() => {
-    const clubs = this.publicClubsQuery.data() ?? [];
-    const query = this.#searchQuery().toLowerCase().trim();
+  // Create cigar modal state
+  readonly createCigarModalOpen = signal<boolean>(false);
+  readonly createCigarPrefillName = signal<string>('');
 
-    if (!query) {
-      return clubs; // No filter, return all
+  // Query using store pattern (reactive with getter)
+  readonly #omnisearchQuery = this.#searchStore.search(() => this.#debouncedQuery());
+
+  // Loading state
+  readonly loading: Signal<boolean> = this.#omnisearchQuery.loading;
+
+  // Search results
+  readonly searchResults: Signal<SearchResultDto> = computed<SearchResultDto>(() => {
+    const data = this.#omnisearchQuery.data();
+    const currentQuery = this.#debouncedQuery();
+
+    if (!data) {
+      return {
+        query: currentQuery,
+        searchType: 'global',
+        brands: [],
+        cigars: [],
+        clubs: [],
+        users: [],
+        total: 0,
+        duration: 0,
+      };
     }
 
-    return clubs.filter((club) => {
-      const name = club.name.toLowerCase();
-      const description = club.description ? String(club.description).toLowerCase() : '';
-      const visibility = club.visibility.toLowerCase();
+    return {
+      ...data,
+      query: currentQuery,
+    };
+  });
 
-      // Smart search: name, description, or visibility keywords
-      const matchesName = name.includes(query);
-      const matchesDescription = description.includes(query);
+  // Computed helpers for UI
+  readonly hasResults = computed(() => {
+    const results = this.searchResults();
+    return (
+      (results.cigars?.length ?? 0) > 0 ||
+      (results.brands?.length ?? 0) > 0 ||
+      (results.clubs?.length ?? 0) > 0 ||
+      (results.users?.length ?? 0) > 0
+    );
+  });
 
-      // Visibility keywords: "public", "privé", "prive", "private"
-      const isPublicKeyword = ['public', 'publique'].some(kw => query.includes(kw));
-      const isPrivateKeyword = ['privé', 'prive', 'private'].some(kw => query.includes(kw));
+  readonly showEmpty = computed(() => {
+    const query = this.#debouncedQuery();
+    return query.length > 0 && !this.loading() && !this.hasResults();
+  });
 
-      const matchesVisibility =
-        (isPublicKeyword && visibility === 'public') ||
-        (isPrivateKeyword && visibility === 'private');
+  // Limited results (3 per group in global view)
+  readonly limitedCigars = computed(() => (this.searchResults().cigars ?? []).slice(0, 3));
+  readonly limitedBrands = computed(() => (this.searchResults().brands ?? []).slice(0, 3));
+  readonly limitedClubs = computed(() => (this.searchResults().clubs ?? []).slice(0, 3));
+  readonly limitedUsers = computed(() => (this.searchResults().users ?? []).slice(0, 3));
 
-      return matchesName || matchesDescription || matchesVisibility;
-    });
+  readonly hasMoreCigars = computed(() => (this.searchResults().cigars?.length ?? 0) > 3);
+  readonly hasMoreBrands = computed(() => (this.searchResults().brands?.length ?? 0) > 3);
+  readonly hasMoreClubs = computed(() => (this.searchResults().clubs?.length ?? 0) > 3);
+  readonly hasMoreUsers = computed(() => (this.searchResults().users?.length ?? 0) > 3);
+
+  readonly hasExactCigarMatch = computed(() => {
+    const query = this.#debouncedQuery().toLowerCase().trim();
+    if (!query) return false;
+    return (this.searchResults().cigars ?? []).some(
+      (c) => c.name.toLowerCase() === query
+    );
   });
 
   constructor() {
-    // Setup search with debounce
-    this.searchControl.valueChanges
-      .pipe(debounceTime(300), distinctUntilChanged())
-      .subscribe((value) => {
-        this.#searchQuery.set(value || '');
-      });
+    // Debounce logic: update debouncedQuery 300ms after searchQuery changes
+    let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    effect(() => {
+      const query = this.#searchQuery();
+
+      if (debounceTimeout) {
+        clearTimeout(debounceTimeout);
+      }
+
+      debounceTimeout = setTimeout(() => {
+        this.#debouncedQuery.set(query);
+      }, 300);
+    });
+
+    // Reset search when user changes (login/logout)
+    effect(() => {
+      this.#authService.currentUser();
+      this.#searchQuery.set('');
+      this.#debouncedQuery.set('');
+    });
+
+    // Sync FormControl with signal
+    this.searchControl.valueChanges.subscribe((value) => {
+      this.#searchQuery.set(value ?? '');
+    });
   }
 
-  ngOnInit(): void {
-    // Open global search modal by default
-    // Primary UX: Modal search > Browse page
-    this.#searchModal.open();
+  ngAfterViewInit(): void {
+    // Auto-focus search input on page load
+    setTimeout(() => {
+      this.searchInputRef?.nativeElement?.focus();
+    }, 100);
   }
 
   /**
-   * Set entity filter (clubs, users, cigars, events)
-   * MVP: Only clubs supported
+   * Handle result click - Navigate to entity page
    */
-  setEntityFilter(filter: ExploreFilter): void {
-    this.#entityFilter.set(filter);
-    // Future: Add queries for users, cigars, events
+  handleResultClick(event: {
+    id: string;
+    type: 'brand' | 'cigar' | 'club' | 'user';
+    name: string;
+    subtitle?: string;
+    avatarUrl?: string;
+    iconBadge?: string;
+  }): void {
+    const results = this.searchResults();
+
+    switch (event.type) {
+      case 'club': {
+        const club = results.clubs?.find((c) => c.id === event.id);
+        if (club?.slug) {
+          void this.#router.navigate(['/club', club.slug]);
+        }
+        break;
+      }
+      case 'user': {
+        const user = results.users?.find((u) => u.id === event.id);
+        if (user?.username) {
+          void this.#router.navigate(['/user', `@${user.username}`]);
+        }
+        break;
+      }
+      case 'brand':
+        // TODO: Implement brand page (/brand/slug)
+        break;
+      case 'cigar': {
+        const cigar = results.cigars?.find((c) => c.id === event.id);
+        if (cigar) {
+          const identifier = cigar.slug ?? cigar.id;
+          void this.#router.navigate(['/cigar', identifier]);
+        }
+        break;
+      }
+    }
   }
 
   /**
-   * Navigate to club public profile
+   * Handle create cigar request
    */
-  navigateToClub(clubId: string): void {
-    void this.#router.navigate(['/club', clubId]);
+  handleCreateCigar(): void {
+    const query = this.searchResults().query?.trim() ?? '';
+    this.createCigarPrefillName.set(query);
+    this.createCigarModalOpen.set(true);
   }
 
   /**
-   * Join/Request access to club
+   * Handle "See All" for a specific entity type
+   * TODO: Navigate to filtered results page or expand results
    */
-  joinClub(clubId: string): void {
-    // TODO: Open join/request modal
-  }
-
-  /**
-   * Get member count
-   */
-  getMemberCount(club: ClubResponseDto): number {
-    return club.memberCount || 0;
+  handleSeeAll(type: 'cigar' | 'brand' | 'club' | 'user'): void {
+    // For now, we could expand the view or navigate to a filtered page
+    // Implementation depends on product requirements
   }
 }

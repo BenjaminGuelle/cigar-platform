@@ -256,6 +256,7 @@ export class PwaService {
 
   /**
    * Initialise la gestion des mises à jour du service worker
+   * Auto-update silencieux (pattern Instagram/Twitter)
    */
   #initServiceWorkerUpdates(): void {
     if (!this.#swUpdate?.isEnabled) {
@@ -268,7 +269,12 @@ export class PwaService {
         takeUntilDestroyed(this.#destroyRef)
       )
       .subscribe(() => {
-        this.#updateAvailable.set(true);
+        // Auto-apply update silencieusement
+        // Le reload se fait au prochain refresh naturel de l'app
+        this.#swUpdate?.activateUpdate().then(() => {
+          // Update activé, prêt pour le prochain reload
+          this.#updateAvailable.set(true);
+        });
       });
   }
 

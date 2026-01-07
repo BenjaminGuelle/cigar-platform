@@ -1,98 +1,213 @@
-<div class="mx-auto max-w-6xl space-y-12 px-6 py-16">
-  <!-- Page Header -->
-  <ui-page-header
-    title="Découvrir"
-    description="Explorez des clubs, utilisateurs, cigares et événements"
-  />
+<!-- Explore Page - Full Page Search Experience -->
+<div class="flex flex-col min-h-screen">
+  <!-- Fixed Search Header (pinned at top with safe-area) -->
+  <div class="fixed top-0 left-0 right-0 z-20 bg-smoke-700 px-4 pb-3 pt-[max(0.5rem,env(safe-area-inset-top))] md:hidden">
+    <!-- Search Input -->
+    <ui-input
+      #searchInput
+      type="search"
+      placeholder="Rechercher..."
+      [control]="searchControl"
+      [suffixIcon]="true"
+      [autofocus]="true"
+    >
+      <i slot="suffix-icon" uiIcon name="search" class="w-5 h-5 text-smoke-400"></i>
+    </ui-input>
 
-  <!-- Entity Type Tabs (Future: clubs | users | cigars | events) -->
-  <div class="border-b border-gray-200 dark:border-gray-700">
-    <div class="flex gap-4">
-      <button
-        (click)="setEntityFilter('clubs')"
-        [class.border-primary-600]="entityFilter() === 'clubs'"
-        [class.text-primary-600]="entityFilter() === 'clubs'"
-        [class.border-transparent]="entityFilter() !== 'clubs'"
-        [class.text-gray-500]="entityFilter() !== 'clubs'"
-        class="pb-3 px-1 border-b-2 font-medium transition-colors"
-      >
-        Clubs
-      </button>
-      <!-- Future tabs (disabled for MVP) -->
-      <button
-        disabled
-        class="pb-3 px-1 border-b-2 border-transparent text-gray-400 cursor-not-allowed"
-      >
-        Utilisateurs
-        <span class="ml-1 text-xs">(bientôt)</span>
-      </button>
-      <button
-        disabled
-        class="pb-3 px-1 border-b-2 border-transparent text-gray-400 cursor-not-allowed"
-      >
-        Cigares
-        <span class="ml-1 text-xs">(bientôt)</span>
-      </button>
-      <button
-        disabled
-        class="pb-3 px-1 border-b-2 border-transparent text-gray-400 cursor-not-allowed"
-      >
-        Événements
-        <span class="ml-1 text-xs">(bientôt)</span>
-      </button>
-    </div>
+    <!-- Search Hint -->
+    <p class="text-xs text-smoke-400 mt-2">
+      Cigares, <span class="text-gold-500">@</span>membres ou <span class="text-gold-500">#</span>clubs
+    </p>
   </div>
 
-  <!-- Clubs Content (MVP) -->
-  @if (entityFilter() === 'clubs') {
-    <ui-page-section title="Clubs">
-      <!-- Smart Search -->
-      <div class="mb-6">
-        <ui-input
-          inputId="search"
-          type="text"
-          [control]="searchControl"
-          label="Recherche intelligente"
-          placeholder="Nom, description, ou tapez 'public' / 'privé'..."
-        />
-        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-          💡 Astuce : Recherchez par nom, description, ou tapez "public" ou "privé" pour filtrer
-        </p>
+  <!-- Desktop Search Header (sticky, below top tabs) -->
+  <div class="hidden md:block sticky top-0 z-10 bg-smoke-700 pb-3">
+    <!-- Search Input -->
+    <ui-input
+      type="search"
+      placeholder="Rechercher..."
+      [control]="searchControl"
+      [suffixIcon]="true"
+      [autofocus]="true"
+    >
+      <i slot="suffix-icon" uiIcon name="search" class="w-5 h-5 text-smoke-400"></i>
+    </ui-input>
+
+    <!-- Search Hint -->
+    <p class="text-xs text-smoke-400 mt-2">
+      Cigares, <span class="text-gold-500">@</span>membres ou <span class="text-gold-500">#</span>clubs
+    </p>
+  </div>
+
+  <!-- Spacer for fixed mobile header -->
+  <div class="h-[calc(5rem+env(safe-area-inset-top))] md:hidden"></div>
+
+  <!-- Results Zone -->
+  <div class="flex-1">
+    <!-- Loading State -->
+    @if (loading()) {
+      <div class="py-12 text-center">
+        <i uiIcon name="spinner" class="w-8 h-8 mx-auto text-gold-500 animate-spin"></i>
+        <p class="text-sm text-smoke-400 mt-3">Recherche en cours...</p>
       </div>
+    }
 
-      <!-- Loading State -->
-      @if (loading()) {
-        <div class="flex justify-center items-center py-12">
-          <i name="spinner" class="w-12 h-12 text-primary-600 animate-spin"></i>
-        </div>
-      }
+    <!-- Results (Grouped by Type) - Priority Order: Cigars/Brands -> Clubs -> Users -->
+    @if (!loading() && hasResults()) {
+      <!-- Cigars Group (Priority 1) -->
+      @if ((searchResults().cigars && searchResults().cigars!.length > 0) || (searchResults().searchType === 'global' && !hasExactCigarMatch())) {
+        <ui-search-result-group title="CIGARES" icon="flame">
+          <!-- Cigar Results (if any) -->
+          @if (searchResults().cigars && searchResults().cigars!.length > 0) {
+            @for (cigar of limitedCigars(); track cigar.id) {
+              <ui-search-result-item
+                [title]="cigar.name"
+                [subtitle]="cigar.metadata ?? ''"
+                [avatarUrl]="cigar.imageUrl"
+                [entityType]="'cigar'"
+                [iconBadge]="cigar.isVerified ? 'verified' : 'community'"
+                (clicked)="handleResultClick({ id: cigar.id, type: 'cigar', name: cigar.name, subtitle: cigar.metadata ?? '', avatarUrl: cigar.imageUrl ?? undefined })"
+              />
+            }
 
-      <!-- Empty State -->
-      @if (!loading() && filteredClubs().length === 0) {
-        <div class="text-center py-12">
-          <i name="search" class="mx-auto h-12 w-12 text-gray-400"></i>
-          <h3 class="mt-4 text-sm font-medium text-gray-900 dark:text-white">
-            Aucun club trouvé
-          </h3>
-          <p class="mt-1 text-sm text-gray-500">
-            Essayez de modifier votre recherche
-          </p>
-        </div>
-      }
+            <!-- See All Item -->
+            @if (hasMoreCigars()) {
+              <div
+                class="px-4 py-2 text-xs text-gold-500 hover:text-gold-400 cursor-pointer font-medium border-t border-smoke-700/30 transition-colors"
+                (click)="handleSeeAll('cigar')"
+              >
+                -> Voir tous les cigares ({{ searchResults().cigars!.length }})
+              </div>
+            }
+          }
 
-      <!-- Club Cards Grid -->
-      @if (!loading() && filteredClubs().length > 0) {
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          @for (club of filteredClubs(); track club.id) {
-            <ui-club-card
-              [club]="club"
-              [memberCount]="getMemberCount(club)"
-              (cardClick)="navigateToClub($event)"
-              (joinClick)="joinClub($event)"
+          <!-- Search-to-Create Action (Global Search Only) -->
+          @if (searchResults().searchType === 'global' && !hasExactCigarMatch()) {
+            <ui-search-result-item
+              [title]="'+ Ajouter ' + searchResults().query + ' a la base'"
+              [subtitle]="'Creer un nouveau cigare'"
+              [entityType]="'cigar'"
+              (clicked)="handleCreateCigar()"
             />
           }
-        </div>
+        </ui-search-result-group>
       }
-    </ui-page-section>
-  }
+
+      <!-- Brands Group (Priority 1) -->
+      @if (searchResults().brands && searchResults().brands!.length > 0) {
+        <ui-search-result-group title="MARQUES" icon="star">
+          @for (brand of limitedBrands(); track brand.id) {
+            <ui-search-result-item
+              [title]="brand.name"
+              [subtitle]="brand.metadata ?? brand.country"
+              [avatarUrl]="brand.imageUrl"
+              [entityType]="'brand'"
+              (clicked)="handleResultClick({ id: brand.id, type: 'brand', name: brand.name, subtitle: brand.metadata ?? brand.country, avatarUrl: brand.imageUrl ?? undefined })"
+            />
+          }
+
+          <!-- See All Item -->
+          @if (hasMoreBrands()) {
+            <div
+              class="px-4 py-2 text-xs text-gold-500 hover:text-gold-400 cursor-pointer font-medium border-t border-smoke-700/30 transition-colors"
+              (click)="handleSeeAll('brand')"
+            >
+              -> Voir toutes les marques ({{ searchResults().brands!.length }})
+            </div>
+          }
+        </ui-search-result-group>
+      }
+
+      <!-- Clubs Group (Priority 2) -->
+      @if (searchResults().clubs && searchResults().clubs!.length > 0) {
+        <ui-search-result-group title="CLUBS" icon="home">
+          @for (club of limitedClubs(); track club.id) {
+            <ui-search-result-item
+              [title]="club.name"
+              [subtitle]="'#' + club.slug"
+              [iconBadge]="club.visibility === 'PUBLIC' ? 'public' : 'private'"
+              [avatarUrl]="club.imageUrl"
+              [entityType]="'club'"
+              (clicked)="handleResultClick({ id: club.id, type: 'club', name: club.name, subtitle: '#' + club.slug, avatarUrl: club.imageUrl ?? undefined, iconBadge: club.visibility === 'PUBLIC' ? 'public' : 'private' })"
+            />
+          }
+
+          <!-- See All Item -->
+          @if (hasMoreClubs()) {
+            <div
+              class="px-4 py-2 text-xs text-gold-500 hover:text-gold-400 cursor-pointer font-medium border-t border-smoke-700/30 transition-colors"
+              (click)="handleSeeAll('club')"
+            >
+              -> Voir tous les clubs ({{ searchResults().clubs!.length }})
+            </div>
+          }
+        </ui-search-result-group>
+      }
+
+      <!-- Users Group (Priority 3) -->
+      @if (searchResults().users && searchResults().users!.length > 0) {
+        <ui-search-result-group title="MEMBRES" icon="users">
+          @for (user of limitedUsers(); track user.id) {
+            <ui-search-result-item
+              [title]="user.name"
+              [subtitle]="'@' + user.username"
+              [avatarUrl]="user.imageUrl"
+              [entityType]="'user'"
+              (clicked)="handleResultClick({ id: user.id, type: 'user', name: user.name, subtitle: '@' + user.username, avatarUrl: user.imageUrl ?? undefined })"
+            />
+          }
+
+          <!-- See All Item -->
+          @if (hasMoreUsers()) {
+            <div
+              class="px-4 py-2 text-xs text-gold-500 hover:text-gold-400 cursor-pointer font-medium border-t border-smoke-700/30 transition-colors"
+              (click)="handleSeeAll('user')"
+            >
+              -> Voir tous les membres ({{ searchResults().users!.length }})
+            </div>
+          }
+        </ui-search-result-group>
+      }
+    }
+
+    <!-- Empty State -->
+    @if (showEmpty()) {
+      <div class="px-4 py-3 text-center">
+        <p class="text-sm text-smoke-400">Aucun resultat trouve</p>
+      </div>
+
+      <!-- Create Cigar Option -->
+      @if (searchResults().query && searchResults().query.trim().length >= 1) {
+        <ui-search-result-group title="CIGARES" icon="flame">
+          <ui-search-result-item
+            [title]="'+ Ajouter ' + searchResults().query.trim() + ' a la base'"
+            [subtitle]="'Creer un nouveau cigare'"
+            [entityType]="'cigar'"
+            (clicked)="handleCreateCigar()"
+          />
+        </ui-search-result-group>
+      }
+    }
+
+    <!-- Initial State (no search yet) -->
+    @if (!loading() && !hasResults() && !showEmpty()) {
+      <div class="py-12 text-center">
+        <i uiIcon name="search" class="w-12 h-12 mx-auto text-smoke-600 mb-4"></i>
+        <p class="text-smoke-400">Commencez a taper pour rechercher</p>
+      </div>
+    }
+  </div>
+
+  <!-- Keyboard Hints (Desktop only) -->
+  <div class="hidden md:flex items-center gap-2 mt-6 pt-4 border-t border-smoke-700 text-xs text-smoke-500">
+    <kbd class="px-2 py-1 bg-smoke-700 rounded text-smoke-300 font-mono">Enter</kbd>
+    <span>Selectionner</span>
+  </div>
 </div>
+
+<!-- Create Cigar Modal -->
+<app-create-cigar-modal
+  [isOpen]="createCigarModalOpen()"
+  [prefillName]="createCigarPrefillName()"
+  (close)="createCigarModalOpen.set(false)"
+/>
