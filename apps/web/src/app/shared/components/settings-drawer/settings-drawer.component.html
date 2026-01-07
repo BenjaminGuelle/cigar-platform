@@ -1,0 +1,429 @@
+<ui-modal
+  [isOpen]="isOpen()"
+  variant="drawer"
+  drawerFrom="right"
+  [showCloseButton]="false"
+  (close)="close.emit()"
+>
+  <div class="flex h-full flex-col">
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b border-smoke-700 px-5 py-4">
+      <h2 class="font-display text-xl font-bold text-smoke-50">Paramètres</h2>
+      <button
+        type="button"
+        (click)="close.emit()"
+        class="rounded-full p-2 text-smoke-400 transition-colors hover:bg-smoke-700 hover:text-smoke-200"
+        aria-label="Fermer"
+      >
+        <i name="x" class="h-5 w-5"></i>
+      </button>
+    </div>
+
+    <!-- Scrollable Content -->
+    <div class="flex-1 overflow-y-auto px-5 py-6">
+      <!-- ===== SOLO CONTEXT: User Settings ===== -->
+      @if (isSoloContext()) {
+        <div class="space-y-8">
+          <!-- Avatar -->
+          <div class="mb-4">
+            <ui-avatar-upload
+              type="user"
+              [user]="currentUser()"
+              [loading]="userStore.uploadAvatar.loading()"
+              size="md"
+              (fileSelected)="onUserAvatarSelected($event)"
+            />
+          </div>
+
+          <!-- Profile Form -->
+          <form [formGroup]="profileForm" (ngSubmit)="onUpdateProfile()" class="space-y-5">
+            <ui-input
+              inputId="displayName"
+              type="text"
+              label="Nom d'affichage"
+              placeholder="Votre nom"
+              [control]="profileForm.controls.displayName"
+              [required]="true"
+              autocomplete="name"
+            />
+
+            <ui-input
+              inputId="username"
+              type="text"
+              label="Nom d'utilisateur"
+              placeholder="votre_pseudo"
+              prefix="@"
+              hint="Minuscules, chiffres, points et underscores"
+              [control]="profileForm.controls.username"
+              [required]="true"
+              [errorMessages]="usernameErrorMessages"
+              autocomplete="username"
+            />
+
+            <ui-input
+              inputId="bio"
+              label="Bio"
+              placeholder="Décrivez-vous..."
+              [control]="profileForm.controls.bio"
+              [multiline]="true"
+              [rows]="3"
+              [maxlength]="500"
+              [hint]="profileForm.controls.bio.value ? (profileForm.controls.bio.value.length + '/500') : ''"
+            />
+
+            <!-- Save Button -->
+            <div class="flex justify-end gap-3 pt-2">
+              @if (userHasUnsavedChanges()) {
+                <ui-button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  [disabled]="userStore.updateProfile.loading()"
+                  (click)="onCancelUserChanges()"
+                >
+                  Annuler
+                </ui-button>
+              }
+              <ui-button
+                type="submit"
+                variant="outline"
+                size="sm"
+                [loading]="userStore.updateProfile.loading()"
+                [disabled]="!userHasUnsavedChanges() || profileForm.invalid"
+              >
+                Enregistrer
+              </ui-button>
+            </div>
+          </form>
+
+          <!-- Divider -->
+          <div class="border-t border-smoke-700"></div>
+
+          <!-- Privacy Switches -->
+          <div class="space-y-5">
+            <ui-switch
+              switchId="visibility-public"
+              switchPosition="right"
+              label="Profil public"
+              description="Afficher mon nom sur mon profil"
+              [control]="visibilitySwitch"
+            />
+
+            <ui-switch
+              switchId="share-evaluations"
+              switchPosition="right"
+              label="Dégustations publiques"
+              description="Rendre mes évaluations visibles"
+              [control]="shareEvaluationsSwitch"
+            />
+          </div>
+
+          <!-- Divider -->
+          <div class="border-t border-smoke-700"></div>
+
+          <!-- Subscription -->
+          <div class="rounded-xl border border-smoke-700 bg-smoke-850 p-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                @if (planService.isPremium()) {
+                  <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-gold-500 to-gold-600">
+                    <i name="crown" class="h-5 w-5 text-smoke-900"></i>
+                  </div>
+                } @else {
+                  <div class="flex h-10 w-10 items-center justify-center rounded-full bg-smoke-700">
+                    <i name="user" class="h-5 w-5 text-smoke-400"></i>
+                  </div>
+                }
+                <div>
+                  <p class="font-medium text-smoke-50">{{ planService.planLabel() }}</p>
+                  @if (planService.isBetaTester()) {
+                    <p class="text-xs text-gold-500">Merci pour la Beta !</p>
+                  } @else if (!planService.isPremium()) {
+                    <p class="text-xs text-smoke-400">Fonctionnalités de base</p>
+                  }
+                </div>
+              </div>
+              @if (planService.isPremium()) {
+                <span class="rounded-full bg-gold-500/10 px-2 py-0.5 text-xs font-medium text-gold-500">
+                  Actif
+                </span>
+              }
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div class="border-t border-smoke-700"></div>
+
+          <!-- Account Info -->
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-smoke-400">Email</p>
+                <p class="text-sm text-smoke-100">{{ currentUser()?.email }}</p>
+              </div>
+              <span
+                class="rounded-full px-2 py-0.5 text-xs font-medium"
+                [class]="isOAuthUser() ? 'bg-blue-500/10 text-blue-400' : 'bg-smoke-700 text-smoke-400'"
+              >
+                {{ providerLabel() }}
+              </span>
+            </div>
+
+            <ui-button
+              type="button"
+              variant="destructive"
+              size="sm"
+              [fullWidth]="true"
+              [loading]="logoutLoading()"
+              [disabled]="logoutLoading()"
+              (click)="onLogout()"
+            >
+              Se déconnecter
+            </ui-button>
+          </div>
+
+          <!-- Divider -->
+          <div class="border-t border-smoke-700"></div>
+
+          <!-- Feedback -->
+          <button
+            type="button"
+            (click)="showFeedbackModal.set(true)"
+            class="group flex w-full items-center justify-between rounded-lg p-3 transition-colors hover:bg-smoke-800"
+          >
+            <div class="flex items-center gap-3">
+              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gold-500/10">
+                <i name="heart" class="h-5 w-5 text-gold-500"></i>
+              </div>
+              <div class="text-left">
+                <p class="text-sm font-medium text-smoke-50 transition-colors group-hover:text-gold-500">
+                  Donner mon avis
+                </p>
+                <p class="text-xs text-smoke-400">Bug ou suggestion</p>
+              </div>
+            </div>
+            <i name="chevron-right" class="h-5 w-5 text-smoke-500 transition-colors group-hover:text-gold-500"></i>
+          </button>
+        </div>
+      }
+
+      <!-- ===== CLUB CONTEXT: Club Settings ===== -->
+      @if (isClubContext()) {
+        @if (clubLoading()) {
+          <div class="flex items-center justify-center py-16">
+            <div class="h-8 w-8 animate-spin rounded-full border-2 border-gold-500 border-t-transparent"></div>
+          </div>
+        } @else {
+          <div class="space-y-8">
+            <!-- Avatar (Admin & Owner) -->
+            @if (contextStore.canManageClub()) {
+              <div class="mb-4">
+                <ui-avatar-upload
+                  type="club"
+                  [imageUrl]="club()?.imageUrl ?? null"
+                  [name]="club()?.name ?? ''"
+                  [loading]="clubStore.uploadClubAvatar.loading()"
+                  size="md"
+                  (fileSelected)="onClubAvatarSelected($event)"
+                />
+              </div>
+            }
+
+            <!-- Club Form -->
+            <form [formGroup]="clubForm" (ngSubmit)="onUpdateClub()" class="space-y-5">
+              <!-- Club Info (Admin & Owner) -->
+              @if (contextStore.canManageClub()) {
+                <ui-input
+                  inputId="club-name"
+                  type="text"
+                  label="Nom du club"
+                  placeholder="Ex: Les Aficionados"
+                  [control]="clubForm.controls.name"
+                  [required]="true"
+                  autocomplete="off"
+                />
+
+                <ui-input
+                  inputId="club-description"
+                  label="Description"
+                  placeholder="Décrivez votre club..."
+                  [control]="clubForm.controls.description"
+                  [multiline]="true"
+                  [rows]="3"
+                />
+              }
+
+              <!-- Privacy Settings (Owner only) -->
+              @if (contextStore.canEditCriticalSettings()) {
+                <!-- Divider -->
+                <div class="border-t border-smoke-700"></div>
+
+                <ui-select
+                  selectId="visibility"
+                  label="Visibilité"
+                  hint="Public = visible dans /explore"
+                  [control]="clubForm.controls.visibility"
+                  [options]="visibilityOptions"
+                  [required]="true"
+                />
+
+                @if (clubForm.controls.visibility.value === 'PUBLIC') {
+                  <ui-checkbox
+                    checkboxId="public-directory"
+                    label="Répertoire public"
+                    description="Afficher dans le répertoire"
+                    [control]="clubForm.controls.isPublicDirectory"
+                  />
+
+                  <ui-checkbox
+                    checkboxId="auto-approve"
+                    label="Approbation automatique"
+                    description="Accepter automatiquement les demandes"
+                    [control]="clubForm.controls.autoApproveMembers"
+                  />
+                }
+
+                <ui-checkbox
+                  checkboxId="member-invites"
+                  label="Invitations par les membres"
+                  description="Permettre aux membres d'inviter"
+                  [control]="clubForm.controls.allowMemberInvites"
+                />
+
+                <ui-input
+                  inputId="max-members"
+                  type="number"
+                  label="Membres max (optionnel)"
+                  placeholder="Illimité"
+                  hint="Laisser vide = illimité"
+                  [control]="clubForm.controls.maxMembers"
+                />
+              }
+
+              <!-- Save Button (Admin & Owner) -->
+              @if (contextStore.canManageClub()) {
+                <div class="flex justify-end gap-3 pt-2">
+                  @if (clubHasUnsavedChanges()) {
+                    <ui-button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      [disabled]="clubStore.updateClub.loading()"
+                      (click)="onCancelClubChanges()"
+                    >
+                      Annuler
+                    </ui-button>
+                  }
+                  <ui-button
+                    type="submit"
+                    variant="outline"
+                    size="sm"
+                    [loading]="clubStore.updateClub.loading()"
+                    [disabled]="!clubHasUnsavedChanges() || clubForm.invalid"
+                  >
+                    Enregistrer
+                  </ui-button>
+                </div>
+              }
+            </form>
+
+            <!-- Divider -->
+            <div class="border-t border-smoke-700"></div>
+
+            <!-- Danger Zone -->
+            <div class="space-y-3">
+              <!-- Archive (Owner only) -->
+              @if (isOwner()) {
+                <button
+                  type="button"
+                  (click)="onArchiveClub()"
+                  class="flex w-full items-center justify-between rounded-lg border border-error-500/30 bg-error-500/5 p-4 transition-colors hover:bg-error-500/10"
+                >
+                  <div class="text-left">
+                    <p class="text-sm font-medium text-smoke-100">Archiver le club</p>
+                    <p class="text-xs text-smoke-400">Le club ne sera plus accessible</p>
+                  </div>
+                  <i name="box" class="h-5 w-5 text-error-500"></i>
+                </button>
+              }
+
+              <!-- Leave Club -->
+              <button
+                type="button"
+                (click)="onLeaveClub()"
+                [disabled]="clubStore.removeMember.loading() || isOwner()"
+                class="flex w-full items-center justify-between rounded-lg border border-warning-500/30 bg-warning-500/5 p-4 transition-colors hover:bg-warning-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <div class="text-left">
+                  <p class="text-sm font-medium text-smoke-100">Quitter le club</p>
+                  <p class="text-xs text-smoke-400">
+                    @if (isOwner()) {
+                      Transférez d'abord la propriété
+                    } @else {
+                      Vous pourrez redemander à rejoindre
+                    }
+                  </p>
+                </div>
+                @if (clubStore.removeMember.loading()) {
+                  <div class="h-5 w-5 animate-spin rounded-full border-2 border-warning-500 border-t-transparent"></div>
+                } @else {
+                  <i name="log-out" class="h-5 w-5 text-warning-500"></i>
+                }
+              </button>
+            </div>
+          </div>
+        }
+      }
+
+      <!-- About (shared across all contexts) -->
+      <div class="flex flex-col items-center gap-2 pt-8">
+        <ui-logo variant="full" size="sm" [showTagline]="true" />
+        <p class="text-xs text-smoke-300">v {{ appVersion }}</p>
+      </div>
+    </div>
+  </div>
+</ui-modal>
+
+<!-- Logout Confirmation Modal -->
+<app-confirmation-modal
+  [isOpen]="showLogoutConfirm()"
+  [title]="'Déconnexion'"
+  [message]="'Êtes-vous sûr de vouloir vous déconnecter ?'"
+  [confirmLabel]="'Confirmer'"
+  [cancelLabel]="'Annuler'"
+  [variant]="'warning'"
+  [loading]="logoutLoading()"
+  (confirm)="onConfirmLogout()"
+  (cancel)="showLogoutConfirm.set(false)"
+/>
+
+<!-- Feedback Modal -->
+<app-feedback-modal
+  [isOpen]="showFeedbackModal()"
+  (close)="showFeedbackModal.set(false)"
+/>
+
+<!-- Archive Club Confirmation Modal -->
+<app-confirmation-modal
+  [isOpen]="showArchiveConfirm()"
+  [title]="'Archiver le club'"
+  [message]="'Êtes-vous sûr de vouloir archiver ' + (club()?.name || 'ce club') + ' ?'"
+  [confirmLabel]="'Archiver'"
+  [cancelLabel]="'Annuler'"
+  [variant]="'destructive'"
+  (confirm)="onConfirmArchiveClub()"
+  (cancel)="showArchiveConfirm.set(false)"
+/>
+
+<!-- Leave Club Confirmation Modal -->
+<app-confirmation-modal
+  [isOpen]="showLeaveConfirm()"
+  [title]="'Quitter le club'"
+  [message]="'Êtes-vous sûr de vouloir quitter ' + (club()?.name || 'ce club') + ' ?'"
+  [confirmLabel]="'Quitter'"
+  [cancelLabel]="'Annuler'"
+  [variant]="'warning'"
+  [loading]="clubStore.removeMember.loading()"
+  (confirm)="onConfirmLeaveClub()"
+  (cancel)="showLeaveConfirm.set(false)"
+/>

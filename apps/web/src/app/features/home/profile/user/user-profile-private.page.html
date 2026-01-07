@@ -34,8 +34,8 @@
           </ui-button>
         </div>
 
-        <!-- Settings -->
-        <div [uiTooltip]="'Paramètres'" tooltipPosition="bottom">
+        <!-- Settings (desktop only - mobile uses bottom tab) -->
+        <div [uiTooltip]="'Paramètres'" tooltipPosition="bottom" class="hidden md:block">
           <a routerLink="/settings">
             <ui-button
               size="icon"

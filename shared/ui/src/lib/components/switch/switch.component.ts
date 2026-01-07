@@ -33,7 +33,7 @@ const CLASSES = {
     },
     state: {
       enabled: {
-        on: 'bg-gold-500',
+        on: 'bg-gold-600',
         off: 'bg-smoke-800 border-2 border-smoke-500',
       },
       disabled: 'bg-smoke-800 cursor-not-allowed opacity-50',
@@ -62,7 +62,7 @@ const CLASSES = {
       lg: 'text-lg',
     },
     title: 'font-medium text-smoke-100',
-    description: 'text-sm text-smoke-400 mt-0.5',
+    description: 'text-xs text-smoke-200 mt-0.5',
   },
 };
 

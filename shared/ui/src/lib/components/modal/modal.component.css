@@ -25,7 +25,7 @@
 .modal-content {
     position: relative;
     width: 100%;
-    background: #27272a; /* smoke-800 - lighter than app bg */
+    background: #282726; /* smoke-700 - same as body bg */
     border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     padding: 1.5rem;

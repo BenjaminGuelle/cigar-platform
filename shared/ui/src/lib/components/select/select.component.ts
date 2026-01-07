@@ -33,25 +33,25 @@ const DEFAULT_ERROR_MESSAGES: ErrorMessages = {
 
 const CLASSES = {
   button: {
-    base: 'w-full rounded-lg border-2 transition-all duration-200 focus:outline-none bg-transparent text-smoke-100 cursor-pointer flex items-center justify-between',
+    base: 'w-full rounded-lg border transition-all duration-200 focus:outline-none bg-transparent text-smoke-200 cursor-pointer flex items-center justify-between',
     size: {
       sm: 'px-3 py-1.5 text-sm',
       md: 'px-4 py-2.5 text-base',
       lg: 'px-5 py-3 text-lg',
     },
     state: {
-      error: 'border-error-500/50 focus:border-error-500 focus:ring-2 focus:ring-error-500/20 focus:ring-offset-2 focus:ring-offset-smoke-900',
-      valid: 'border-smoke-700 focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 focus:ring-offset-2 focus:ring-offset-smoke-900',
-      open: 'border-gold-500 ring-2 ring-gold-500/20 ring-offset-2 ring-offset-smoke-900',
-      disabled: 'bg-smoke-900 border-smoke-800 cursor-not-allowed opacity-50',
+      error: 'border-error-500/50 focus:border-error-500 focus:ring-1 focus:ring-error-500/20',
+      valid: 'border-smoke-600 focus:border-smoke-400 focus:ring-1 focus:ring-smoke-400/20',
+      open: 'border-smoke-400 ring-1 ring-smoke-400/20',
+      disabled: 'bg-smoke-800/30 cursor-not-allowed opacity-50',
     },
   },
   icon: {
-    base: 'text-gold-500 transition-transform duration-200',
+    base: 'text-smoke-400 transition-transform duration-200',
     open: 'rotate-180',
   },
   dropdown: {
-    base: 'absolute z-50 mt-2 w-full rounded-lg border-2 border-smoke-700 bg-smoke-850 shadow-xl max-h-60 overflow-auto',
+    base: 'absolute z-50 mt-2 w-full rounded-lg border border-smoke-600 bg-smoke-800 shadow-xl max-h-60 overflow-auto',
   },
   option: {
     base: 'px-4 py-2.5 cursor-pointer transition-colors duration-150',
@@ -142,13 +142,13 @@ let selectIdCounter: number = 0;
       </div>
 
       @if (hint() && !showError()) {
-        <p [id]="hintId()" class="text-sm text-smoke-400">
+        <p [id]="hintId()" class="mt-1.5 text-xs text-smoke-200">
           {{ hint() }}
         </p>
       }
 
       @if (showError()) {
-        <p [id]="errorId()" class="text-sm text-error-500" role="alert">
+        <p [id]="errorId()" class="mt-1.5 text-xs text-error-400" role="alert">
           {{ errorMessage() }}
         </p>
       }

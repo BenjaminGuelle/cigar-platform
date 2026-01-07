@@ -31,17 +31,17 @@ const DEFAULT_ERROR_MESSAGES: ErrorMessages = {
 };
 
 const CLASSES = {
-  base: 'w-full rounded-lg border-2 transition-all duration-200 focus:outline-none bg-smoke-850 text-smoke-100 placeholder:text-smoke-500',
+  base: 'w-full rounded-lg border transition-all duration-200 focus:outline-none bg-transparent text-smoke-200 placeholder:text-smoke-500',
   size: {
     sm: 'px-3 py-1.5 text-sm',
     md: 'px-4 py-2.5 text-base',
     lg: 'px-5 py-3 text-lg',
   },
   state: {
-    error: 'border-error-500/50 focus:border-error-500 focus:ring-2 focus:ring-error-500/20',
-    valid: 'border-smoke-700 focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20',
-    disabled: 'bg-smoke-900 cursor-not-allowed opacity-50',
-    readonly: 'bg-smoke-900 cursor-default',
+    error: 'border-error-500/50 focus:border-error-500 focus:ring-1 focus:ring-error-500/20',
+    valid: 'border-smoke-600 focus:border-smoke-400 focus:ring-1 focus:ring-smoke-400/20',
+    disabled: 'bg-smoke-800/30 cursor-not-allowed opacity-50',
+    readonly: 'bg-smoke-800/30 cursor-default',
   },
   icon: {
     prefix: 'pl-10',
@@ -95,6 +95,11 @@ export class InputComponent {
   readonly inputmode = input<InputMode | null>(null);
   readonly control = input.required<FormControl>();
   readonly errorMessages = input<ErrorMessages>({});
+
+  // Textarea support
+  readonly multiline = input(false, { transform: booleanAttribute });
+  readonly rows = input<number>(3);
+  readonly resize = input<'none' | 'vertical' | 'both'>('none');
 
   readonly #forceShowError: WritableSignal<boolean> = signal<boolean>(false);
   readonly #controlTouched: WritableSignal<boolean> = signal<boolean>(false);
@@ -170,6 +175,7 @@ export class InputComponent {
 
   readonly inputClasses: Signal<string> = computed<string>(() => {
     const ctrl: FormControl = this.control();
+    const isMultiline: boolean = this.multiline();
 
     return clsx(
       CLASSES.base,
@@ -179,7 +185,11 @@ export class InputComponent {
       this.suffixIcon() && CLASSES.icon.suffix,
       this.showError() ? CLASSES.state.error : CLASSES.state.valid,
       ctrl?.disabled && CLASSES.state.disabled,
-      this.readonly() && CLASSES.state.readonly
+      this.readonly() && CLASSES.state.readonly,
+      // Textarea-specific
+      isMultiline && this.resize() === 'none' && 'resize-none',
+      isMultiline && this.resize() === 'vertical' && 'resize-y',
+      isMultiline && this.resize() === 'both' && 'resize'
     );
   });
 

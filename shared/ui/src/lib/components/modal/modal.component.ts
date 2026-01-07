@@ -167,17 +167,28 @@ export class ModalComponent implements OnDestroy {
 
   /**
    * Check if modal is bottom-aligned (for mobile handle display)
+   * Only shows handle for bottomSheet variant on mobile - never for drawer
    */
   protected isBottomAligned(): boolean {
     const variant = this.variant();
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
+    // Drawer variant never shows handle bar
+    if (variant === 'drawer') {
+      return false;
+    }
 
     // Show handle for bottomSheet variant on mobile
     if (variant === 'bottomSheet' && isMobile) {
       return true;
     }
 
-    // Legacy position-based check
+    // Dialog variant never shows handle
+    if (variant === 'dialog') {
+      return false;
+    }
+
+    // Legacy position-based check (only for non-variant modals)
     const pos = this.position();
     return pos === 'center' || pos === 'bottom' || pos === 'bottom-left' || pos === 'bottom-right';
   }

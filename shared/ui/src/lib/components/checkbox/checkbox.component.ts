@@ -53,7 +53,7 @@ const CLASSES = {
       lg: 'text-lg',
     },
     title: 'font-medium text-smoke-100',
-    description: 'text-sm text-smoke-400 mt-0.5',
+    description: 'text-xs text-smoke-200 mt-0.5',
   },
 };
 

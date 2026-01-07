@@ -2,7 +2,7 @@
   @if (label()) {
     <label
       [for]="inputId()"
-      class="label mb-2 block"
+      class="mb-2 block text-sm font-medium text-smoke-100"
     >
       {{ label() }}
       @if (required()) {
@@ -24,22 +24,39 @@
       </div>
     }
 
-    <input
-      [id]="inputId()"
-      [type]="type()"
-      [placeholder]="placeholder()"
-      [formControl]="control()"
-      [class]="inputClasses()"
-      [attr.autocomplete]="autocomplete()"
-      [attr.inputmode]="inputmode()"
-      [attr.maxlength]="maxlength() || null"
-      [attr.minlength]="minlength() || null"
-      [readonly]="readonly()"
-      [attr.autofocus]="autofocus() || null"
-      [attr.aria-invalid]="showError()"
-      [attr.aria-required]="required()"
-      [attr.aria-describedby]="ariaDescribedBy()"
-    />
+    @if (multiline()) {
+      <textarea
+        [id]="inputId()"
+        [placeholder]="placeholder()"
+        [formControl]="control()"
+        [class]="inputClasses()"
+        [rows]="rows()"
+        [attr.maxlength]="maxlength() || null"
+        [attr.minlength]="minlength() || null"
+        [readonly]="readonly()"
+        [attr.autofocus]="autofocus() || null"
+        [attr.aria-invalid]="showError()"
+        [attr.aria-required]="required()"
+        [attr.aria-describedby]="ariaDescribedBy()"
+      ></textarea>
+    } @else {
+      <input
+        [id]="inputId()"
+        [type]="type()"
+        [placeholder]="placeholder()"
+        [formControl]="control()"
+        [class]="inputClasses()"
+        [attr.autocomplete]="autocomplete()"
+        [attr.inputmode]="inputmode()"
+        [attr.maxlength]="maxlength() || null"
+        [attr.minlength]="minlength() || null"
+        [readonly]="readonly()"
+        [attr.autofocus]="autofocus() || null"
+        [attr.aria-invalid]="showError()"
+        [attr.aria-required]="required()"
+        [attr.aria-describedby]="ariaDescribedBy()"
+      />
+    }
 
     @if (suffixIcon()) {
       <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
@@ -61,7 +78,7 @@
   @if (hint() && !showError()) {
     <div
       [id]="hintId()"
-      class="caption mt-1.5"
+      class="mt-1.5 text-xs text-smoke-200"
     >
       {{ hint() }}
     </div>

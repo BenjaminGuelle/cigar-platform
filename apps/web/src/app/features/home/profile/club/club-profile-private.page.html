@@ -51,9 +51,9 @@
             </ui-button>
           </div>
 
-          <!-- Settings (only for admins/owners) -->
+          <!-- Settings (desktop only - mobile uses bottom tab, only for admins/owners) -->
           @if (canAccessSettings()) {
-            <div [uiTooltip]="'Paramètres du club'" tooltipPosition="bottom">
+            <div [uiTooltip]="'Paramètres du club'" tooltipPosition="bottom" class="hidden md:block">
               <a routerLink="/settings">
                 <ui-button
                   size="icon"
