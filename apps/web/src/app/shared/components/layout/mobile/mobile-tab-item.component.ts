@@ -1,11 +1,11 @@
 import { Component, input, output, computed, Signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { IconDirective, type IconName } from '../../directives/icon';
+import { IconDirective, type IconName } from '@cigar-platform/shared/ui';
 import clsx from 'clsx';
 
 /**
- * Bottom Tab Item Component
+ * Mobile Tab Item Component
  * Individual tab item with iOS-style animations and active state
  *
  * Supports two modes:
@@ -13,7 +13,7 @@ import clsx from 'clsx';
  * 2. Click mode: Emits clicked event (for modals, etc.)
  */
 @Component({
-  selector: 'ui-bottom-tab-item',
+  selector: 'app-mobile-tab-item',
   standalone: true,
   imports: [CommonModule, RouterModule, IconDirective],
   template: `
@@ -28,8 +28,9 @@ import clsx from 'clsx';
         <div [class]="pillClasses()"></div>
 
         <div class="relative z-10 flex items-center justify-center">
-          <i [name]="icon()"
-            class="h-6 w-6 transition-transform duration-200 ease-out group-active:scale-90"
+          <i
+            [name]="icon()"
+            class="h-6 w-6 transition-all duration-200 ease-out group-active:scale-90 text-smoke-300 group-[.active]:text-gold-500"
           ></i>
 
           @if (badge() && badge()! > 0) {
@@ -49,16 +50,13 @@ import clsx from 'clsx';
       </a>
     } @else {
       <!-- Click mode: Button -->
-      <button
-        type="button"
-        (click)="clicked.emit()"
-        [class]="itemClasses()"
-      >
+      <button type="button" (click)="clicked.emit()" [class]="itemClasses()">
         <div [class]="pillClasses()"></div>
 
         <div class="relative z-10 flex items-center justify-center">
-          <i [name]="icon()"
-            class="h-6 w-6 transition-transform duration-200 ease-out group-active:scale-90"
+          <i
+            [name]="icon()"
+            class="h-6 w-6 transition-all duration-200 ease-out group-active:scale-90 text-smoke-300 group-[.active]:text-gold-500"
           ></i>
 
           @if (badge() && badge()! > 0) {
@@ -79,7 +77,7 @@ import clsx from 'clsx';
     }
   `,
 })
-export class BottomTabItemComponent {
+export class MobileTabItemComponent {
   readonly icon = input.required<IconName>();
   readonly label = input<string>('');
   readonly route = input<string | null>(null);
@@ -100,9 +98,9 @@ export class BottomTabItemComponent {
 
   readonly pillClasses: Signal<string> = computed<string>(() => {
     return clsx(
-      'absolute inset-0 mx-auto rounded-2xl transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]',
-      'opacity-0 scale-90 bg-gold-500/10',
-      'group-[.active]:opacity-100 group-[.active]:scale-100',
+      'absolute inset-x-2 inset-y-1 rounded-xl transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]',
+      'opacity-0 scale-75 bg-gold-500/10',
+      'group-[.active]:opacity-100 group-[.active]:scale-100'
     );
   });
 

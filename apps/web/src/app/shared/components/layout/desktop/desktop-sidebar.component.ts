@@ -1,17 +1,21 @@
 import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AvatarComponent } from '../avatar';
-import { ActionButtonComponent } from '../action-button';
-import { LogoComponent } from '../logo';
+import {
+  AvatarComponent,
+  ActionButtonComponent,
+  LogoComponent,
+} from '@cigar-platform/shared/ui';
 import clsx from 'clsx';
 
 /**
- * Context Sidebar Component (Desktop Only)
+ * Desktop Sidebar Component
  * Displays a vertical stack of context avatars for quick context switching
  * Inspired by Slack/Discord's server/workspace switcher
  *
  * Layout:
  * ┌────┐
+ * │Logo│ <- App branding
+ * ├────┤
  * │ Me │ <- Solo context (always visible)
  * ├────┤
  * │ C1 │ <- Club 1
@@ -23,12 +27,12 @@ import clsx from 'clsx';
  * Hidden on mobile (< 768px)
  */
 @Component({
-  selector: 'ui-context-sidebar',
+  selector: 'app-desktop-sidebar',
   standalone: true,
   imports: [CommonModule, AvatarComponent, ActionButtonComponent, LogoComponent],
   template: `
     <aside
-      class="hidden md:flex fixed left-0 top-0 z-50 h-screen w-18 flex-col items-center gap-3 bg-smoke-800 border-r border-smoke-700 py-4"
+      class="fixed left-0 top-0 z-50 hidden h-screen w-18 flex-col items-center gap-3 border-r border-smoke-700 bg-smoke-800 py-4 md:flex"
     >
       <!-- Logo - Branding -->
       <div class="mb-2">
@@ -36,13 +40,13 @@ import clsx from 'clsx';
       </div>
 
       <!-- Divider -->
-      <div class="w-10 h-px bg-smoke-600"></div>
+      <div class="h-px w-10 bg-smoke-600"></div>
 
       <!-- Solo Context (User Avatar) -->
       <button
         type="button"
         (click)="contextSelected.emit({ type: 'solo', id: null })"
-        [class]="getAvatarButtonClasses('solo')"
+        [class]="getAvatarButtonClasses()"
         [attr.aria-label]="'Switch to solo context'"
         [title]="getSoloTooltip()"
       >
@@ -52,18 +56,24 @@ import clsx from 'clsx';
       </button>
 
       <!-- Divider -->
-      <div class="w-10 h-px bg-smoke-600"></div>
+      <div class="h-px w-10 bg-smoke-600"></div>
 
       <!-- Club Contexts -->
       @for (club of clubs(); track club.id) {
         <button
           type="button"
           (click)="contextSelected.emit({ type: 'club', id: club.id, club: club })"
-          [class]="getAvatarButtonClasses('club', club.id)"
+          [class]="getAvatarButtonClasses()"
           [attr.aria-label]="'Switch to ' + club.name"
           [title]="club.name"
         >
-          <div [class]="getAvatarWrapperClasses(activeContextType() === 'club' && activeClubId() === club.id)">
+          <div
+            [class]="
+              getAvatarWrapperClasses(
+                activeContextType() === 'club' && activeClubId() === club.id
+              )
+            "
+          >
             <ui-avatar [club]="club" size="md" />
           </div>
         </button>
@@ -79,23 +89,27 @@ import clsx from 'clsx';
     </aside>
   `,
 })
-export class ContextSidebarComponent {
+export class DesktopSidebarComponent {
   // Inputs
-  readonly user = input<any | null>(null); // TODO: Replace with UserDto
-  readonly clubs = input<any[]>([]); // TODO: Replace with ClubDto[]
+  readonly user = input<any | null>(null);
+  readonly clubs = input<any[]>([]);
   readonly activeContextType = input<'solo' | 'club'>('solo');
   readonly activeClubId = input<string | null>(null);
 
   // Outputs
-  readonly contextSelected = output<{ type: 'solo' | 'club'; id: string | null; club?: any }>();
+  readonly contextSelected = output<{
+    type: 'solo' | 'club';
+    id: string | null;
+    club?: any;
+  }>();
   readonly createJoinClub = output<void>();
 
   /**
-   * Get dynamic classes for avatar button based on active state
+   * Get dynamic classes for avatar button
    */
-  getAvatarButtonClasses(type: 'solo' | 'club', clubId?: string): string {
+  getAvatarButtonClasses(): string {
     return clsx(
-      'relative group flex items-center justify-center h-12 w-12',
+      'group relative flex h-12 w-12 items-center justify-center',
       'transition-all duration-200',
       'focus:outline-none',
       'active:scale-95'
@@ -109,8 +123,8 @@ export class ContextSidebarComponent {
     return clsx(
       'relative rounded-full transition-all duration-200',
       isActive
-        ? 'ring-2 ring-gold-500 ring-offset-2 ring-offset-smoke-800 scale-105 shadow-lg shadow-gold-500/20'
-        : 'opacity-60 hover:opacity-100 hover:scale-105'
+        ? 'scale-105 shadow-lg shadow-gold-500/20 ring-2 ring-gold-500 ring-offset-2 ring-offset-smoke-800'
+        : 'opacity-60 hover:scale-105 hover:opacity-100'
     );
   }
 

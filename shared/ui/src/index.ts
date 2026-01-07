@@ -11,7 +11,6 @@ export * from './lib/components/confirmation';
 export * from './lib/components/fab-menu';
 export * from './lib/components/global-search-modal';
 export * from './lib/components/input';
-export * from './lib/components/layout';
 export * from './lib/components/logo';
 export * from './lib/components/member-card';
 export * from './lib/components/modal';

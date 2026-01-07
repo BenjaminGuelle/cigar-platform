@@ -1,16 +1,17 @@
-<div class="min-h-screen">
+<div class="min-h-screen" appPullToRefresh>
   <!-- Mobile Header (< 768px) -->
-  <ui-mobile-header
+  <app-mobile-header
     [contextType]="context().type"
     [user]="currentUser()"
     [club]="context().club"
     [notificationsBadge]="3"
     (contextClick)="onContextClick()"
-    (notificationsClick)="onComingSoonOpen('Notifications')"
+    (notificationsClick)="onNotificationsOpen()"
+    (settingsClick)="onSettingsOpen()"
   />
 
   <!-- Desktop Context Sidebar (≥ 768px) - Left avatar stack -->
-  <ui-context-sidebar
+  <app-desktop-sidebar
     [user]="currentUser()"
     [clubs]="userClubs()"
     [activeContextType]="context().type"
@@ -20,12 +21,12 @@
   />
 
   <!-- Desktop Top Tabs (≥ 768px) - Horizontal navigation -->
-  <ui-desktop-top-tabs
+  <app-desktop-top-tabs
     [notificationsBadge]="3"
-    (notificationsClick)="onComingSoonOpen('Notifications')"
+    (notificationsClick)="onNotificationsOpen()"
   >
     <!-- 1. Dashboard (contextualisé : Solo = Dashboard perso, Club = Dashboard club) -->
-    <ui-desktop-top-tab-item
+    <app-desktop-top-tab-item
       label="Accueil"
       route="/dashboard"
       icon="home"
@@ -33,7 +34,7 @@
     />
 
     <!-- 2. Search (modal omnisearch) -->
-    <ui-desktop-top-tab-item
+    <app-desktop-top-tab-item
       label="Recherche"
       [route]="null"
       icon="search"
@@ -41,14 +42,14 @@
     />
 
     <!-- 3. Tasting (navigation vers liste) -->
-    <ui-desktop-top-tab-item
+    <app-desktop-top-tab-item
       label="Dégustation"
       route="/tastings"
       icon="flame"
     />
 
     <!-- 4. Cave (prochainement) -->
-    <ui-desktop-top-tab-item
+    <app-desktop-top-tab-item
       label="Cave"
       [route]="null"
       icon="book-copy"
@@ -56,7 +57,7 @@
     />
 
     <!-- 5. Profil (contextuel) -->
-    <ui-desktop-top-tab-item
+    <app-desktop-top-tab-item
       label="Profil"
       route="/profile"
       icon="user"
@@ -64,79 +65,74 @@
 
     <!-- 6. Admin (visible si ADMIN/SUPER_ADMIN/MODERATOR) -->
     @if (isAdmin()) {
-      <ui-desktop-top-tab-item
+      <app-desktop-top-tab-item
         label="Admin"
         route="/admin"
         icon="lock"
       />
     }
-  </ui-desktop-top-tabs>
+  </app-desktop-top-tabs>
 
   <!-- Main Content Area -->
-  <main class="min-h-screen overflow-auto px-4 pt-15 pb-24 md:pl-18 md:pr-8 md:pt-24 md:pb-8">
+  <main class="min-h-screen overflow-auto scroll-touch px-4 pb-24 pt-20 md:pb-8 md:pl-18 md:pr-8 md:pt-24">
     <router-outlet />
   </main>
 
   <!-- Context Switcher (Mobile Bottom Sheet) -->
-  <ui-context-switcher
+  <app-context-switcher
     [isOpen]="contextSwitcherOpen()"
     [user]="currentUser()"
     [clubs]="userClubs()"
     [activeContext]="{ type: context().type, clubId: context().clubId }"
     (close)="onContextSwitcherClose()"
     (contextSelected)="onContextSelected($event)"
-    (createJoinClub)="onCreateJoinClub()"
+    (createClub)="onCreateJoinClub()"
+    (joinClub)="onCreateJoinClub()"
   />
 
-  <ui-bottom-tab-bar>
-    <!-- 1. Dashboard (contextualisé : Solo = Dashboard perso, Club = Dashboard club) -->
-    <ui-bottom-tab-item
+  <app-mobile-tab-bar>
+    <!-- 1. Dashboard -->
+    <app-mobile-tab-item
       icon="home"
-      label="Accueil"
       route="/dashboard"
       [exact]="true"
     />
 
-    <!-- 2. Search (modal omnisearch) -->
-    <ui-bottom-tab-item
+    <!-- 2. Search -->
+    <app-mobile-tab-item
       icon="search"
-      label="Recherche"
       [route]="null"
       (clicked)="onSearchOpen()"
     />
 
-    <!-- 3. Tasting (menu FAB comme desktop) -->
-    <ui-bottom-tab-item
+    <!-- 3. Create (FAB menu) -->
+    <app-mobile-tab-item
       icon="flame"
-      label="Créer"
       [route]="null"
       (clicked)="onFabMenuToggle()"
     />
 
-    <!-- 4. Cave (prochainement) -->
-    <ui-bottom-tab-item
+    <!-- 4. Cave -->
+    <app-mobile-tab-item
       icon="book-copy"
-      label="Cave"
       [route]="null"
       (clicked)="onComingSoonOpen('Cave')"
     />
 
-    <!-- 5. Profil (contextuel) -->
-    <ui-bottom-tab-item
+    <!-- 5. Profile -->
+    <app-mobile-tab-item
       icon="user"
-      label="Profil"
       route="/profile"
     />
 
-    <!-- 6. Admin (visible si ADMIN/SUPER_ADMIN/MODERATOR) -->
+    <!-- 6. Admin -->
     @if (isAdmin()) {
-      <ui-bottom-tab-item
+      <app-mobile-tab-item
         icon="lock"
-        label="Admin"
         route="/admin"
       />
     }
-  </ui-bottom-tab-bar>
+  </app-mobile-tab-bar>
 
   <!-- FAB Menu - Quick Actions (Mobile + Desktop) -->
   <!-- Mobile: Menu items only (button hidden via CSS) -->
@@ -177,5 +173,17 @@
     [isOpen]="comingSoonModalOpen()"
     [featureName]="comingSoonFeature()"
     (close)="onComingSoonClose()"
+  />
+
+  <!-- Notifications Drawer -->
+  <app-notifications-drawer
+    [isOpen]="notificationsDrawerOpen()"
+    (close)="onNotificationsClose()"
+  />
+
+  <!-- Settings Drawer -->
+  <app-settings-drawer
+    [isOpen]="settingsDrawerOpen()"
+    (close)="onSettingsClose()"
   />
 </div>

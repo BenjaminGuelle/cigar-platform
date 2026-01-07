@@ -2,7 +2,7 @@ import { Component, computed, Signal, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import clsx from 'clsx';
-import { IconDirective, type IconName } from '../../directives/icon/icon.directive';
+import { IconDirective, type IconName } from '@cigar-platform/shared/ui';
 
 export interface TopTab {
   label: string;
@@ -25,15 +25,15 @@ export interface TopTab {
  * Hidden on mobile (< 768px)
  */
 @Component({
-  selector: 'ui-desktop-top-tabs',
+  selector: 'app-desktop-top-tabs',
   standalone: true,
   imports: [CommonModule, RouterModule, IconDirective],
   template: `
     <nav
-      class="hidden md:flex fixed top-0 left-18 right-0 z-40 h-18 items-center gap-2 bg-smoke-800 border-b border-smoke-700/50 px-8 shadow-lg shadow-smoke-950/20"
+      class="fixed left-18 right-0 top-0 z-40 hidden h-18 items-center gap-2 border-b border-smoke-700/50 bg-smoke-800 px-8 shadow-lg shadow-smoke-950/20 md:flex"
     >
       <!-- Tabs -->
-      <div class="flex items-center gap-2 flex-1">
+      <div class="flex flex-1 items-center gap-2">
         <ng-content />
       </div>
 
@@ -41,13 +41,13 @@ export interface TopTab {
       <button
         type="button"
         (click)="notificationsClick.emit()"
-        class="flex items-center justify-center w-10 h-10 rounded-lg text-smoke-400 hover:text-gold-500 hover:bg-smoke-700/50 transition-all duration-150 active:scale-95 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 focus:ring-offset-smoke-800 relative"
+        class="relative flex h-10 w-10 items-center justify-center rounded-lg text-smoke-400 transition-all duration-150 hover:bg-smoke-700/50 hover:text-gold-500 active:scale-95 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 focus:ring-offset-smoke-800"
         aria-label="Notifications"
       >
-        <i name="bell" class="w-5 h-5"></i>
+        <i name="bell" class="h-5 w-5"></i>
         @if (notificationsBadge() && notificationsBadge()! > 0) {
           <span
-            class="flex h-5 min-w-5 items-center justify-center rounded-full bg-error-500 px-1 text-xs font-bold text-white absolute -right-1 -top-1"
+            class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-error-500 px-1 text-xs font-bold text-white"
           >
             {{ notificationsBadge()! > 99 ? '99+' : notificationsBadge() }}
           </span>
@@ -70,7 +70,7 @@ export class DesktopTopTabsComponent {
  * 2. Click mode: Emits clicked event (for modals, etc.)
  */
 @Component({
-  selector: 'ui-desktop-top-tab-item',
+  selector: 'app-desktop-top-tab-item',
   standalone: true,
   imports: [CommonModule, RouterModule, IconDirective],
   template: `
@@ -86,11 +86,14 @@ export class DesktopTopTabsComponent {
         <div class="flex items-center gap-2.5">
           <!-- Icon (if provided) -->
           @if (icon()) {
-            <i [name]="icon()!" class="h-5 w-5 transition-transform duration-200 group-hover:scale-110"></i>
+            <i
+              [name]="icon()!"
+              class="h-5 w-5 transition-transform duration-200 group-hover:scale-110"
+            ></i>
           }
 
           <!-- Label -->
-          <span class="font-semibold text-sm">{{ label() }}</span>
+          <span class="text-sm font-semibold">{{ label() }}</span>
 
           <!-- Badge (if provided) -->
           @if (badge() && badge()! > 0) {
@@ -111,19 +114,18 @@ export class DesktopTopTabsComponent {
       </a>
     } @else {
       <!-- Click mode: Button -->
-      <button
-        type="button"
-        (click)="clicked.emit()"
-        [class]="tabClasses()"
-      >
+      <button type="button" (click)="clicked.emit()" [class]="tabClasses()">
         <div class="flex items-center gap-2.5">
           <!-- Icon (if provided) -->
           @if (icon()) {
-            <i [name]="icon()!" class="h-5 w-5 transition-transform duration-200 group-hover:scale-110"></i>
+            <i
+              [name]="icon()!"
+              class="h-5 w-5 transition-transform duration-200 group-hover:scale-110"
+            ></i>
           }
 
           <!-- Label -->
-          <span class="font-semibold text-sm">{{ label() }}</span>
+          <span class="text-sm font-semibold">{{ label() }}</span>
 
           <!-- Badge (if provided) -->
           @if (badge() && badge()! > 0) {
@@ -150,14 +152,13 @@ export class DesktopTopTabItemComponent {
 
   readonly tabClasses: Signal<string> = computed<string>(() => {
     return clsx(
-      'group relative flex items-center px-6 h-full',
+      'group relative mx-1 flex h-full items-center rounded-lg px-6',
       'text-smoke-400 transition-all duration-300',
-      'hover:text-smoke-100 hover:bg-smoke-700/50',
+      'hover:bg-smoke-700/50 hover:text-smoke-100',
       'active:scale-98',
-      'rounded-lg mx-1',
       // Active state handled by routerLinkActive
-      '[&.active]:text-gold-500',
       '[&.active]:bg-smoke-700/30',
+      '[&.active]:text-gold-500',
       '[&.active]:shadow-lg',
       '[&.active]:shadow-gold-500/10'
     );

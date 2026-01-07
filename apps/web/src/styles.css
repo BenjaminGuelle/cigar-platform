@@ -13,6 +13,8 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%;
+  min-height: 100dvh; /* Dynamic viewport height (ignores mobile browser chrome) */
+  overscroll-behavior: none; /* Disable native pull-to-refresh & bounce */
 }
 
 body {
@@ -20,6 +22,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior-y: contain;
 }
 
 @theme {
@@ -30,31 +33,33 @@ body {
 
 
   /* ============================================ */
-  /* SMOKE: Ultra dark backgrounds */
+  /* SMOKE: Warm dark backgrounds (cigar-inspired) */
+  /* Better contrast + warmer tones for readability */
   /* ============================================ */
-  --color-smoke-950: #050505;   /* Absolute black */
-  --color-smoke-900: #0a0a0a;   /* Deep black */
-  --color-smoke-850: #0f0f0f;   /* Almost black */
-  --color-smoke-800: #141414;   /* Very dark */
-  --color-smoke-750: #1a1816;   /* Dark with brown hint */
-  --color-smoke-700: #1a1a1a;   /* Card background */
-  --color-smoke-600: #242424;   /* Elevated surface */
-  --color-smoke-500: #2a2a2a;   /* Medium dark */
-  --color-smoke-400: #3a3a3a;   /* Lighter dark */
-  --color-smoke-300: #525252;   /* Mid gray */
-  --color-smoke-200: #737373;   /* Light gray */
-  --color-smoke-100: #a3a3a3;   /* Very light gray */
-  --color-smoke-50: #d4d4d4;    /* Almost white */
+  --color-smoke-950: #0e0e0d;   /* Absolute dark */
+  --color-smoke-900: #141413;   /* App background */
+  --color-smoke-850: #19191a;   /* Deep surface */
+  --color-smoke-800: #1e1e1d;   /* Surface */
+  --color-smoke-750: #232322;   /* Between surface & card */
+  --color-smoke-700: #282726;   /* Card/elevated - BASE */
+  --color-smoke-600: #343332;   /* Lighter surface */
+  --color-smoke-500: #413f3e;   /* Borders */
+  --color-smoke-400: #545251;   /* Subtle elements */
+  --color-smoke-300: #6e6c6b;   /* Muted text */
+  --color-smoke-200: #8c8a89;   /* Secondary text */
+  --color-smoke-100: #b3b1b0;   /* Body text */
+  --color-smoke-50: #d4d3d2;    /* Primary text */
+  --color-smoke-25: #e2e2dd;    /* Headings - BASE */
 
   /* ============================================ */
-  /* GOLD: Premium accents (élégant, pas criard) */
+  /* GOLD: Premium accents (unchanged) */
   /* ============================================ */
   --color-gold-50: #fefce8;
   --color-gold-100: #fef9c3;
   --color-gold-200: #fef08a;
   --color-gold-300: #fde047;
   --color-gold-400: #e5c158;
-  --color-gold-500: #d4af37;   /* Primary gold - élégant */
+  --color-gold-500: #d4af37;   /* Primary gold */
   --color-gold-600: #b8941f;
   --color-gold-700: #9a7a1a;
   --color-gold-800: #7d6316;
@@ -62,60 +67,64 @@ body {
   --color-gold-950: #3d2f0a;
 
   /* ============================================ */
-  /* SEMANTIC: Success (Forest Green) */
+  /* SEMANTIC: Success (Pastel Sage Green) */
+  /* Softer, less saturated for dark theme */
   /* ============================================ */
-  --color-success-50: #f0fdf4;
-  --color-success-100: #dcfce7;
-  --color-success-200: #bbf7d0;
-  --color-success-300: #86efac;
-  --color-success-400: #4ade80;
-  --color-success-500: #16a34a;
-  --color-success-600: #15803d;
-  --color-success-700: #166534;
-  --color-success-800: #14532d;
-  --color-success-900: #052e16;
+  --color-success-50: #f4f9f5;
+  --color-success-100: #e4f0e6;
+  --color-success-200: #c9e1cd;
+  --color-success-300: #a3cca9;
+  --color-success-400: #7bb583;
+  --color-success-500: #5a9a64;   /* Main - pastel sage */
+  --color-success-600: #4a8054;
+  --color-success-700: #3d6745;
+  --color-success-800: #345439;
+  --color-success-900: #1e3321;
 
   /* ============================================ */
-  /* SEMANTIC: Warning (Ember) */
+  /* SEMANTIC: Warning (Pastel Amber) */
+  /* Softer, warm tone */
   /* ============================================ */
-  --color-warning-50: #fff7ed;
-  --color-warning-100: #ffedd5;
-  --color-warning-200: #fed7aa;
-  --color-warning-300: #fdba74;
-  --color-warning-400: #fb923c;
-  --color-warning-500: #f59e0b;
-  --color-warning-600: #d97706;
-  --color-warning-700: #b45309;
-  --color-warning-800: #92400e;
-  --color-warning-900: #78350f;
+  --color-warning-50: #fdf9f3;
+  --color-warning-100: #faefdd;
+  --color-warning-200: #f4ddb8;
+  --color-warning-300: #ecc78e;
+  --color-warning-400: #e2ad64;
+  --color-warning-500: #d49545;   /* Main - pastel amber */
+  --color-warning-600: #b67d3a;
+  --color-warning-700: #966532;
+  --color-warning-800: #7a522c;
+  --color-warning-900: #4d331b;
 
   /* ============================================ */
-  /* SEMANTIC: Error (Deep Red) */
+  /* SEMANTIC: Error (Pastel Terracotta) */
+  /* Softer, earthy red */
   /* ============================================ */
-  --color-error-50: #fef2f2;
-  --color-error-100: #fee2e2;
-  --color-error-200: #fecaca;
-  --color-error-300: #fca5a5;
-  --color-error-400: #f87171;
-  --color-error-500: #dc2626;
-  --color-error-600: #b91c1c;
-  --color-error-700: #991b1b;
-  --color-error-800: #7f1d1d;
-  --color-error-900: #450a0a;
+  --color-error-50: #fdf6f5;
+  --color-error-100: #fae8e6;
+  --color-error-200: #f4cfcb;
+  --color-error-300: #ebada6;
+  --color-error-400: #df8a82;
+  --color-error-500: #c96b62;   /* Main - pastel terracotta */
+  --color-error-600: #aa564e;
+  --color-error-700: #8c4640;
+  --color-error-800: #723a35;
+  --color-error-900: #4a2420;
 
   /* ============================================ */
-  /* SEMANTIC: Info (Smoke Blue) */
+  /* SEMANTIC: Info (Pastel Slate Blue) */
+  /* Softer, muted blue */
   /* ============================================ */
-  --color-info-50: #f0f9ff;
-  --color-info-100: #e0f2fe;
-  --color-info-200: #bae6fd;
-  --color-info-300: #7dd3fc;
-  --color-info-400: #38bdf8;
-  --color-info-500: #0ea5e9;
-  --color-info-600: #0284c7;
-  --color-info-700: #0369a1;
-  --color-info-800: #075985;
-  --color-info-900: #0c4a6e;
+  --color-info-50: #f5f8fa;
+  --color-info-100: #e6eef3;
+  --color-info-200: #ccdde8;
+  --color-info-300: #a8c5d6;
+  --color-info-400: #82a9c1;
+  --color-info-500: #6590a8;   /* Main - pastel slate blue */
+  --color-info-600: #52768a;
+  --color-info-700: #435f70;
+  --color-info-800: #384e5b;
+  --color-info-900: #243239;
 
   /* ============================================ */
   /* SEMANTIC ALIASES - Dark Theme */
@@ -161,19 +170,19 @@ body {
   }
 
   .heading-1 {
-    @apply text-3xl md:text-5xl font-bold text-smoke-50;
+    @apply text-3xl md:text-5xl font-bold text-smoke-25;
   }
 
   .heading-2 {
-    @apply text-2xl md:text-3xl font-semibold text-smoke-50;
+    @apply text-2xl md:text-3xl font-semibold text-smoke-25;
   }
 
   .heading-3 {
-    @apply text-xl md:text-2xl font-semibold text-smoke-100;
+    @apply text-xl md:text-2xl font-semibold text-smoke-50;
   }
 
   .heading-section {
-    @apply text-2xl font-semibold text-smoke-50;
+    @apply text-2xl font-semibold text-smoke-25;
   }
 
   /* Body Text */
@@ -295,5 +304,43 @@ body {
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;  /* Chrome, Safari and Opera */
+  }
+}
+
+/* ============================================ */
+/* PWA MOBILE - Utilities & Touch */
+/* ============================================ */
+@layer utilities {
+  /* iOS momentum scrolling */
+  .scroll-touch {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+}
+
+/* Touch optimization - prevent double-tap zoom delay */
+@layer base {
+  button, a, [role="button"], input, select, textarea {
+    touch-action: manipulation;
+  }
+}
+
+/* Standalone PWA mode detection */
+@media (display-mode: standalone) {
+  .pwa-safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pwa-safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Pull to refresh spinner animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }

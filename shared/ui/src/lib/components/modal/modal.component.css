@@ -25,8 +25,8 @@
 .modal-content {
     position: relative;
     width: 100%;
-    background: #18181b; /* zinc-900 equivalent */
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: #27272a; /* smoke-800 - lighter than app bg */
+    border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     padding: 1.5rem;
     max-height: 85vh;
@@ -204,12 +204,20 @@
 /* ============================================ */
 /* VARIANT: Drawer (Slide Over) */
 /* ============================================ */
+/* Mobile: Force 100% width on overlay pane */
+@media (max-width: 767px) {
+    .cdk-overlay-pane:has(.modal-drawer) {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
+
 .modal-content.modal-drawer {
     height: 100vh;
     max-height: 100vh;
     border-radius: 0;
     width: 100%;
-    max-width: 400px;
+    max-width: 100%;
     padding: 0;
 
     /* Hidden state: slide off-screen */

@@ -6,20 +6,26 @@ import { AuthService, SearchModalService } from '../../core/services';
 import { ContextStore, type ClubWithRole } from '../../core/stores/context.store';
 import type { UserWithAuth } from '@cigar-platform/types';
 import {
-  BottomTabBarComponent,
-  BottomTabItemComponent,
-  MobileHeaderComponent,
-  ContextSidebarComponent,
-  DesktopTopTabsComponent,
-  DesktopTopTabItemComponent,
-  ContextSwitcherComponent,
   FabMenuComponent,
   ComingSoonModalComponent,
   type FabMenuItem,
 } from '@cigar-platform/shared/ui';
+// Layout components (web-specific with PWA safe area support)
+import {
+  MobileHeaderComponent,
+  MobileTabBarComponent,
+  MobileTabItemComponent,
+  ContextSwitcherComponent,
+  DesktopSidebarComponent,
+  DesktopTopTabsComponent,
+  DesktopTopTabItemComponent,
+} from '../../shared/components/layout';
+import { PullToRefreshDirective } from '../../shared/directives';
 import { CreateJoinClubModalComponent } from '../../shared/components/create-join-club-modal';
 import { CreateContentModalComponent } from '../../shared/components/create-content-modal';
 import { GlobalSearchComponent } from '../../shared/components/global-search';
+import { NotificationsDrawerComponent } from '../../shared/components/notifications-drawer';
+import { SettingsDrawerComponent } from '../../shared/components/settings-drawer';
 
 /**
  * Home Component (Main App Layout)
@@ -33,18 +39,24 @@ import { GlobalSearchComponent } from '../../shared/components/global-search';
   imports: [
     CommonModule,
     RouterOutlet,
-    BottomTabBarComponent,
-    BottomTabItemComponent,
+    // Layout components (web-specific with PWA support)
     MobileHeaderComponent,
-    ContextSidebarComponent,
+    MobileTabBarComponent,
+    MobileTabItemComponent,
+    ContextSwitcherComponent,
+    DesktopSidebarComponent,
     DesktopTopTabsComponent,
     DesktopTopTabItemComponent,
-    ContextSwitcherComponent,
+    PullToRefreshDirective,
+    // Modal & feature components
     CreateJoinClubModalComponent,
     CreateContentModalComponent,
     FabMenuComponent,
     GlobalSearchComponent,
     ComingSoonModalComponent,
+    // Drawer components
+    NotificationsDrawerComponent,
+    SettingsDrawerComponent,
   ],
   templateUrl: './home.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -86,6 +98,10 @@ export class HomeComponent {
 
   // FAB menu state (Mobile + Desktop)
   readonly fabMenuOpen: WritableSignal<boolean> = signal<boolean>(false);
+
+  // Drawer states
+  readonly notificationsDrawerOpen: WritableSignal<boolean> = signal<boolean>(false);
+  readonly settingsDrawerOpen: WritableSignal<boolean> = signal<boolean>(false);
   readonly fabMenuItems: Signal<FabMenuItem[]> = computed(() => {
     const items: FabMenuItem[] = [
       {
@@ -217,5 +233,25 @@ export class HomeComponent {
 
   onComingSoonClose(): void {
     this.comingSoonModalOpen.set(false);
+  }
+
+  // Notifications drawer handlers
+  onNotificationsOpen(): void {
+    this.#searchModal.close();
+    this.notificationsDrawerOpen.set(true);
+  }
+
+  onNotificationsClose(): void {
+    this.notificationsDrawerOpen.set(false);
+  }
+
+  // Settings drawer handlers
+  onSettingsOpen(): void {
+    this.#searchModal.close();
+    this.settingsDrawerOpen.set(true);
+  }
+
+  onSettingsClose(): void {
+    this.settingsDrawerOpen.set(false);
   }
 }
