@@ -1,4 +1,12 @@
+/* Parisienne font with proper iOS Safari support */
 @import url('https://fonts.googleapis.com/css2?family=Parisienne&display=swap');
+
+/* iOS font rendering fix */
+@supports (-webkit-touch-callout: none) {
+  .font-display {
+    -webkit-text-stroke: 0.25px; /* Improves rendering on iOS */
+  }
+}
 @import url('https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css');
 @import "tailwindcss";
 
@@ -342,5 +350,41 @@ body {
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* ============================================ */
+/* MAIN CONTENT - Safe area aware padding */
+/* ============================================ */
+.main-content {
+  /* Mobile: account for mobile header + safe area */
+  padding-top: calc(4.5rem + env(safe-area-inset-top, 0px));
+}
+
+@media (min-width: 768px) {
+  .main-content {
+    /* Desktop: fixed padding (no mobile header) */
+    padding-top: 6rem; /* pt-24 equivalent */
+  }
+}
+
+/* ============================================ */
+/* CDK OVERLAY FIX - Prevent body position change */
+/* The default cdk-global-scrollblock adds position:fixed */
+/* which causes a reflow affecting fixed elements (tab bar) */
+/* ============================================ */
+@layer base {
+  /* Override CDK scroll block to avoid position:fixed on body */
+  /* This prevents the "jump" on fixed elements when modal opens */
+  body.cdk-global-scrollblock {
+    position: static !important;
+    overflow: hidden !important;
+    /* Prevent scroll without changing position */
+    touch-action: none;
+  }
+
+  /* Ensure html also blocks scroll */
+  html:has(body.cdk-global-scrollblock) {
+    overflow: hidden;
   }
 }

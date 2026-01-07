@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { ContextSwitcherComponent } from '../../../shared/components/context-switcher/context-switcher.component';
+import { ContextRouterComponent } from '../../../shared/components/context-switcher/context-switcher.component';
 import { DashboardUserPage } from './user/dashboard-user.page';
 import { DashboardClubPage } from './club/dashboard-club.page';
 import { PwaInstallPromptComponent } from '../../../shared/components/pwa-install-prompt';
@@ -12,7 +12,7 @@ import { PwaInstallPromptComponent } from '../../../shared/components/pwa-instal
  *
  * Pattern:
  * - Zero business logic (pure shell)
- * - Uses generic ContextSwitcherComponent
+ * - Uses generic ContextRouterComponent
  * - Switches between DashboardUserPage and DashboardClubPage
  * - Based on ContextStore.context()
  *
@@ -23,16 +23,16 @@ import { PwaInstallPromptComponent } from '../../../shared/components/pwa-instal
   selector: 'app-dashboard',
   standalone: true,
   imports: [
-    ContextSwitcherComponent,
+    ContextRouterComponent,
     DashboardUserPage,
     DashboardClubPage,
     PwaInstallPromptComponent,
   ],
   template: `
-    <app-context-switcher>
+    <app-context-router>
       <app-dashboard-user solo />
       <app-dashboard-club club />
-    </app-context-switcher>
+    </app-context-router>
     <app-pwa-install-prompt />
   `,
 })
