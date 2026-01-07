@@ -89,7 +89,7 @@ export class MobileTabItemComponent {
 
   readonly itemClasses: Signal<string> = computed<string>(() => {
     return clsx(
-      'group relative flex flex-col items-center justify-center gap-1 py-2 px-3 min-w-16',
+      'group relative flex flex-col items-center justify-center gap-0.5 py-3 px-5 min-w-[60px]',
       'text-smoke-400 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
       'active:scale-95',
       '[&.active]:text-gold-500'

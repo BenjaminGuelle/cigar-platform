@@ -3,10 +3,13 @@ import { CommonModule } from '@angular/common';
 import { ContextStore } from '../../../core/stores/context.store';
 
 /**
- * Context Switcher Component (Web-specific)
+ * Context Router Component (Web-specific)
  *
- * Generic component that switches content based on context (solo vs club).
+ * Routes content based on context (solo vs club).
  * Use with ng-content projection for maximum flexibility.
+ *
+ * Note: Renamed from ContextSwitcherComponent to avoid selector collision
+ * with the mobile ContextSwitcherComponent (modal bottom sheet).
  *
  * Pattern:
  * - Declares content slots with [solo] and [club] attributes
@@ -15,16 +18,16 @@ import { ContextStore } from '../../../core/stores/context.store';
  *
  * Usage:
  * ```html
- * <app-context-switcher>
+ * <app-context-router>
  *   <app-user-settings solo />
  *   <app-club-settings club />
- * </app-context-switcher>
+ * </app-context-router>
  * ```
  *
  * Reusable for:
  * - Dashboard (UserDashboard | ClubDashboard)
  * - Settings (UserSettings | ClubSettings)
- * - Degustations (UserDegustations | ClubDegustations)
+ * - Profile (UserProfile | ClubProfile)
  * - Events (UserEvents | ClubEvents)
  *
  * Architecture:
@@ -32,7 +35,7 @@ import { ContextStore } from '../../../core/stores/context.store';
  * - NOT in shared/ui (depends on ContextStore)
  */
 @Component({
-  selector: 'app-context-switcher',
+  selector: 'app-context-router',
   standalone: true,
   imports: [CommonModule],
   template: `
@@ -43,6 +46,6 @@ import { ContextStore } from '../../../core/stores/context.store';
     }
   `,
 })
-export class ContextSwitcherComponent {
+export class ContextRouterComponent {
   contextStore = inject(ContextStore);
 }

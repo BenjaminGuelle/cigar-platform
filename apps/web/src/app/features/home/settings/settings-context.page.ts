@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { ContextSwitcherComponent } from '../../../shared/components/context-switcher/context-switcher.component';
+import { ContextRouterComponent } from '../../../shared/components/context-switcher/context-switcher.component';
 import { UserSettingsPage } from './user/user-settings.page';
 import { ClubSettingsPage } from './club/club-settings.page';
 
@@ -11,7 +11,7 @@ import { ClubSettingsPage } from './club/club-settings.page';
  *
  * Pattern:
  * - Zero business logic (pure shell)
- * - Uses generic ContextSwitcherComponent
+ * - Uses generic ContextRouterComponent
  * - Switches between UserSettingsPage and ClubSettingsPage
  * - Based on ContextStore.context()
  *
@@ -24,15 +24,15 @@ import { ClubSettingsPage } from './club/club-settings.page';
   selector: 'app-settings-context',
   standalone: true,
   imports: [
-    ContextSwitcherComponent,
+    ContextRouterComponent,
     UserSettingsPage,
     ClubSettingsPage,
   ],
   template: `
-    <app-context-switcher>
+    <app-context-router>
       <app-user-settings solo />
       <app-club-settings club />
-    </app-context-switcher>
+    </app-context-router>
   `,
 })
 export class SettingsContextPage {}
