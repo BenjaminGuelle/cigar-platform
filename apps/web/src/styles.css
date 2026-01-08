@@ -387,9 +387,32 @@ body {
 }
 
 /* ============================================ */
-/* CDK OVERLAY FIX - Prevent body position change */
-/* The default cdk-global-scrollblock adds position:fixed */
-/* which causes a reflow affecting fixed elements (tab bar) */
+/* VAUL-LIKE DRAWER EFFECT - Modern Mobile UX */
+/* Replaces CDK scroll blocking with CSS-only approach */
+/* ============================================ */
+@layer base {
+  /**
+   * When a drawer/modal/bottomsheet is open:
+   * - Block scroll via overflow (not position:fixed)
+   * - This prevents the tabbar jump issue on iOS Safari
+   * - The VaulWrapperDirective handles the scale effect
+   */
+  body.vaul-drawer-open {
+    overflow: hidden !important;
+    touch-action: none;
+    /* Keep position static - no reflow on fixed elements */
+  }
+
+  /* Ensure html also blocks scroll */
+  html:has(body.vaul-drawer-open) {
+    overflow: hidden;
+  }
+}
+
+/* ============================================ */
+/* CDK OVERLAY FIX - Override default behavior */
+/* Since we use noop() scroll strategy, CDK won't add */
+/* cdk-global-scrollblock class. But keep this as fallback. */
 /* ============================================ */
 @layer base {
   /* Override CDK scroll block to avoid position:fixed on body */
@@ -404,5 +427,16 @@ body {
   /* Ensure html also blocks scroll */
   html:has(body.cdk-global-scrollblock) {
     overflow: hidden;
+  }
+}
+
+/* ============================================ */
+/* VAUL WRAPPER STATES - For additional CSS hooks */
+/* ============================================ */
+@layer utilities {
+  /* Additional class applied by VaulWrapperDirective */
+  .vaul-scaled {
+    /* The scale and border-radius are applied via JS */
+    /* This class can be used for additional styling */
   }
 }

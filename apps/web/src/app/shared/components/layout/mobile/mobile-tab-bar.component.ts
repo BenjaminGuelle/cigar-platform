@@ -13,7 +13,7 @@ import { CommonModule } from '@angular/common';
   template: `
     <nav
       class="fixed bottom-0 left-0 right-0 z-20 px-4 md:hidden"
-      style="padding-bottom: calc(0.5rem + env(safe-area-inset-bottom)); transform: translateZ(0); will-change: transform;"
+      style="padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));"
     >
       <!-- Floating pill container - full width aligned with header px-4 -->
       <div

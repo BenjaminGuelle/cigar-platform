@@ -18,6 +18,7 @@ import { Overlay, OverlayModule, OverlayRef } from '@angular/cdk/overlay';
 import { A11yModule } from '@angular/cdk/a11y';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { IconDirective } from '../../directives/icon';
+import { DRAWER_STATE_HANDLER, type DrawerStateHandler } from './drawer-state.token';
 
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl';
 export type ModalPosition = 'center' | 'centered' | 'top' | 'bottom' | 'right' | 'left' | 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
@@ -101,8 +102,20 @@ export type DrawerFrom = 'left' | 'right';
   `,
 })
 export class ModalComponent implements OnDestroy {
-  private overlay = inject(Overlay);
-  private viewContainerRef = inject(ViewContainerRef);
+  readonly #overlay = inject(Overlay);
+  readonly #viewContainerRef = inject(ViewContainerRef);
+
+  /**
+   * Optional drawer state handler for Vaul-like scale effect
+   * Provided by the app via DRAWER_STATE_HANDLER token
+   */
+  readonly #drawerStateHandler = inject(DRAWER_STATE_HANDLER, { optional: true });
+
+  /**
+   * Unique ID for this modal instance
+   * Used to track open/close state in DrawerStateService
+   */
+  readonly #modalId = `modal-${Math.random().toString(36).substring(2, 9)}`;
 
   @ViewChild('modalTemplate', { static: true }) modalTemplate!: TemplateRef<unknown>;
   @ViewChild('modalContent', { read: ElementRef }) modalContentRef?: ElementRef<HTMLElement>;
@@ -124,23 +137,26 @@ export class ModalComponent implements OnDestroy {
   readonly close = output<void>();
 
   // Private state
-  private overlayRef?: OverlayRef;
-  private transitionEndListener?: (event: TransitionEvent) => void;
+  #overlayRef?: OverlayRef;
+  #transitionEndListener?: (event: TransitionEvent) => void;
 
   // Animation state (internal visibility for CSS transitions)
   protected readonly isVisible = signal(false);
 
   // Swipe-to-dismiss state
-  private touchStartY = 0;
-  private isDragging = false;
+  #touchStartY = 0;
+  #isDragging = false;
   protected readonly dragY = signal(0);
-  private swipeCleanup?: () => void;
+  #swipeCleanup?: () => void;
 
   constructor() {
     effect(() => {
       if (this.isOpen()) {
         this.openModal();
-      } else {
+      } else if (this.#overlayRef) {
+        // Only close if we have an overlay (meaning we were open)
+        // Notify drawer state at START of close animation (sync with modal animation)
+        this.#drawerStateHandler?.close(this.#modalId);
         this.isVisible.set(false);
       }
     });
@@ -199,7 +215,7 @@ export class ModalComponent implements OnDestroy {
   private addTransitionListener(): void {
     if (!this.modalContentRef) return;
 
-    this.transitionEndListener = (event: TransitionEvent) => {
+    this.#transitionEndListener = (event: TransitionEvent) => {
       // Only detach after closing animation (opacity transition)
       // Ignore other transitions (transform, etc.) using event bubbling check
       if (event.propertyName === 'opacity' && !this.isVisible() && event.target === this.modalContentRef?.nativeElement) {
@@ -208,16 +224,16 @@ export class ModalComponent implements OnDestroy {
       }
     };
 
-    this.modalContentRef.nativeElement.addEventListener('transitionend', this.transitionEndListener);
+    this.modalContentRef.nativeElement.addEventListener('transitionend', this.#transitionEndListener);
   }
 
   /**
    * Remove transitionend listener
    */
   private removeTransitionListener(): void {
-    if (this.modalContentRef && this.transitionEndListener) {
-      this.modalContentRef.nativeElement.removeEventListener('transitionend', this.transitionEndListener);
-      this.transitionEndListener = undefined;
+    if (this.modalContentRef && this.#transitionEndListener) {
+      this.modalContentRef.nativeElement.removeEventListener('transitionend', this.#transitionEndListener);
+      this.#transitionEndListener = undefined;
     }
   }
 
@@ -226,25 +242,30 @@ export class ModalComponent implements OnDestroy {
    */
   private openModal(): void {
     // Prevent multiple overlays
-    if (this.overlayRef?.hasAttached()) {
+    if (this.#overlayRef?.hasAttached()) {
       return;
     }
+
+    // Notify drawer state handler (for Vaul-like scale effect)
+    this.#drawerStateHandler?.open(this.#modalId);
 
     // Create position strategy based on position input
     const positionStrategy = this.getPositionStrategy();
 
     // Create overlay with backdrop
-    this.overlayRef = this.overlay.create({
+    // Use noop() scroll strategy - scroll blocking is handled via CSS class on body
+    // This prevents the position:fixed issue that causes tabbar collision
+    this.#overlayRef = this.#overlay.create({
       positionStrategy,
       hasBackdrop: true,
       backdropClass: ['modal-backdrop', 'cdk-overlay-backdrop', 'modal-z-index-override'],
       panelClass: ['modal-overlay-pane', 'modal-z-index-override'],
-      scrollStrategy: this.overlay.scrollStrategies.block(),
+      scrollStrategy: this.#overlay.scrollStrategies.noop(),
     });
 
     // Attach template portal
-    const portal = new TemplatePortal(this.modalTemplate, this.viewContainerRef);
-    this.overlayRef.attach(portal);
+    const portal = new TemplatePortal(this.modalTemplate, this.#viewContainerRef);
+    this.#overlayRef.attach(portal);
 
     // Add transition listener and trigger enter animation
     setTimeout(() => {
@@ -255,7 +276,7 @@ export class ModalComponent implements OnDestroy {
 
     // Handle backdrop click
     if (this.closeOnBackdrop()) {
-      this.overlayRef.backdropClick().subscribe(() => {
+      this.#overlayRef.backdropClick().subscribe(() => {
         this.close.emit();
       });
     }
@@ -264,12 +285,17 @@ export class ModalComponent implements OnDestroy {
   /**
    * Detach and dispose overlay
    * Called after leave animation completes
+   * Note: drawer state close() is called in the effect at START of animation for sync
    */
   private detachOverlay(): void {
-    if (this.overlayRef) {
-      this.overlayRef.detach();
-      this.overlayRef.dispose();
-      this.overlayRef = undefined;
+    // Fallback: close drawer state if not already closed (e.g., ngOnDestroy edge case)
+    // This is a no-op if already closed since Set.delete on non-existent ID is harmless
+    this.#drawerStateHandler?.close(this.#modalId);
+
+    if (this.#overlayRef) {
+      this.#overlayRef.detach();
+      this.#overlayRef.dispose();
+      this.#overlayRef = undefined;
     }
 
     // Reset swipe state
@@ -278,7 +304,7 @@ export class ModalComponent implements OnDestroy {
   }
 
   private getPositionStrategy() {
-    const strategy = this.overlay.position().global();
+    const strategy = this.#overlay.position().global();
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
     const variant = this.variant();
@@ -375,15 +401,15 @@ export class ModalComponent implements OnDestroy {
     if (!isMobile || !isBottomSheet) return;
 
     const handleTouchStart = (e: TouchEvent) => {
-      this.touchStartY = e.touches[0].clientY;
-      this.isDragging = true;
+      this.#touchStartY = e.touches[0].clientY;
+      this.#isDragging = true;
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (!this.isDragging) return;
+      if (!this.#isDragging) return;
 
       const currentY = e.touches[0].clientY;
-      const deltaY = currentY - this.touchStartY;
+      const deltaY = currentY - this.#touchStartY;
 
       if (deltaY > 0) {
         this.dragY.set(deltaY);
@@ -394,8 +420,8 @@ export class ModalComponent implements OnDestroy {
     };
 
     const handleTouchEnd = () => {
-      if (!this.isDragging) return;
-      this.isDragging = false;
+      if (!this.#isDragging) return;
+      this.#isDragging = false;
 
       const DISMISS_THRESHOLD = 100;
 
@@ -411,7 +437,7 @@ export class ModalComponent implements OnDestroy {
     element.addEventListener('touchmove', handleTouchMove, { passive: false });
     element.addEventListener('touchend', handleTouchEnd);
 
-    this.swipeCleanup = () => {
+    this.#swipeCleanup = () => {
       element.removeEventListener('touchstart', handleTouchStart);
       element.removeEventListener('touchmove', handleTouchMove);
       element.removeEventListener('touchend', handleTouchEnd);
@@ -419,9 +445,9 @@ export class ModalComponent implements OnDestroy {
   }
 
   private removeSwipeHandlers(): void {
-    if (this.swipeCleanup) {
-      this.swipeCleanup();
-      this.swipeCleanup = undefined;
+    if (this.#swipeCleanup) {
+      this.#swipeCleanup();
+      this.#swipeCleanup = undefined;
     }
   }
 

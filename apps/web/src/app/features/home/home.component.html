@@ -1,190 +1,178 @@
-<div class="min-h-screen" appPullToRefresh>
-  <!-- Mobile Header (< 768px) - Hidden on /explore -->
-  @if (!isExplorePage()) {
-    <app-mobile-header
-      [contextType]="context().type"
-      [user]="currentUser()"
-      [club]="context().club"
-      [notificationsBadge]="3"
-      (contextClick)="onContextClick()"
-      (notificationsClick)="onNotificationsOpen()"
-      (settingsClick)="onSettingsOpen()"
+<!--
+  Layout Structure:
+  - Desktop elements (sidebar, top tabs) → position: fixed (outside wrapper)
+  - Mobile header → position: fixed (outside wrapper)
+  - Mobile tabbar → position: fixed (outside wrapper)
+  - Main content → inside vaulDrawerWrapper (scales on modal open)
+  - Header/tabbar stay in place, only content scales (avoids transform/fixed issues)
+-->
+
+<!-- Desktop Context Sidebar (≥ 768px) - Outside wrapper, stays fixed -->
+<app-desktop-sidebar
+  [user]="currentUser()"
+  [clubs]="userClubs()"
+  [activeContextType]="context().type"
+  [activeClubId]="context().clubId"
+  (contextSelected)="onContextSelected($event)"
+  (createJoinClub)="onCreateJoinClub()"
+/>
+
+<!-- Desktop Top Tabs (≥ 768px) - Outside wrapper, stays fixed -->
+<app-desktop-top-tabs
+  [notificationsBadge]="3"
+  (notificationsClick)="onNotificationsOpen()"
+>
+  <app-desktop-top-tab-item
+    label="Accueil"
+    route="/dashboard"
+    icon="home"
+    [exact]="true"
+  />
+  <app-desktop-top-tab-item
+    label="Recherche"
+    route="/explore"
+    icon="search"
+  />
+  <app-desktop-top-tab-item
+    label="Dégustation"
+    route="/tastings"
+    icon="flame"
+  />
+  <app-desktop-top-tab-item
+    label="Cave"
+    [route]="null"
+    icon="book-copy"
+    (clicked)="onComingSoonOpen('Cave')"
+  />
+  <app-desktop-top-tab-item
+    label="Profil"
+    route="/profile"
+    icon="user"
+  />
+  @if (isAdmin()) {
+    <app-desktop-top-tab-item
+      label="Admin"
+      route="/admin"
+      icon="lock"
     />
   }
+</app-desktop-top-tabs>
 
-  <!-- Desktop Context Sidebar (≥ 768px) - Left avatar stack -->
-  <app-desktop-sidebar
+<!-- Mobile Header (< 768px) - Fixed, outside wrapper to avoid transform issues -->
+@if (!isExplorePage()) {
+  <app-mobile-header
+    [contextType]="context().type"
     [user]="currentUser()"
-    [clubs]="userClubs()"
-    [activeContextType]="context().type"
-    [activeClubId]="context().clubId"
-    (contextSelected)="onContextSelected($event)"
-    (createJoinClub)="onCreateJoinClub()"
-  />
-
-  <!-- Desktop Top Tabs (≥ 768px) - Horizontal navigation -->
-  <app-desktop-top-tabs
+    [club]="context().club"
     [notificationsBadge]="3"
+    (contextClick)="onContextClick()"
     (notificationsClick)="onNotificationsOpen()"
-  >
-    <!-- 1. Dashboard (contextualisé : Solo = Dashboard perso, Club = Dashboard club) -->
-    <app-desktop-top-tab-item
-      label="Accueil"
-      route="/dashboard"
-      icon="home"
-      [exact]="true"
-    />
+    (settingsClick)="onSettingsOpen()"
+  />
+}
 
-    <!-- 2. Search (navigate to /explore) -->
-    <app-desktop-top-tab-item
-      label="Recherche"
-      route="/explore"
-      icon="search"
-    />
-
-    <!-- 3. Tasting (navigation vers liste) -->
-    <app-desktop-top-tab-item
-      label="Dégustation"
-      route="/tastings"
-      icon="flame"
-    />
-
-    <!-- 4. Cave (prochainement) -->
-    <app-desktop-top-tab-item
-      label="Cave"
-      [route]="null"
-      icon="book-copy"
-      (clicked)="onComingSoonOpen('Cave')"
-    />
-
-    <!-- 5. Profil (contextuel) -->
-    <app-desktop-top-tab-item
-      label="Profil"
-      route="/profile"
-      icon="user"
-    />
-
-    <!-- 6. Admin (visible si ADMIN/SUPER_ADMIN/MODERATOR) -->
-    @if (isAdmin()) {
-      <app-desktop-top-tab-item
-        label="Admin"
-        route="/admin"
-        icon="lock"
-      />
-    }
-  </app-desktop-top-tabs>
-
+<!-- ============================================ -->
+<!-- VAUL WRAPPER - Only main content scales -->
+<!-- ============================================ -->
+<div
+  class="min-h-dvh bg-smoke-700 md:min-h-screen"
+  appPullToRefresh
+  vaulDrawerWrapper
+>
   <!-- Main Content Area -->
-  <!-- Mobile: padding-top includes safe-area + header height (~68px) -->
-  <!-- Desktop: fixed padding (no mobile header) -->
-  <!-- Explore page: no header padding (header is hidden, page handles its own safe-area) -->
   <main
-    class="min-h-screen overflow-auto scroll-touch px-4 pb-24 md:pb-8 md:pl-18 md:pr-8"
+    class="px-4 pb-24 md:pb-8 md:pl-18 md:pr-8"
     [class.main-content]="!isExplorePage()"
     [class.main-content-no-header]="isExplorePage()"
   >
     <router-outlet />
   </main>
+</div>
 
-  <!-- Context Switcher (Mobile Bottom Sheet) -->
-  <app-context-switcher
-    [isOpen]="contextSwitcherOpen()"
-    [user]="currentUser()"
-    [clubs]="userClubs()"
-    [activeContext]="{ type: context().type, clubId: context().clubId }"
-    (close)="onContextSwitcherClose()"
-    (contextSelected)="onContextSelected($event)"
-    (createClub)="onCreateJoinClub()"
-    (joinClub)="onCreateJoinClub()"
-  />
-
-  <app-mobile-tab-bar>
-    <!-- 1. Dashboard -->
+<!-- Mobile Tab Bar (< 768px) - Fixed, outside wrapper -->
+<app-mobile-tab-bar>
     <app-mobile-tab-item
       icon="home"
       route="/dashboard"
       [exact]="true"
     />
-
-    <!-- 2. Search (navigate to /explore) -->
     <app-mobile-tab-item
       icon="search"
       route="/explore"
     />
-
-    <!-- 3. Create (FAB menu) -->
     <app-mobile-tab-item
       icon="flame"
       [route]="null"
       (clicked)="onFabMenuToggle()"
     />
-
-    <!-- 4. Cave -->
     <app-mobile-tab-item
       icon="book-copy"
       [route]="null"
       (clicked)="onComingSoonOpen('Cave')"
     />
-
-    <!-- 5. Profile -->
     <app-mobile-tab-item
       icon="user"
       route="/profile"
     />
-
-    <!-- 6. Admin -->
     @if (isAdmin()) {
       <app-mobile-tab-item
         icon="lock"
         route="/admin"
       />
     }
-  </app-mobile-tab-bar>
+</app-mobile-tab-bar>
 
-  <!-- FAB Menu - Quick Actions (Mobile + Desktop) -->
-  <!-- Mobile: Menu items only (button hidden via CSS) -->
-  <!-- Desktop: Full FAB with button -->
-  <ui-fab-menu
-    class="[&>button]:hidden md:[&>button]:flex"
-    [isOpen]="fabMenuOpen()"
-    [items]="fabMenuItems()"
-    (toggle)="onFabMenuToggle()"
-    (close)="onFabMenuClose()"
-    (itemClicked)="onFabMenuItemClick($event)"
-  />
+<!-- FAB Menu - Outside wrapper (rendered via overlay anyway) -->
+<ui-fab-menu
+  class="[&>button]:hidden md:[&>button]:flex"
+  [isOpen]="fabMenuOpen()"
+  [items]="fabMenuItems()"
+  (toggle)="onFabMenuToggle()"
+  (close)="onFabMenuClose()"
+  (itemClicked)="onFabMenuItemClick($event)"
+/>
 
-  <!-- Create/Join Club Modal -->
-  <app-create-join-club-modal
-    [isOpen]="createJoinClubModalOpen()"
-    (close)="onCreateJoinClubModalClose()"
-    (clubCreated)="onClubCreated()"
-    (clubJoined)="onClubJoined()"
-  />
+<!-- ============================================ -->
+<!-- MODALS & DRAWERS - Rendered via CDK Overlay -->
+<!-- ============================================ -->
 
-  <!-- Create Event Modal -->
-  <app-create-content-modal
-    [isOpen]="createContentModalOpen()"
-    [contextClubName]="context().club?.name || null"
-    (close)="onCreateContentModalClose()"
-    (eventCreated)="onEventCreated()"
-  />
+<app-context-switcher
+  [isOpen]="contextSwitcherOpen()"
+  [user]="currentUser()"
+  [clubs]="userClubs()"
+  [activeContext]="{ type: context().type, clubId: context().clubId }"
+  (close)="onContextSwitcherClose()"
+  (contextSelected)="onContextSelected($event)"
+  (createClub)="onCreateJoinClub()"
+  (joinClub)="onCreateJoinClub()"
+/>
 
-  <!-- Coming Soon Modal -->
-  <ui-coming-soon-modal
-    [isOpen]="comingSoonModalOpen()"
-    [featureName]="comingSoonFeature()"
-    (close)="onComingSoonClose()"
-  />
+<app-create-join-club-modal
+  [isOpen]="createJoinClubModalOpen()"
+  (close)="onCreateJoinClubModalClose()"
+  (clubCreated)="onClubCreated()"
+  (clubJoined)="onClubJoined()"
+/>
 
-  <!-- Notifications Drawer -->
-  <app-notifications-drawer
-    [isOpen]="notificationsDrawerOpen()"
-    (close)="onNotificationsClose()"
-  />
+<app-create-content-modal
+  [isOpen]="createContentModalOpen()"
+  [contextClubName]="context().club?.name || null"
+  (close)="onCreateContentModalClose()"
+  (eventCreated)="onEventCreated()"
+/>
 
-  <!-- Settings Drawer -->
-  <app-settings-drawer
-    [isOpen]="settingsDrawerOpen()"
-    (close)="onSettingsClose()"
-  />
-</div>
+<ui-coming-soon-modal
+  [isOpen]="comingSoonModalOpen()"
+  [featureName]="comingSoonFeature()"
+  (close)="onComingSoonClose()"
+/>
+
+<app-notifications-drawer
+  [isOpen]="notificationsDrawerOpen()"
+  (close)="onNotificationsClose()"
+/>
+
+<app-settings-drawer
+  [isOpen]="settingsDrawerOpen()"
+  (close)="onSettingsClose()"
+/>
