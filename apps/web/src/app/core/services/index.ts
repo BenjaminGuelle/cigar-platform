@@ -7,3 +7,4 @@ export * from './global-search.service';
 export * from './search-modal.service';
 export * from './plan.service';
 export * from './pwa.service';
+export * from './drawer-state.service';

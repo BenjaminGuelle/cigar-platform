@@ -21,7 +21,7 @@ import {
   DesktopTopTabsComponent,
   DesktopTopTabItemComponent,
 } from '../../shared/components/layout';
-import { PullToRefreshDirective } from '../../shared/directives';
+import { PullToRefreshDirective, VaulWrapperDirective } from '../../shared/directives';
 import { CreateJoinClubModalComponent } from '../../shared/components/create-join-club-modal';
 import { CreateContentModalComponent } from '../../shared/components/create-content-modal';
 import { NotificationsDrawerComponent } from '../../shared/components/notifications-drawer';
@@ -48,6 +48,7 @@ import { SettingsDrawerComponent } from '../../shared/components/settings-drawer
     DesktopTopTabsComponent,
     DesktopTopTabItemComponent,
     PullToRefreshDirective,
+    VaulWrapperDirective,
     // Modal & feature components
     CreateJoinClubModalComponent,
     CreateContentModalComponent,

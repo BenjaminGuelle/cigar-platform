@@ -11,9 +11,11 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { registerLocaleData } from '@angular/common';
 import { provideServiceWorker } from '@angular/service-worker';
 import localeFr from '@angular/common/locales/fr';
+import { DRAWER_STATE_HANDLER } from '@cigar-platform/shared/ui';
 import { appRoutes } from './app.routes';
 import { authInterceptor, errorInterceptor } from './core/interceptors';
 import { ContextStore } from './core/stores/context.store';
+import { DrawerStateService } from './core/services';
 
 // Register French locale
 registerLocaleData(localeFr);
@@ -24,6 +26,8 @@ export const appConfig: ApplicationConfig = {
     provideRouter(appRoutes),
     provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
     { provide: LOCALE_ID, useValue: 'fr-FR' },
+    // Vaul-like drawer effect: connect modal/drawer to DrawerStateService
+    { provide: DRAWER_STATE_HANDLER, useExisting: DrawerStateService },
     provideAppInitializer(() => {
       const contextStore = inject(ContextStore);
       return contextStore.initializeContext();
