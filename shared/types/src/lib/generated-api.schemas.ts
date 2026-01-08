@@ -1215,7 +1215,7 @@ export type TrackEventDtoData = { [key: string]: unknown };
 
 export interface TrackEventDto {
   /**
-   * Event name
+   * Event name (lowercase snake_case)
    * @maxLength 100
    */
   event: string;
@@ -1227,7 +1227,7 @@ export interface TrackEventDto {
    */
   page: string;
   /**
-   * Platform (desktop, android, ios)
+   * Platform (desktop, android, ios, web)
    * @maxLength 50
    */
   platform?: string;
@@ -1306,6 +1306,30 @@ export interface PlatformStatsDto {
   totalClubs: number;
   totalTastings: number;
   totalEvents: number;
+}
+
+export interface DiscoverCigarDto {
+  id: string;
+  name: string;
+  slug: string;
+  brandName: string;
+  createdAt: string;
+}
+
+export interface DiscoverTastingDto {
+  id: string;
+  cigarName: string;
+  cigarSlug: string;
+  rating: number;
+  username: string;
+  createdAt: string;
+}
+
+export interface DiscoverResponseDto {
+  /** Recently added cigars (newest first) */
+  recentCigars: DiscoverCigarDto[];
+  /** Recent public tastings (newest first) */
+  recentTastings: DiscoverTastingDto[];
 }
 
 export type ClubControllerFindAllParams = {
