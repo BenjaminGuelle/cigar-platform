@@ -16,6 +16,7 @@ import { PlanModule } from '../plan/plan.module';
 import { HealthModule } from '../health/health.module';
 import { FeedbackModule } from '../feedback/feedback.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
+import { DiscoverModule } from '../discover/discover.module';
 
 @Global()
 @Module({
@@ -42,6 +43,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     HealthModule,
     FeedbackModule,
     AnalyticsModule,
+    DiscoverModule,
   ],
   controllers: [AppController],
   providers: [

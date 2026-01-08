@@ -14,7 +14,11 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import type { SearchResultDto } from '@cigar-platform/types';
+import type {
+  SearchResultDto,
+  DiscoverCigarDto,
+  DiscoverTastingDto,
+} from '@cigar-platform/types';
 import {
   IconDirective,
   InputComponent,
@@ -22,6 +26,7 @@ import {
   SearchResultItemComponent,
 } from '@cigar-platform/shared/ui';
 import { injectSearchStore } from '../../../core/stores/search.store';
+import { injectDiscoverStore } from '../../../core/stores/discover.store';
 import { AuthService } from '../../../core/services/auth.service';
 import { CreateCigarModalComponent } from '../../../shared/components/create-cigar-modal/create-cigar-modal.component';
 
@@ -63,6 +68,7 @@ export class ExplorePage implements AfterViewInit {
 
   readonly #router = inject(Router);
   readonly #searchStore = injectSearchStore();
+  readonly #discoverStore = injectDiscoverStore();
   readonly #authService = inject(AuthService);
 
   // Search input control
@@ -76,11 +82,24 @@ export class ExplorePage implements AfterViewInit {
   readonly createCigarModalOpen = signal<boolean>(false);
   readonly createCigarPrefillName = signal<string>('');
 
+  // Focus state for search input (controls discovery/search mode)
+  readonly isInputFocused = signal<boolean>(false);
+
   // Query using store pattern (reactive with getter)
   readonly #omnisearchQuery = this.#searchStore.search(() => this.#debouncedQuery());
+  readonly #discoverQuery = this.#discoverStore.getDiscoveryContent();
 
   // Loading state
   readonly loading: Signal<boolean> = this.#omnisearchQuery.loading;
+  readonly discoveryLoading: Signal<boolean> = this.#discoverQuery.loading;
+
+  // Discovery content (recent cigars + tastings)
+  readonly recentCigars: Signal<DiscoverCigarDto[]> = computed(
+    () => this.#discoverQuery.data()?.recentCigars ?? []
+  );
+  readonly recentTastings: Signal<DiscoverTastingDto[]> = computed(
+    () => this.#discoverQuery.data()?.recentTastings ?? []
+  );
 
   // Search results
   readonly searchResults: Signal<SearchResultDto> = computed<SearchResultDto>(() => {
@@ -141,6 +160,15 @@ export class ExplorePage implements AfterViewInit {
     );
   });
 
+  // Discovery vs Search mode (based on focus state)
+  readonly isDiscoveryMode = computed(() => !this.isInputFocused());
+  readonly isSearchMode = computed(() => this.isInputFocused());
+
+  // Show hints when in search mode but query is empty
+  readonly showSearchHints = computed(
+    () => this.isSearchMode() && !this.#debouncedQuery().trim()
+  );
+
   constructor() {
     // Debounce logic: update debouncedQuery 300ms after searchQuery changes
     let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -171,10 +199,7 @@ export class ExplorePage implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    // Auto-focus search input on page load
-    setTimeout(() => {
-      this.searchInputRef?.nativeElement?.focus();
-    }, 100);
+    // No auto-focus - start in discovery mode
   }
 
   /**
@@ -235,5 +260,58 @@ export class ExplorePage implements AfterViewInit {
   handleSeeAll(type: 'cigar' | 'brand' | 'club' | 'user'): void {
     // For now, we could expand the view or navigate to a filtered page
     // Implementation depends on product requirements
+  }
+
+  /**
+   * Handle cancel - blur input and return to discovery mode
+   */
+  handleCancel(): void {
+    this.searchControl.setValue('');
+    this.#searchQuery.set('');
+    this.#debouncedQuery.set('');
+    this.isInputFocused.set(false);
+    // Blur the input to ensure focus is lost
+    this.searchInputRef?.nativeElement?.blur();
+  }
+
+  /**
+   * Handle input focus
+   */
+  handleFocus(): void {
+    this.isInputFocused.set(true);
+  }
+
+  /**
+   * Navigate to cigar page from discovery
+   */
+  handleDiscoverCigarClick(cigar: DiscoverCigarDto): void {
+    void this.#router.navigate(['/cigar', cigar.slug]);
+  }
+
+  /**
+   * Navigate to cigar page from tasting in discovery
+   */
+  handleDiscoverTastingClick(tasting: DiscoverTastingDto): void {
+    void this.#router.navigate(['/cigar', tasting.cigarSlug]);
+  }
+
+  /**
+   * Format relative time for display (e.g., "2h", "3j")
+   */
+  formatRelativeTime(date: Date | string): string {
+    const now = new Date();
+    const pastDate = new Date(date);
+    const diffMs = now.getTime() - pastDate.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMins < 60) {
+      return `${Math.max(1, diffMins)}m`;
+    } else if (diffHours < 24) {
+      return `${diffHours}h`;
+    } else {
+      return `${diffDays}j`;
+    }
   }
 }
