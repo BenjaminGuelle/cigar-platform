@@ -24,7 +24,11 @@ import { AvatarComponent, IconDirective } from '@cigar-platform/shared/ui';
   template: `
     <header
       class="fixed top-0 left-0 right-0 z-40 md:hidden"
-      style="padding-top: env(safe-area-inset-top)"
+      style="
+        padding-top: env(safe-area-inset-top);
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+      "
     >
       <!-- Subtle gradient blur backdrop -->
       <div
