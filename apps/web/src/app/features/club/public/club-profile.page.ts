@@ -11,6 +11,7 @@ import {
   ButtonComponent,
   ModalComponent,
   SkeletonComponent,
+  SkeletonListComponent,
 } from '@cigar-platform/shared/ui';
 
 /**
@@ -45,6 +46,7 @@ import {
     ButtonComponent,
     ModalComponent,
     SkeletonComponent,
+    SkeletonListComponent,
   ],
   templateUrl: './club-profile.page.html',
 })

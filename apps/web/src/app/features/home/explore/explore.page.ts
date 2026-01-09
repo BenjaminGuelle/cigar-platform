@@ -7,28 +7,21 @@ import {
   WritableSignal,
   Signal,
   ChangeDetectionStrategy,
-  ViewChild,
-  ElementRef,
-  AfterViewInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import type {
   SearchResultDto,
   DiscoverCigarDto,
   DiscoverTastingDto,
 } from '@cigar-platform/types';
-import {
-  IconDirective,
-  InputComponent,
-  SearchResultGroupComponent,
-  SearchResultItemComponent,
-} from '@cigar-platform/shared/ui';
 import { injectSearchStore } from '../../../core/stores/search.store';
 import { injectDiscoverStore } from '../../../core/stores/discover.store';
 import { AuthService } from '../../../core/services/auth.service';
+import { ExploreHeaderService } from '../../../core/services/explore-header.service';
 import { CreateCigarModalComponent } from '../../../shared/components/create-cigar-modal/create-cigar-modal.component';
+import { ExploreDiscoveryComponent } from './components/explore-discovery/explore-discovery.component';
+import { ExploreSearchComponent, SearchResultClickEvent } from './components/explore-search/explore-search.component';
 
 /**
  * Explore Page - Search Experience
@@ -53,37 +46,26 @@ import { CreateCigarModalComponent } from '../../../shared/components/create-cig
   standalone: true,
   imports: [
     CommonModule,
-    ReactiveFormsModule,
-    IconDirective,
-    InputComponent,
-    SearchResultGroupComponent,
-    SearchResultItemComponent,
     CreateCigarModalComponent,
+    ExploreDiscoveryComponent,
+    ExploreSearchComponent,
   ],
   templateUrl: './explore.page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ExplorePage implements AfterViewInit {
-  @ViewChild('searchInput') searchInputRef!: ElementRef<HTMLInputElement>;
-
+export class ExplorePage {
   readonly #router = inject(Router);
   readonly #searchStore = injectSearchStore();
   readonly #discoverStore = injectDiscoverStore();
   readonly #authService = inject(AuthService);
+  readonly #headerService = inject(ExploreHeaderService);
 
-  // Search input control
-  readonly searchControl = new FormControl('');
-
-  // Internal state
-  readonly #searchQuery: WritableSignal<string> = signal<string>('');
+  // Internal state for debounced query
   readonly #debouncedQuery: WritableSignal<string> = signal<string>('');
 
   // Create cigar modal state
   readonly createCigarModalOpen = signal<boolean>(false);
   readonly createCigarPrefillName = signal<string>('');
-
-  // Focus state for search input (controls discovery/search mode)
-  readonly isInputFocused = signal<boolean>(false);
 
   // Query using store pattern (reactive with getter)
   readonly #omnisearchQuery = this.#searchStore.search(() => this.#debouncedQuery());
@@ -160,9 +142,9 @@ export class ExplorePage implements AfterViewInit {
     );
   });
 
-  // Discovery vs Search mode (based on focus state)
-  readonly isDiscoveryMode = computed(() => !this.isInputFocused());
-  readonly isSearchMode = computed(() => this.isInputFocused());
+  // Discovery vs Search mode (from header service)
+  readonly isDiscoveryMode = this.#headerService.isDiscoveryMode;
+  readonly isSearchMode = this.#headerService.isSearchMode;
 
   // Show hints when in search mode but query is empty
   readonly showSearchHints = computed(
@@ -170,11 +152,11 @@ export class ExplorePage implements AfterViewInit {
   );
 
   constructor() {
-    // Debounce logic: update debouncedQuery 300ms after searchQuery changes
+    // Debounce logic: update debouncedQuery 300ms after header service searchValue changes
     let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
 
     effect(() => {
-      const query = this.#searchQuery();
+      const query = this.#headerService.searchValue();
 
       if (debounceTimeout) {
         clearTimeout(debounceTimeout);
@@ -188,31 +170,15 @@ export class ExplorePage implements AfterViewInit {
     // Reset search when user changes (login/logout)
     effect(() => {
       this.#authService.currentUser();
-      this.#searchQuery.set('');
+      this.#headerService.reset();
       this.#debouncedQuery.set('');
     });
-
-    // Sync FormControl with signal
-    this.searchControl.valueChanges.subscribe((value) => {
-      this.#searchQuery.set(value ?? '');
-    });
-  }
-
-  ngAfterViewInit(): void {
-    // No auto-focus - start in discovery mode
   }
 
   /**
    * Handle result click - Navigate to entity page
    */
-  handleResultClick(event: {
-    id: string;
-    type: 'brand' | 'cigar' | 'club' | 'user';
-    name: string;
-    subtitle?: string;
-    avatarUrl?: string;
-    iconBadge?: string;
-  }): void {
+  handleResultClick(event: SearchResultClickEvent): void {
     const results = this.searchResults();
 
     switch (event.type) {
@@ -257,28 +223,9 @@ export class ExplorePage implements AfterViewInit {
    * Handle "See All" for a specific entity type
    * TODO: Navigate to filtered results page or expand results
    */
-  handleSeeAll(type: 'cigar' | 'brand' | 'club' | 'user'): void {
+  handleSeeAll(_type: 'cigar' | 'brand' | 'club' | 'user'): void {
     // For now, we could expand the view or navigate to a filtered page
     // Implementation depends on product requirements
-  }
-
-  /**
-   * Handle cancel - blur input and return to discovery mode
-   */
-  handleCancel(): void {
-    this.searchControl.setValue('');
-    this.#searchQuery.set('');
-    this.#debouncedQuery.set('');
-    this.isInputFocused.set(false);
-    // Blur the input to ensure focus is lost
-    this.searchInputRef?.nativeElement?.blur();
-  }
-
-  /**
-   * Handle input focus
-   */
-  handleFocus(): void {
-    this.isInputFocused.set(true);
   }
 
   /**
@@ -293,25 +240,5 @@ export class ExplorePage implements AfterViewInit {
    */
   handleDiscoverTastingClick(tasting: DiscoverTastingDto): void {
     void this.#router.navigate(['/cigar', tasting.cigarSlug]);
-  }
-
-  /**
-   * Format relative time for display (e.g., "2h", "3j")
-   */
-  formatRelativeTime(date: Date | string): string {
-    const now = new Date();
-    const pastDate = new Date(date);
-    const diffMs = now.getTime() - pastDate.getTime();
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffMins < 60) {
-      return `${Math.max(1, diffMins)}m`;
-    } else if (diffHours < 24) {
-      return `${diffHours}h`;
-    } else {
-      return `${diffDays}j`;
-    }
   }
 }

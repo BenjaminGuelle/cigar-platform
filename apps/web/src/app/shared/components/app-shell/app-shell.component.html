@@ -1,13 +1,21 @@
 <!--
-  Layout Structure:
-  - Desktop elements (sidebar, top tabs) → position: fixed (outside wrapper)
-  - Mobile header → position: fixed (outside wrapper)
-  - Mobile tabbar → position: fixed (outside wrapper)
-  - Main content → inside vaulDrawerWrapper (scales on modal open)
-  - Header/tabbar stay in place, only content scales (avoids transform/fixed issues)
+  AppShell Layout Component
+  =========================
+  Single source of truth for app layout following ALL STARS architecture.
+
+  Structure:
+  - Desktop (≥768px): Sidebar (left) + Top tabs + Content
+  - Mobile (<768px): Header + Content + TabBar
+
+  Fixed elements (outside wrapper):
+  - Desktop sidebar, top tabs
+  - Mobile header, tabbar
+
+  Scalable content (inside vaulDrawerWrapper):
+  - Main content area (scales on modal open for Vaul effect)
 -->
 
-<!-- Desktop Context Sidebar (≥ 768px) - Outside wrapper, stays fixed -->
+<!-- Desktop Context Sidebar (≥ 768px) - Fixed position -->
 <app-desktop-sidebar
   [user]="currentUser()"
   [clubs]="userClubs()"
@@ -17,7 +25,7 @@
   (createJoinClub)="onCreateJoinClub()"
 />
 
-<!-- Desktop Top Tabs (≥ 768px) - Outside wrapper, stays fixed -->
+<!-- Desktop Top Tabs (≥ 768px) - Fixed position -->
 <app-desktop-top-tabs
   [notificationsBadge]="3"
   (notificationsClick)="onNotificationsOpen()"
@@ -58,13 +66,15 @@
   }
 </app-desktop-top-tabs>
 
-<!-- Mobile Header (< 768px) - Fixed, outside wrapper to avoid transform issues -->
-@if (!isExplorePage()) {
+<!-- Mobile Header (< 768px) -->
+@if (isExplorePage()) {
+  <app-mobile-header-explore />
+} @else {
   <app-mobile-header
     [contextType]="context().type"
     [user]="currentUser()"
     [club]="context().club"
-    [notificationsBadge]="3"
+    [notificationsBadge]="0"
     (contextClick)="onContextClick()"
     (notificationsClick)="onNotificationsOpen()"
     (settingsClick)="onSettingsOpen()"
@@ -72,57 +82,62 @@
 }
 
 <!-- ============================================ -->
-<!-- VAUL WRAPPER - Only main content scales -->
+<!-- VAUL WRAPPER - Main content with scale effect -->
 <!-- ============================================ -->
 <div
   class="min-h-dvh bg-smoke-700 md:min-h-screen"
   appPullToRefresh
   vaulDrawerWrapper
 >
-  <!-- Main Content Area -->
-  <main
-    class="px-4 pb-24 md:pb-8 md:pl-18 md:pr-8"
-    [class.main-content]="!isExplorePage()"
-    [class.main-content-no-header]="isExplorePage()"
-  >
-    <router-outlet />
+  <!--
+    Main Content Area
+    =================
+    Structural offsets only (AppShell responsibility):
+    - pb-24: mobile tabbar clearance (96px)
+    - md:pb-8: desktop bottom spacing (32px)
+    - md:pl-18: desktop sidebar offset (72px)
+
+    Content padding handled by pages via container-page-* classes
+  -->
+  <main class="main-content pb-24 md:pb-8 md:pl-18">
+    <ng-content />
   </main>
 </div>
 
-<!-- Mobile Tab Bar (< 768px) - Fixed, outside wrapper -->
+<!-- Mobile Tab Bar (< 768px) - Fixed position -->
 <app-mobile-tab-bar>
+  <app-mobile-tab-item
+    icon="home"
+    route="/dashboard"
+    [exact]="true"
+  />
+  <app-mobile-tab-item
+    icon="search"
+    route="/explore"
+  />
+  <app-mobile-tab-item
+    icon="flame"
+    [route]="null"
+    (clicked)="onFabMenuToggle()"
+  />
+  <app-mobile-tab-item
+    icon="book-copy"
+    [route]="null"
+    (clicked)="onComingSoonOpen('Cave')"
+  />
+  <app-mobile-tab-item
+    icon="user"
+    route="/profile"
+  />
+  @if (isAdmin()) {
     <app-mobile-tab-item
-      icon="home"
-      route="/dashboard"
-      [exact]="true"
+      icon="lock"
+      route="/admin"
     />
-    <app-mobile-tab-item
-      icon="search"
-      route="/explore"
-    />
-    <app-mobile-tab-item
-      icon="flame"
-      [route]="null"
-      (clicked)="onFabMenuToggle()"
-    />
-    <app-mobile-tab-item
-      icon="book-copy"
-      [route]="null"
-      (clicked)="onComingSoonOpen('Cave')"
-    />
-    <app-mobile-tab-item
-      icon="user"
-      route="/profile"
-    />
-    @if (isAdmin()) {
-      <app-mobile-tab-item
-        icon="lock"
-        route="/admin"
-      />
-    }
+  }
 </app-mobile-tab-bar>
 
-<!-- FAB Menu - Outside wrapper (rendered via overlay anyway) -->
+<!-- FAB Menu - Desktop only visible button, mobile via tabbar -->
 <ui-fab-menu
   class="[&>button]:hidden md:[&>button]:flex"
   [isOpen]="fabMenuOpen()"
@@ -136,6 +151,7 @@
 <!-- MODALS & DRAWERS - Rendered via CDK Overlay -->
 <!-- ============================================ -->
 
+<!-- Context Switcher (Mobile bottom sheet) -->
 <app-context-switcher
   [isOpen]="contextSwitcherOpen()"
   [user]="currentUser()"
@@ -147,6 +163,7 @@
   (joinClub)="onCreateJoinClub()"
 />
 
+<!-- Create/Join Club Modal -->
 <app-create-join-club-modal
   [isOpen]="createJoinClubModalOpen()"
   (close)="onCreateJoinClubModalClose()"
@@ -154,6 +171,7 @@
   (clubJoined)="onClubJoined()"
 />
 
+<!-- Create Content Modal (Events) -->
 <app-create-content-modal
   [isOpen]="createContentModalOpen()"
   [contextClubName]="context().club?.name || null"
@@ -161,17 +179,20 @@
   (eventCreated)="onEventCreated()"
 />
 
+<!-- Coming Soon Modal -->
 <ui-coming-soon-modal
   [isOpen]="comingSoonModalOpen()"
   [featureName]="comingSoonFeature()"
   (close)="onComingSoonClose()"
 />
 
+<!-- Notifications Drawer -->
 <app-notifications-drawer
   [isOpen]="notificationsDrawerOpen()"
   (close)="onNotificationsClose()"
 />
 
+<!-- Settings Drawer -->
 <app-settings-drawer
   [isOpen]="settingsDrawerOpen()"
   (close)="onSettingsClose()"

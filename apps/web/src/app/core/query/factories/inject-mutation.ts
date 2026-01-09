@@ -42,8 +42,8 @@ import type { Mutation, MutationOptions } from '../types/query.types';
  * </button>
  * ```
  */
-export function injectMutation<TData, TVariables>(
-  options: MutationOptions<TData, TVariables>
+export function injectMutation<TData, TVariables, TContext = void>(
+  options: MutationOptions<TData, TVariables, TContext>
 ): Mutation<TData, TVariables> {
   const queryCache = inject(QueryCacheService);
 
@@ -55,9 +55,8 @@ export function injectMutation<TData, TVariables>(
    * Execute mutation
    */
   const mutate = async (variables: TVariables): Promise<TData | null> => {
-    // onMutate - Optimistic update phase
-    const mutateResult = options.onMutate?.(variables);
-    const context = mutateResult !== undefined ? mutateResult : undefined;
+    // onMutate - Optimistic update phase (returns TContext)
+    const context = options.onMutate?.(variables) as TContext;
 
     loading.set(true);
     error.set(null);
@@ -68,7 +67,7 @@ export function injectMutation<TData, TVariables>(
 
       loading.set(false);
 
-      // Success callback
+      // Success callback with typed context
       await options.onSuccess?.(data, variables, context);
 
       // Invalidate queries
@@ -85,7 +84,7 @@ export function injectMutation<TData, TVariables>(
       loading.set(false);
       error.set(mutationError);
 
-      // Error callback with context for rollback
+      // Error callback with typed context for rollback
       options.onError?.(mutationError, variables, context);
 
       return null;

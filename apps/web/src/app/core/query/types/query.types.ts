@@ -59,8 +59,12 @@ export interface MutationContext {
 /**
  * Mutation Options
  * Configuration for a mutation
+ *
+ * @template TData - Return type of mutationFn
+ * @template TVariables - Input type for mutationFn
+ * @template TContext - Context type returned by onMutate (default: void)
  */
-export interface MutationOptions<TData, TVariables> {
+export interface MutationOptions<TData, TVariables, TContext = void> {
   /**
    * Function that performs the mutation
    */
@@ -70,17 +74,17 @@ export interface MutationOptions<TData, TVariables> {
    * Callback before mutation starts (for optimistic updates)
    * Return context for rollback in onError
    */
-  onMutate?: (variables: TVariables) => MutationContext | void;
+  onMutate?: (variables: TVariables) => TContext;
 
   /**
    * Callback on successful mutation
    */
-  onSuccess?: (data: TData, variables: TVariables, context?: MutationContext) => void | Promise<void>;
+  onSuccess?: (data: TData, variables: TVariables, context: TContext) => void | Promise<void>;
 
   /**
    * Callback on failed mutation
    */
-  onError?: (error: Error, variables: TVariables, context?: MutationContext) => void;
+  onError?: (error: Error, variables: TVariables, context: TContext) => void;
 
   /**
    * Query keys to invalidate after successful mutation

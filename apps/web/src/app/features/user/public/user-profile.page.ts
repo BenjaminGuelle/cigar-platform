@@ -9,6 +9,9 @@ import {
   AvatarComponent,
   TooltipDirective,
   SkeletonComponent,
+  SkeletonProfileComponent,
+  SkeletonStatsComponent,
+  SkeletonListComponent,
 } from '@cigar-platform/shared/ui';
 
 /**
@@ -41,6 +44,9 @@ import {
     AvatarComponent,
     TooltipDirective,
     SkeletonComponent,
+    SkeletonProfileComponent,
+    SkeletonStatsComponent,
+    SkeletonListComponent,
   ],
   templateUrl: './user-profile.page.html',
 })

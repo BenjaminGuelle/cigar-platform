@@ -8,6 +8,7 @@ import {
   PageSectionComponent,
   ButtonComponent,
   RatingBandsComponent,
+  SkeletonComponent,
 } from '@cigar-platform/shared/ui';
 import { injectTastingStore } from '../../../core/stores/tasting.store';
 import { AROMAS, TASTES } from '@cigar-platform/shared/constants';
@@ -48,6 +49,7 @@ function getFlavorLabel(id: string): string {
     PageSectionComponent,
     ButtonComponent,
     RatingBandsComponent,
+    SkeletonComponent,
     DatePipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -63,8 +65,25 @@ function getFlavorLabel(id: string): string {
 
       <!-- Loading State -->
       @if (loading()) {
-        <div class="flex justify-center py-12">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gold-500"></div>
+        <div class="space-y-6">
+          <!-- Header skeleton -->
+          <div class="flex items-start gap-4">
+            <ui-skeleton size="avatar-lg" />
+            <div class="flex-1 space-y-2">
+              <ui-skeleton size="text-lg" />
+              <ui-skeleton size="text-md" class="w-1/3" />
+              <ui-skeleton size="text-sm" class="w-1/4" />
+            </div>
+          </div>
+          <!-- Rating skeleton -->
+          <div class="flex justify-center">
+            <ui-skeleton class="w-32 h-8" />
+          </div>
+          <!-- Content skeleton -->
+          <div class="space-y-4">
+            <ui-skeleton class="w-full h-24" />
+            <ui-skeleton class="w-full h-32" />
+          </div>
         </div>
       }
 

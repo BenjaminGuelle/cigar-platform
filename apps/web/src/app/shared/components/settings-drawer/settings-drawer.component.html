@@ -210,8 +210,16 @@
       <!-- ===== CLUB CONTEXT: Club Settings ===== -->
       @if (isClubContext()) {
         @if (clubLoading()) {
-          <div class="flex items-center justify-center py-16">
-            <div class="h-8 w-8 animate-spin rounded-full border-2 border-gold-500 border-t-transparent"></div>
+          <!-- Club Settings Skeleton -->
+          <div class="space-y-8">
+            <div class="flex justify-center">
+              <ui-skeleton size="avatar-lg" />
+            </div>
+            <div class="space-y-5">
+              <ui-skeleton size="text-lg" />
+              <ui-skeleton size="text-md" />
+              <ui-skeleton size="text-md" />
+            </div>
           </div>
         } @else {
           <div class="space-y-8">

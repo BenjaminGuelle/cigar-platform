@@ -1,8 +1,32 @@
-<div class="mx-auto max-w-4xl space-y-6 md:space-y-8 px-4 md:px-6 py-6 md:py-8">
+<div class="container-page content-section-lg">
   <!-- Loading State -->
   @if (loading()) {
-    <div class="flex items-center justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-500"></div>
+    <div class="space-y-6">
+      <!-- Header Skeleton -->
+      <div class="space-y-3">
+        <ui-skeleton size="heading-lg" />
+        <ui-skeleton size="text-sm" />
+        <div class="flex items-center gap-4">
+          <ui-skeleton size="text-md" />
+          <ui-skeleton size="text-md" />
+        </div>
+      </div>
+
+      <!-- Image Skeleton -->
+      <ui-skeleton size="image-lg" class="max-w-md mx-auto" />
+
+      <!-- Specs Skeleton -->
+      <ui-page-section title="Spécifications">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          @for (i of [1, 2, 3, 4]; track i) {
+            <div class="flex flex-col items-center p-4 rounded-lg bg-smoke-800 border border-smoke-700 space-y-2">
+              <ui-skeleton size="avatar-sm" />
+              <ui-skeleton size="text-sm" />
+              <ui-skeleton size="text-xs" />
+            </div>
+          }
+        </div>
+      </ui-page-section>
     </div>
   }
 

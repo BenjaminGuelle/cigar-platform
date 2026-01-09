@@ -20,7 +20,7 @@ import { ButtonComponent } from '@cigar-platform/shared/ui';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, ButtonComponent],
   template: `
-    <div class="mx-auto max-w-5xl space-y-6">
+    <div class="container-page content-section-lg">
       <!-- Welcome Card -->
       <div class="rounded-xl border border-smoke-700 bg-smoke-800 p-8 text-center shadow-xl shadow-smoke-950/50">
         <h2 class="mb-2 text-2xl font-bold text-smoke-50 md:text-4xl">

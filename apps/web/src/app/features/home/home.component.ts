@@ -1,240 +1,44 @@
-import { Component, inject, Signal, signal, WritableSignal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { filter, map, startWith } from 'rxjs';
-import { AuthService } from '../../core/services';
-import { ContextStore, type ClubWithRole } from '../../core/stores/context.store';
-import type { UserWithAuth } from '@cigar-platform/types';
-import {
-  FabMenuComponent,
-  ComingSoonModalComponent,
-  type FabMenuItem,
-} from '@cigar-platform/shared/ui';
-// Layout components (web-specific with PWA safe area support)
-import {
-  MobileHeaderComponent,
-  MobileTabBarComponent,
-  MobileTabItemComponent,
-  ContextSwitcherComponent,
-  DesktopSidebarComponent,
-  DesktopTopTabsComponent,
-  DesktopTopTabItemComponent,
-} from '../../shared/components/layout';
-import { PullToRefreshDirective, VaulWrapperDirective } from '../../shared/directives';
-import { CreateJoinClubModalComponent } from '../../shared/components/create-join-club-modal';
-import { CreateContentModalComponent } from '../../shared/components/create-content-modal';
-import { NotificationsDrawerComponent } from '../../shared/components/notifications-drawer';
-import { SettingsDrawerComponent } from '../../shared/components/settings-drawer';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { ContextStore } from '../../core/stores/context.store';
+import { AppShellComponent } from '../../shared/components/app-shell';
 
 /**
- * Home Component (Main App Layout)
- * Wraps all authenticated pages with context-based navigation
- * - Desktop: Context sidebar (left) + Top tabs (horizontal)
- * - Mobile: Header with context avatar + Bottom tab bar
+ * Home Component
+ *
+ * Root layout component for authenticated pages.
+ * Uses AppShell for all layout concerns (header, sidebar, tabs, modals).
+ * Only handles business logic like context hydration.
+ *
+ * Following ALL STARS architecture:
+ * - Layout: delegated to AppShellComponent
+ * - Business logic: context initialization
  */
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [
-    CommonModule,
-    RouterOutlet,
-    // Layout components (web-specific with PWA support)
-    MobileHeaderComponent,
-    MobileTabBarComponent,
-    MobileTabItemComponent,
-    ContextSwitcherComponent,
-    DesktopSidebarComponent,
-    DesktopTopTabsComponent,
-    DesktopTopTabItemComponent,
-    PullToRefreshDirective,
-    VaulWrapperDirective,
-    // Modal & feature components
-    CreateJoinClubModalComponent,
-    CreateContentModalComponent,
-    FabMenuComponent,
-    ComingSoonModalComponent,
-    // Drawer components
-    NotificationsDrawerComponent,
-    SettingsDrawerComponent,
-  ],
-  templateUrl: './home.component.html',
+  imports: [RouterOutlet, AppShellComponent],
+  template: `
+    <app-shell>
+      <router-outlet />
+    </app-shell>
+  `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomeComponent {
-  #authService = inject(AuthService);
-  #router = inject(Router);
-
-  // Expose contextStore for template access to permission methods
-  readonly contextStore = inject(ContextStore);
-
-  readonly currentUser: Signal<UserWithAuth | null> = this.#authService.currentUser;
-  readonly context = this.contextStore.context;
-  readonly userClubs = this.contextStore.userClubs;
-
-  // Admin check for navigation visibility
-  readonly isAdmin: Signal<boolean> = computed(() => {
-    const user = this.currentUser();
-    if (!user?.role) return false;
-    return user.role === 'SUPER_ADMIN' || user.role === 'ADMIN' || user.role === 'MODERATOR';
-  });
-
-  // Route-based visibility: hide mobile header on /explore
-  readonly #currentUrl = toSignal(
-    this.#router.events.pipe(
-      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-      map(e => e.urlAfterRedirects),
-      startWith(this.#router.url)
-    )
-  );
-  readonly isExplorePage: Signal<boolean> = computed(() => {
-    const url = this.#currentUrl();
-    return url?.startsWith('/explore') ?? false;
-  });
-
-  // Context switcher state (mobile bottom sheet)
-  readonly contextSwitcherOpen: WritableSignal<boolean> = signal<boolean>(false);
-
-  // Create/Join club modal state
-  readonly createJoinClubModalOpen: WritableSignal<boolean> = signal<boolean>(false);
-
-  // Create content modal state
-  readonly createContentModalOpen: WritableSignal<boolean> = signal<boolean>(false);
-
-  // Coming Soon modal state
-  readonly comingSoonModalOpen: WritableSignal<boolean> = signal<boolean>(false);
-  readonly comingSoonFeature: WritableSignal<string> = signal<string>('');
-
-  // FAB menu state (Mobile + Desktop)
-  readonly fabMenuOpen: WritableSignal<boolean> = signal<boolean>(false);
-
-  // Drawer states
-  readonly notificationsDrawerOpen: WritableSignal<boolean> = signal<boolean>(false);
-  readonly settingsDrawerOpen: WritableSignal<boolean> = signal<boolean>(false);
-  readonly fabMenuItems: Signal<FabMenuItem[]> = computed(() => {
-    const items: FabMenuItem[] = [
-      {
-        icon: 'flame',
-        label: 'Nouvelle dégustation',
-        action: 'create-evaluation',
-        show: true,
-      },
-    ];
-
-    // Show event creation only in club context
-    if (this.context().type === 'club') {
-      items.push({
-        icon: 'calendar',
-        label: 'Nouvel événement',
-        action: 'create-event',
-        show: true,
-      });
-    }
-
-    return items;
-  });
+  readonly #contextStore = inject(ContextStore);
 
   constructor() {
     // Senior Dev Pattern: Load clubs + hydrate context after authentication
     // APP_INITIALIZER only restored clubId from localStorage (optimistic state)
     // Now we load real data and hydrate the "pending" club context
-    this.contextStore.loadUserClubs().then(() => {
-      const context = this.contextStore.context();
+    this.#contextStore.loadUserClubs().then(() => {
+      const context = this.#contextStore.context();
 
       // If we have a club context but no club data, hydrate it
       if (context.type === 'club' && context.clubId && !context.club) {
-        this.contextStore.hydrateClubContext(context.clubId);
+        this.#contextStore.hydrateClubContext(context.clubId);
       }
     });
-  }
-
-  onSignOut(): void {
-    this.#authService.signOut().subscribe();
-  }
-
-  onContextClick(): void {
-    this.contextSwitcherOpen.set(true);
-  }
-
-  onContextSwitcherClose(): void {
-    this.contextSwitcherOpen.set(false);
-  }
-
-  onContextSelected(event: { type: 'solo' | 'club'; id: string | null; club?: ClubWithRole }): void {
-    if (event.type === 'solo') {
-      this.contextStore.switchToSolo();
-    } else if (event.type === 'club' && event.club) {
-      // Use actual role from club data (included via /clubs/me endpoint)
-      const role = event.club.myRole || 'member';
-      this.contextStore.switchToClub(event.club, role);
-    }
-  }
-
-  onCreateJoinClub(): void {
-    this.createJoinClubModalOpen.set(true);
-  }
-
-  onCreateJoinClubModalClose(): void {
-    this.createJoinClubModalOpen.set(false);
-  }
-
-  onClubCreated(): void {
-    // TODO: Refresh user clubs
-  }
-
-  onClubJoined(): void {
-    // TODO: Refresh user clubs
-  }
-
-  onCreateContentModalClose(): void {
-    this.createContentModalOpen.set(false);
-  }
-
-  onEventCreated(): void {
-    // TODO: Refresh events / navigate to event
-  }
-
-  onFabMenuToggle(): void {
-    this.fabMenuOpen.update(open => !open);
-  }
-
-  onFabMenuClose(): void {
-    this.fabMenuOpen.set(false);
-  }
-
-  onFabMenuItemClick(action: string): void {
-    if (action === 'create-evaluation') {
-      // Navigate to tasting page (context auto-détecté)
-      void this.#router.navigate(['/tasting', 'new']);
-    } else if (action === 'create-event') {
-      this.createContentModalOpen.set(true);
-    }
-  }
-
-  onComingSoonOpen(featureName: string): void {
-    this.comingSoonFeature.set(featureName);
-    this.comingSoonModalOpen.set(true);
-  }
-
-  onComingSoonClose(): void {
-    this.comingSoonModalOpen.set(false);
-  }
-
-  // Notifications drawer handlers
-  onNotificationsOpen(): void {
-    this.notificationsDrawerOpen.set(true);
-  }
-
-  onNotificationsClose(): void {
-    this.notificationsDrawerOpen.set(false);
-  }
-
-  // Settings drawer handlers
-  onSettingsOpen(): void {
-    this.settingsDrawerOpen.set(true);
-  }
-
-  onSettingsClose(): void {
-    this.settingsDrawerOpen.set(false);
   }
 }

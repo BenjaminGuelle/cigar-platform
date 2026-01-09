@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import {
   IconDirective,
   ButtonComponent,
+  SkeletonListComponent,
 } from '@cigar-platform/shared/ui';
 import { injectTastingStore } from '../../../core/stores/tasting.store';
 import { ContextStore } from '../../../core/stores/context.store';
@@ -31,6 +32,7 @@ import type { TastingResponseDto } from '@cigar-platform/types';
     RouterLink,
     IconDirective,
     ButtonComponent,
+    SkeletonListComponent,
     DatePipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -55,9 +57,7 @@ import type { TastingResponseDto } from '@cigar-platform/types';
 
       <!-- Loading State -->
       @if (loading()) {
-        <div class="flex justify-center py-12">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gold-500"></div>
-        </div>
+        <ui-skeleton-list [count]="5" variant="card" />
       }
 
       <!-- Error State -->

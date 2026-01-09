@@ -1,41 +1,24 @@
-<div class="mx-auto max-w-4xl space-y-6 md:space-y-8 px-4 md:px-6 py-6 md:py-8">
+<div class="container-page content-section-lg">
   <!-- Loading State (Skeleton) -->
   @if (profileLoading()) {
     <!-- Header Skeleton -->
-    <div class="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6">
-      <ui-skeleton variant="circular" width="80px" height="80px" />
-      <div class="flex flex-col gap-2">
-        <ui-skeleton variant="text" width="180px" height="32px" />
-        <ui-skeleton variant="text" width="100px" height="16px" />
-      </div>
-    </div>
+    <ui-skeleton-profile avatarSize="avatar-lg" />
 
     <!-- Info Skeleton -->
     <div class="space-y-3 mt-4">
-      <ui-skeleton variant="text" width="160px" height="14px" />
+      <ui-skeleton size="text-md" />
       <ui-skeleton variant="text" width="100%" height="16px" />
       <ui-skeleton variant="text" width="80%" height="16px" />
     </div>
 
     <!-- Stats Section Skeleton -->
     <ui-page-section title="Statistiques">
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-        @for (i of [1, 2, 3]; track i) {
-          <div class="rounded-lg bg-smoke-800/50 p-4 md:p-6 space-y-3">
-            <ui-skeleton variant="text" width="80px" height="14px" />
-            <ui-skeleton variant="text" width="60px" height="32px" />
-          </div>
-        }
-      </div>
+      <ui-skeleton-stats [count]="3" [columns]="3" />
     </ui-page-section>
 
     <!-- Clubs Section Skeleton -->
     <ui-page-section title="Mes Clubs">
-      <div class="flex gap-6 overflow-x-auto py-3">
-        @for (i of [1, 2, 3, 4]; track i) {
-          <ui-skeleton variant="circular" width="80px" height="80px" class="flex-shrink-0" />
-        }
-      </div>
+      <ui-skeleton-list [count]="4" variant="avatar" />
     </ui-page-section>
   }
 
@@ -108,11 +91,7 @@
     <!-- Clubs Section -->
     <ui-page-section title="Mes Clubs">
       @if (clubsLoading()) {
-        <div class="flex gap-6 overflow-x-auto py-3">
-          @for (i of [1, 2, 3, 4]; track i) {
-            <ui-skeleton variant="circular" width="80px" height="80px" class="flex-shrink-0" />
-          }
-        </div>
+        <ui-skeleton-list [count]="4" variant="avatar" />
       }
 
       @if (!clubsLoading() && hasClubs()) {

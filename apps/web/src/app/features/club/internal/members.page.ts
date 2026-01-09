@@ -13,6 +13,7 @@ import {
   PageHeaderComponent,
   PageSectionComponent,
   ButtonComponent,
+  SkeletonListComponent,
 } from '@cigar-platform/shared/ui';
 import { MemberItemComponent } from '../../../shared/components/member-item/member-item.component';
 import { JoinRequestItemComponent } from '../../../shared/components/join-request-item/join-request-item.component';
@@ -47,6 +48,7 @@ import { ConfirmationModalComponent, type ConfirmationResult } from '../../../sh
     PageHeaderComponent,
     PageSectionComponent,
     ButtonComponent,
+    SkeletonListComponent,
     MemberItemComponent,
     JoinRequestItemComponent,
     BannedMemberItemComponent,

@@ -1,4 +1,4 @@
-<div class="mx-auto max-w-4xl space-y-6 md:space-y-8 px-4 md:px-6 py-6 md:py-8">
+<div class="container-page content-section-lg">
   <!-- Guard: Context must be club -->
   @if (contextStore.context().type !== 'club') {
     <div class="text-center py-12">
@@ -40,9 +40,7 @@
 
       @if (loading()) {
         <!-- Loading State -->
-        <div class="flex justify-center items-center py-12">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-500"></div>
-        </div>
+        <ui-skeleton-list [count]="5" variant="card" />
       } @else if (members().length > 0) {
         <!-- Tab Navigation (Mobile: horizontal scroll, Desktop: full width) -->
         <div class="flex items-center gap-1 md:gap-2 mb-6 border-b border-smoke-700 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
@@ -136,9 +134,7 @@
             <div class="space-y-6 md:space-y-8">
               @if (joinRequestsLoading()) {
                 <!-- Loading State -->
-                <div class="flex justify-center items-center py-12">
-                  <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
-                </div>
+                <ui-skeleton-list [count]="3" variant="card" />
               } @else if (hasPendingRequests()) {
                 <!-- Pending Requests List -->
                 <ui-page-section title="Demandes en attente">
@@ -186,9 +182,7 @@
             <div class="space-y-6 md:space-y-8">
               @if (bannedMembersLoading()) {
                 <!-- Loading State -->
-                <div class="flex justify-center items-center py-12">
-                  <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div>
-                </div>
+                <ui-skeleton-list [count]="3" variant="card" />
               } @else if (hasBannedMembers()) {
                 <!-- Banned Members List -->
                 <ui-page-section title="Membres bannis">

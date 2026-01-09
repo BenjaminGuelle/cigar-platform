@@ -10,6 +10,7 @@ import {
   NgZone,
 } from '@angular/core';
 import { QueryCacheService } from '../../core/query';
+import { LayoutService } from '../../core/layout';
 
 /**
  * Pull to Refresh Directive
@@ -30,6 +31,7 @@ export class PullToRefreshDirective implements OnInit, OnDestroy {
   private readonly renderer = inject(Renderer2);
   private readonly ngZone = inject(NgZone);
   private readonly queryCache = inject(QueryCacheService);
+  private readonly layout = inject(LayoutService);
 
   /**
    * Query keys to invalidate on refresh
@@ -257,7 +259,11 @@ export class PullToRefreshDirective implements OnInit, OnDestroy {
     this.hideIndicator();
   }
 
+  /**
+   * Check if current viewport is mobile
+   * Uses centralized LayoutService for consistent breakpoint detection
+   */
   private isMobile(): boolean {
-    return window.innerWidth < 768;
+    return this.layout.isMobile();
   }
 }

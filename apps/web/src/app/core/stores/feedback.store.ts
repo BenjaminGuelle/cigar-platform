@@ -1,5 +1,5 @@
 import { inject, signal, computed } from '@angular/core';
-import { injectQuery, injectMutation } from '../query';
+import { injectQuery, injectMutation, QueryCacheService } from '../query';
 import type { Query, Mutation } from '../query';
 import { FeedbackService } from '@cigar-platform/types/lib/feedback/feedback.service';
 import type {
@@ -43,6 +43,7 @@ export interface FeedbackStore {
  */
 export function injectFeedbackStore(): FeedbackStore {
   const feedbackService = inject(FeedbackService);
+  const queryCache = inject(QueryCacheService);
 
   // Pagination state
   const currentPage = signal(1);
@@ -67,8 +68,9 @@ export function injectFeedbackStore(): FeedbackStore {
     mutationFn: ({ id, data }: { id: string; data: UpdateFeedbackStatusDto }) =>
       feedbackService.feedbackControllerUpdateStatus(id, data),
 
-    onSuccess: async () => {
-      await feedbacks.refetch();
+    onSuccess: () => {
+      // Invalidate all feedback queries (all pages)
+      queryCache.invalidateQueriesMatching(['feedbacks', 'list']);
     },
   });
 

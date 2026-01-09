@@ -13,6 +13,14 @@ import type {
 } from '@cigar-platform/types';
 
 /**
+ * Optimistic update context for user mutations
+ * Stores previous state for rollback on error
+ */
+interface OptimisticUserContext {
+  previousUser: UserDto | null;
+}
+
+/**
  * User Store
  * Manages current user state with Query Layer
  *
@@ -140,10 +148,10 @@ export function injectUserStore(): UserStore {
   };
 
   // Mutation: Update Profile with TRUE optimistic update
-  const updateProfile = injectMutation<UserDto, UpdateProfileDto>({
+  const updateProfile = injectMutation<UserDto, UpdateProfileDto, OptimisticUserContext>({
     mutationFn: (data: UpdateProfileDto) => authApiService.authControllerUpdateProfile(data),
 
-    onMutate: (variables: UpdateProfileDto) => {
+    onMutate: (variables: UpdateProfileDto): OptimisticUserContext => {
       const previousUser = currentUser.data();
 
       // Optimistic update: Apply ALL changes immediately
@@ -159,7 +167,7 @@ export function injectUserStore(): UserStore {
         currentUser.setData(optimisticUser);
       }
 
-      // Return context for rollback
+      // Return typed context for rollback
       return { previousUser };
     },
 
@@ -171,20 +179,20 @@ export function injectUserStore(): UserStore {
       authService.updateCurrentUser(updatedUser);
     },
 
-    onError: (error: Error, _variables: UpdateProfileDto, context) => {
-      // Rollback to previous user data
-      if (context?.['previousUser']) {
-        currentUser.setData(context['previousUser'] as UserDto);
+    onError: (_error: Error, _variables: UpdateProfileDto, context: OptimisticUserContext) => {
+      // Rollback to previous user data (fully typed, no cast needed)
+      if (context.previousUser) {
+        currentUser.setData(context.previousUser);
       }
     },
   });
 
   // Mutation: Upload Avatar
-  const uploadAvatar = injectMutation<{ avatarUrl: string }, { avatar: File }>({
+  const uploadAvatar = injectMutation<{ avatarUrl: string }, { avatar: File }, OptimisticUserContext>({
     mutationFn: (variables: { avatar: File }) =>
       usersService.usersControllerUploadAvatar(variables),
 
-    onMutate: () => {
+    onMutate: (): OptimisticUserContext => {
       // Return previous user for rollback
       return { previousUser: currentUser.data() };
     },
@@ -206,12 +214,11 @@ export function injectUserStore(): UserStore {
       }
     },
 
-    onError: (error: Error, _variables, context) => {
-      // Rollback to previous user data
-      if (context?.['previousUser']) {
-        const previousUser = context['previousUser'] as UserDto;
-        currentUser.setData(previousUser);
-        authService.updateCurrentUser(previousUser);
+    onError: (_error: Error, _variables: { avatar: File }, context: OptimisticUserContext) => {
+      // Rollback to previous user data (fully typed, no cast needed)
+      if (context.previousUser) {
+        currentUser.setData(context.previousUser);
+        authService.updateCurrentUser(context.previousUser);
       }
     },
   });

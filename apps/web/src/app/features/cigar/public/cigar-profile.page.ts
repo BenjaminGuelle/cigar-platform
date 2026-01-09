@@ -8,6 +8,7 @@ import {
   PageSectionComponent,
   ButtonComponent,
   TooltipDirective,
+  SkeletonComponent,
 } from '@cigar-platform/shared/ui';
 import { injectCigarStore } from '../../../core/stores/cigar.store';
 
@@ -37,6 +38,7 @@ import { injectCigarStore } from '../../../core/stores/cigar.store';
     PageSectionComponent,
     ButtonComponent,
     TooltipDirective,
+    SkeletonComponent,
   ],
   templateUrl: './cigar-profile.page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,

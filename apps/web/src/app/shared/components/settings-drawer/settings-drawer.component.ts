@@ -13,6 +13,7 @@ import {
   SelectComponent,
   CheckboxComponent,
   LogoComponent,
+  SkeletonComponent,
   type SelectOption,
 } from '@cigar-platform/shared/ui';
 import { environment } from '../../../../environments/environment';
@@ -68,6 +69,7 @@ interface ClubSettingsFormValue {
     SelectComponent,
     CheckboxComponent,
     LogoComponent,
+    SkeletonComponent,
     ConfirmationModalComponent,
     FeedbackModalComponent,
   ],

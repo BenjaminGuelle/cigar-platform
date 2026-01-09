@@ -7,6 +7,7 @@ import {
   IconDirective,
   ButtonComponent,
   TooltipDirective,
+  SkeletonProfileComponent,
 } from '@cigar-platform/shared/ui';
 import {
   ParcoursSectionComponent,
@@ -44,6 +45,7 @@ import type { ClubResponseDto, ClubProfileStatsResponseDto } from '@cigar-platfo
     IconDirective,
     ButtonComponent,
     TooltipDirective,
+    SkeletonProfileComponent,
     ParcoursSectionComponent,
     AromaSignatureSectionComponent,
     TerroirsSectionComponent,

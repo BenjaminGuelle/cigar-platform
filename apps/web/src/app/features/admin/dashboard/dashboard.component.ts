@@ -21,7 +21,7 @@ interface AdminSection {
   imports: [CommonModule, RouterLink, IconDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="p-6 md:p-8">
+    <div class="container-page content-section-lg">
       <div class="mb-8">
         <h1 class="text-2xl font-bold text-smoke-50 mb-2">Administration</h1>
         <p class="text-smoke-400">Gerez la plateforme Cigar & Club</p>
