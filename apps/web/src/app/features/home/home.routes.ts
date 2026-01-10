@@ -48,11 +48,11 @@ export const homeRoutes: Route[] = [
         loadComponent: () =>
           import('./explore/explore.page').then((m) => m.ExplorePage),
       },
-      // Club public profile (Prestige URL: /club/slug)
+      // Club profile (Prestige URL: /club/slug) - Unified component
       {
         path: 'club/:slug',
         loadComponent: () =>
-          import('./profile/club/club-profile-public.page').then((m) => m.ClubProfilePublicPage),
+          import('./profile/club/club-profile.page').then((m) => m.ClubProfilePage),
       },
       // User profile (Prestige URL: /user/@username) - Unified component
       {

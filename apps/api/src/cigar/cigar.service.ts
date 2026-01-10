@@ -33,6 +33,15 @@ export class CigarService {
             createdAt: true,
           },
         },
+        tastings: {
+          where: {
+            status: 'COMPLETED',
+            visibility: 'PUBLIC',
+          },
+          select: {
+            rating: true,
+          },
+        },
       },
     });
 
@@ -40,16 +49,32 @@ export class CigarService {
       throw new NotFoundException(`Cigar with slug "${slug}" not found`);
     }
 
+    // Calcul des stats communautaires
+    const tastingCount = cigar.tastings.length;
+    const averageRating =
+      tastingCount > 0
+        ? cigar.tastings.reduce((sum, t) => sum + t.rating, 0) / tastingCount
+        : 0;
+
     return {
       id: cigar.id,
       name: cigar.name,
       slug: cigar.slug,
-      vitola: cigar.vitola ?? '',
-      strength: cigar.strength ?? 3,
       brand: cigar.brand,
+      vitola: cigar.vitola,
+      length: cigar.length,
+      ringGauge: cigar.ringGauge,
+      wrapper: cigar.wrapper,
+      origin: cigar.origin,
+      strength: cigar.strength,
+      description: cigar.description,
       isVerified: cigar.isVerified,
       status: cigar.status,
       createdAt: cigar.createdAt,
+      stats: {
+        averageRating: Math.round(averageRating * 10) / 10, // Arrondi à 0.1
+        tastingCount,
+      },
     };
   }
 
@@ -124,12 +149,21 @@ export class CigarService {
       id: cigar.id,
       name: cigar.name,
       slug: cigar.slug,
-      vitola: cigar.vitola ?? '',
-      strength: cigar.strength ?? 3,
       brand: cigar.brand,
+      vitola: cigar.vitola,
+      length: cigar.length,
+      ringGauge: cigar.ringGauge,
+      wrapper: cigar.wrapper,
+      origin: cigar.origin,
+      strength: cigar.strength,
+      description: cigar.description,
       isVerified: cigar.isVerified,
       status: cigar.status,
       createdAt: cigar.createdAt,
+      stats: {
+        averageRating: 0,
+        tastingCount: 0,
+      },
     };
   }
 }

@@ -317,12 +317,13 @@ model Cigar {
   slug    String @unique // URL-friendly identifier (brand-name)
 
   // Technical specifications
-  vitola    String? // Format (Robusto, Toro, Churchill, etc.)
-  length    Float? // Length in mm
-  ringGauge Int? // Ring gauge (diameter in 64ths of an inch)
-  wrapper   String? // Wrapper type
-  origin    String? // Country of origin
-  strength  Int? // 1-5 (light to full)
+  vitola      String? // Format (Robusto, Toro, Churchill, etc.)
+  length      Float? // Length in mm
+  ringGauge   Int? // Ring gauge (diameter in 64ths of an inch)
+  wrapper     String? // Wrapper type
+  origin      String? // Country of origin
+  strength    Int? // 1-5 (light to full)
+  description String? @db.Text // Detailed description
 
   // Verification workflow
   status          CigarStatus @default(PENDING)

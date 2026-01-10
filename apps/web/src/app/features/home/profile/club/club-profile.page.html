@@ -1,171 +1,243 @@
 <div class="container-page content-section-lg">
   <!-- Loading State -->
   @if (loading()) {
-    <ui-skeleton-profile variant="club" />
+    <ui-skeleton-profile-page variant="club" [showAvatar]="!isMember()" />
   }
 
   <!-- Error State -->
   @if (error() && !loading()) {
     <div class="text-center py-12">
-      <h3 class="text-lg font-medium text-smoke-100">Impossible de charger le club</h3>
-      <p class="text-sm text-smoke-400 mt-2">Une erreur est survenue</p>
+      <p class="text-red-400">Club introuvable</p>
     </div>
   }
 
-  <!-- Loaded State -->
+  <!-- Profile Content -->
   @if (club() && !loading()) {
-    <!-- Header: Signature + Actions -->
-    <div class="space-y-3">
-      <!-- Club Name + Actions Row -->
-      <div class="flex items-start justify-between gap-4">
-        <h1 class="font-display text-3xl md:text-4xl text-gold-500">{{ name() }}</h1>
-
-        <!-- Action Icons -->
-        <div class="flex items-center gap-2 flex-shrink-0">
-          <!-- View Public Profile -->
-          <div [uiTooltip]="'Voir le profil public'" tooltipPosition="bottom">
-            <a [routerLink]="['/club', slug()]">
-              <ui-button
-                size="icon"
-                variant="ghost"
-                icon="eye"
-                customClass="!rounded-lg"
-              >
-                <span class="sr-only">Voir le profil public</span>
-              </ui-button>
-            </a>
-          </div>
-
-          <!-- Share Profile -->
-          <div [uiTooltip]="'Partager le club'" tooltipPosition="bottom">
-            <ui-button
-              size="icon"
-              variant="ghost"
-              icon="book-copy"
-              customClass="!rounded-lg"
-              (clicked)="copyClubLink()"
-            >
-              <span class="sr-only">Partager le club</span>
-            </ui-button>
-          </div>
-
-          <!-- Settings (desktop only - mobile uses bottom tab, only for admins/owners) -->
-          @if (canAccessSettings()) {
-            <div [uiTooltip]="'Paramètres du club'" tooltipPosition="bottom" class="hidden md:block">
-              <a routerLink="/settings">
-                <ui-button
-                  size="icon"
-                  variant="ghost"
-                  icon="settings"
-                  customClass="!rounded-lg"
-                >
-                  <span class="sr-only">Paramètres du club</span>
-                </ui-button>
-              </a>
+    <!-- Section 1: Header -->
+    <!-- Layout A: Non-member (with avatar) - stacked layout -->
+    @if (!isMember()) {
+      <!-- Row 1: Avatar + Name + Slug -->
+      <div class="flex items-center gap-4">
+        <div class="flex-shrink-0 w-16 h-16 rounded-full overflow-hidden ring-2 ring-smoke-700">
+          @if (imageUrl()) {
+            <img
+              [src]="imageUrl()"
+              [alt]="name()"
+              class="w-full h-full object-cover"
+            />
+          } @else {
+            <div class="w-full h-full bg-gradient-to-br from-gold-600 to-gold-800 flex items-center justify-center">
+              <span class="text-xl font-bold text-smoke-900">{{ initial() }}</span>
             </div>
           }
         </div>
+        <div class="min-w-0 flex-1">
+          <h1 class="font-display text-2xl md:text-3xl text-gold-500 break-words">
+            {{ name() }}
+          </h1>
+          <p class="text-smoke-400 text-sm">#{{ slug() }}</p>
+        </div>
       </div>
 
-      <!-- Slug -->
-      @if (slug()) {
-        <a
-          [routerLink]="['/club', slug()]"
-          class="caption text-smoke-400 hover:text-gold-500 transition-colors"
-        >
-          #{{ slug() }}
-        </a>
-      }
+      <!-- Row 2: Stats -->
+      <div class="mt-4 flex items-center gap-6">
+        <div class="text-left">
+          <p class="text-sm md:text-lg font-bold text-gold-500">{{ tastingCount() }}</p>
+          <p class="text-[10px] text-smoke-400 uppercase tracking-wide">Dégustations</p>
+        </div>
+        <div class="text-left">
+          <p class="text-sm md:text-lg font-bold text-gold-500">{{ memberCount() }}</p>
+          <p class="text-[10px] text-smoke-400 uppercase tracking-wide">Membres</p>
+        </div>
+        <div class="text-left">
+          <p class="text-sm md:text-lg font-bold text-gold-500">{{ brandCount() }}</p>
+          <p class="text-[10px] text-smoke-400 uppercase tracking-wide">Marques</p>
+        </div>
+      </div>
 
-      <!-- Description (sans label) -->
+      <!-- Row 3: Bio + Favorite Cigars -->
       @if (description()) {
-        <p class="body-sm text-smoke-200 mt-3 italic">{{ description() }}</p>
+        <p class="text-smoke-200 text-sm mt-4">{{ description() }}</p>
       }
-    </div>
-
-    <!-- Parcours Section -->
-    <app-parcours-section
-      context="club"
-      [loading]="profileStatsLoading()"
-      [stat1Value]="tastingCount()"
-      [stat2Value]="memberCount()"
-      [stat3Value]="eventCount()"
-    />
-
-    <!-- Aroma Signature Section -->
-    <app-aroma-signature-section
-      context="club"
-      [loading]="profileStatsLoading()"
-      [isPremium]="true"
-      [hasChronicData]="hasChronicData()"
-      [aromas]="aromaSignature()"
-      [chronicTastingCount]="chronicTastingCount()"
-    />
-
-    <!-- Terroirs Section (only visible if has chronic data) -->
-    <app-terroirs-section
-      context="club"
-      [loading]="profileStatsLoading()"
-      [isPremium]="true"
-      [hasChronicData]="hasChronicData()"
-      [terroirs]="terroirs()"
-    />
-
-    <!-- Journal Section -->
-    <app-journal-section
-      context="club"
-      [loading]="profileStatsLoading()"
-      [tastings]="journal()"
-    />
-
-    <!-- Quick Actions -->
-    <div class="pt-4">
-      <h3 class="text-lg font-semibold text-smoke-100 mb-4">Actions rapides</h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-        <!-- View Members -->
-        <a
-          routerLink="/membres"
-          class="flex items-center gap-3 p-4 rounded-lg bg-smoke-800 border border-smoke-700 hover:border-smoke-600 transition-colors"
-        >
-          <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-smoke-700">
-            <i name="users" class="w-5 h-5 text-gold-500"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <h3 class="text-sm font-medium text-smoke-100 mb-0.5">Voir les membres</h3>
-            <p class="text-xs text-smoke-400">Consulter la liste des membres</p>
-          </div>
-        </a>
-
-        <!-- Create Tasting for Club -->
-        <a
-          routerLink="/tasting/new"
-          class="flex items-center gap-3 p-4 rounded-lg bg-smoke-800 border border-smoke-700 hover:border-smoke-600 transition-colors"
-        >
-          <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-smoke-700">
-            <i name="flame" class="w-5 h-5 text-gold-500"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <h3 class="text-sm font-medium text-smoke-100 mb-0.5">Nouvelle dégustation</h3>
-            <p class="text-xs text-smoke-400">Partager avec le club</p>
-          </div>
-        </a>
-
-        <!-- Settings (Admins/Owners only) -->
-        @if (canAccessSettings()) {
-          <a
-            routerLink="/settings"
-            class="flex items-center gap-3 p-4 rounded-lg bg-smoke-800 border border-smoke-700 hover:border-smoke-600 transition-colors"
-          >
-            <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-smoke-700">
-              <i name="settings" class="w-5 h-5 text-gold-500"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <h3 class="text-sm font-medium text-smoke-100 mb-0.5">Parametres du club</h3>
-              <p class="text-xs text-smoke-400">Gerer le club</p>
-            </div>
-          </a>
+      <div class="mt-3 text-sm">
+        <span class="text-smoke-400">Cigares les plus appréciés : </span>
+        @if (hasTastings()) {
+          <span class="text-smoke-200">{{ topCigars() }}</span>
+        } @else {
+          <span class="text-smoke-500 italic">Aucune dégustation pour le moment</span>
         }
       </div>
-    </div>
+    }
+
+    <!-- Layout B: Member (no avatar) - original compact layout -->
+    @if (isMember()) {
+      <div class="flex items-start gap-4">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0 flex-1">
+              <h1 class="font-display text-2xl md:text-3xl text-gold-500 break-words">
+                {{ name() }}
+              </h1>
+              <p class="text-smoke-400 text-sm">#{{ slug() }}</p>
+            </div>
+
+            <!-- Stats -->
+            <div class="flex items-start gap-4 flex-shrink-0">
+              <div class="flex flex-col gap-2">
+                <div class="text-left">
+                  <p class="text-sm md:text-lg font-bold text-gold-500">{{ tastingCount() }}</p>
+                  <p class="text-[10px] text-smoke-400 uppercase tracking-wide">Dégustations</p>
+                </div>
+                <div class="text-left">
+                  <p class="text-sm md:text-lg font-bold text-gold-500">{{ memberCount() }}</p>
+                  <p class="text-[10px] text-smoke-400 uppercase tracking-wide">Membres</p>
+                </div>
+              </div>
+              <div class="text-left">
+                <p class="text-sm md:text-lg font-bold text-gold-500">{{ brandCount() }}</p>
+                <p class="text-[10px] text-smoke-400 uppercase tracking-wide">Marques</p>
+              </div>
+
+              <!-- Share Button (desktop only) -->
+              @if (isDesktop()) {
+                <div [uiTooltip]="'Copier le lien'" tooltipPosition="bottom">
+                  <ui-button
+                    size="icon"
+                    variant="ghost"
+                    icon="book-copy"
+                    customClass="!rounded-lg"
+                    (clicked)="copyClubLink()"
+                  >
+                    <span class="sr-only">Copier le lien du club</span>
+                  </ui-button>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Description -->
+          @if (description()) {
+            <p class="text-smoke-200 text-sm mt-3">{{ description() }}</p>
+          }
+
+          <!-- Favorite Cigars -->
+          <div class="mt-3 text-sm">
+            <span class="text-smoke-400">Cigares les plus appréciés : </span>
+            @if (hasTastings()) {
+              <span class="text-smoke-200">{{ topCigars() }}</span>
+            } @else {
+              <span class="text-smoke-500 italic">Aucune dégustation pour le moment</span>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Members Action (member only) -->
+    @if (isMember()) {
+      <div class="mt-4">
+        <ui-button
+          variant="outline"
+          size="sm"
+          icon="users"
+          routerLink="/membres"
+        >
+          voir les membres
+        </ui-button>
+      </div>
+    }
+
+    <!-- Join Actions (non-member only) -->
+    @if (!isMember()) {
+      <div class="mt-4 flex items-center gap-3">
+        <ui-button
+          [variant]="joinButtonVariant()"
+          size="sm"
+          icon="plus"
+          [disabled]="!shouldShowJoinButton() || joiningClub()"
+          (clicked)="onJoinClub()"
+        >
+          {{ joinStatusLabel() }}
+        </ui-button>
+        @if (shouldShowJoinButton()) {
+          <ui-button
+            variant="outline-gold"
+            size="sm"
+            icon="info"
+            [disabled]="joiningByCode()"
+            (clicked)="openInviteCodeModal()"
+          >
+            J'ai un code
+          </ui-button>
+        }
+      </div>
+    }
+
+    <!-- Section 3: Tastings Grid (members only) -->
+    @if (isMember()) {
+      <!-- Divider -->
+      <div class="mt-6 h-px bg-smoke-600"></div>
+
+      <ui-tastings-grid
+        [tastings]="tastings()"
+        [loading]="tastingsLoading()"
+        [hasMore]="false"
+        [showUsername]="true"
+        emptyMessage="Aucune dégustation pour le moment"
+        emptySubMessage="Les dégustations des membres du club apparaîtront ici"
+        [showAddButton]="true"
+        addButtonLabel="Ajouter une dégustation"
+        (cardClick)="onTastingClick($event)"
+        (addClick)="navigateToCreateTasting()"
+      />
+    }
   }
+
+  <!-- Invite Code Modal -->
+  <ui-modal
+    [isOpen]="showInviteCodeModal()"
+    (close)="closeInviteCodeModal()"
+    position="center"
+  >
+    <div class="p-6 space-y-6">
+      <div>
+        <h2 class="text-2xl font-display font-bold text-white mb-2">
+          Code d'invitation
+        </h2>
+        <p class="text-sm text-smoke-400">
+          Entrez le code d'invitation pour rejoindre ce club
+        </p>
+      </div>
+
+      <div>
+        <label for="invite-code" class="block text-sm font-medium text-smoke-300 mb-2">
+          Code d'invitation
+        </label>
+        <input
+          id="invite-code"
+          type="text"
+          [(ngModel)]="inviteCode"
+          placeholder="XXXX-XXXX-XXXX"
+          class="w-full px-4 py-3 bg-smoke-800 border border-smoke-700 rounded-lg text-white placeholder-smoke-500 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent"
+        />
+      </div>
+
+      <div class="flex gap-3 justify-end">
+        <ui-button
+          (clicked)="closeInviteCodeModal()"
+          variant="secondary"
+          [disabled]="joiningByCode()"
+        >
+          Annuler
+        </ui-button>
+        <ui-button
+          (clicked)="onJoinByCode()"
+          variant="primary"
+          [disabled]="!inviteCode().trim() || joiningByCode()"
+        >
+          {{ joiningByCode() ? 'Rejoindre...' : 'Rejoindre le club' }}
+        </ui-button>
+      </div>
+    </div>
+  </ui-modal>
 </div>

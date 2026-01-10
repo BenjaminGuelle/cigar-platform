@@ -1,13 +1,4 @@
-import {
-  Component,
-  computed,
-  inject,
-  ChangeDetectionStrategy,
-  ElementRef,
-  viewChild,
-  OnDestroy,
-  effect,
-} from '@angular/core';
+import { Component, computed, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -20,7 +11,7 @@ import {
   ButtonComponent,
   TooltipDirective,
   SkeletonProfilePageComponent,
-  TastingCardComponent,
+  TastingsGridComponent,
 } from '@cigar-platform/shared/ui';
 
 /**
@@ -45,47 +36,18 @@ import {
     ButtonComponent,
     TooltipDirective,
     SkeletonProfilePageComponent,
-    TastingCardComponent,
+    TastingsGridComponent,
   ],
   templateUrl: './user-profile.page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class UserProfilePage implements OnDestroy {
+export class UserProfilePage {
   readonly #route = inject(ActivatedRoute);
   readonly #router = inject(Router);
   readonly #userStore = injectUserStore();
   readonly #tastingStore = injectTastingStore();
   readonly #toastService = inject(ToastService);
   readonly #layout = inject(LayoutService);
-
-  // Infinite scroll observer
-  #intersectionObserver: IntersectionObserver | null = null;
-  readonly scrollSentinel = viewChild<ElementRef<HTMLDivElement>>('scrollSentinel');
-
-  constructor() {
-    // Effect to setup/cleanup IntersectionObserver when sentinel appears/disappears
-    effect(() => {
-      const sentinel = this.scrollSentinel();
-
-      // Cleanup previous observer
-      this.#intersectionObserver?.disconnect();
-      this.#intersectionObserver = null;
-
-      // Setup new observer if sentinel exists
-      if (sentinel) {
-        this.#intersectionObserver = new IntersectionObserver(
-          (entries) => {
-            const entry = entries[0];
-            if (entry.isIntersecting && this.hasMoreTastings() && !this.loadingMore()) {
-              void this.userTastingsQuery.loadMore();
-            }
-          },
-          { threshold: 0.1 }
-        );
-        this.#intersectionObserver.observe(sentinel.nativeElement);
-      }
-    });
-  }
 
   // Layout signals
   readonly isDesktop = this.#layout.isDesktop;
@@ -181,10 +143,6 @@ export class UserProfilePage implements OnDestroy {
   // Infinite scroll (works for both owner and non-owner)
   readonly hasMoreTastings = computed(() => this.userTastingsQuery.hasMore());
   readonly loadingMore = computed(() => this.userTastingsQuery.loadingMore());
-
-  ngOnDestroy(): void {
-    this.#intersectionObserver?.disconnect();
-  }
 
   /**
    * Copy profile link to clipboard

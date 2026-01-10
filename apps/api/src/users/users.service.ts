@@ -333,6 +333,7 @@ export class UsersService {
       createdAt: membership.club.createdAt,
       updatedAt: membership.club.updatedAt,
       memberCount: membership.club._count.members,
+      stats: { tastingCount: 0, brandCount: 0, topCigars: null },
     }));
   }
 
