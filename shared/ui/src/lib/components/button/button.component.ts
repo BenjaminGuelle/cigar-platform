@@ -16,6 +16,7 @@ export type ButtonVariant =
   | 'primary'
   | 'secondary'
   | 'outline'
+  | 'outline-gold'
   | 'ghost'
   | 'link'
   | 'destructive'
@@ -30,16 +31,20 @@ const CLASSES = {
   base: 'inline-flex items-center justify-center gap-2 font-semibold cursor-pointer transition-all duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 focus-visible:ring-offset-2 focus-visible:ring-offset-smoke-900 disabled:cursor-not-allowed disabled:opacity-60 active:scale-95',
   variant: {
     primary:
-      'bg-gold-500 text-smoke-950 hover:bg-gold-600 hover:shadow-lg hover:shadow-gold-500/20 hover:-translate-y-0.5 shadow-md shadow-gold-500/10 transition-all duration-200',
-    secondary: 'bg-smoke-700 text-smoke-50 hover:bg-smoke-600 hover:shadow-md hover:shadow-smoke-950/50 hover:-translate-y-0.5 shadow-sm transition-all duration-200',
+      'border border-transparent bg-gold-600 text-smoke-950 hover:bg-gold-700 hover:shadow-lg hover:shadow-gold-500/20 hover:-translate-y-0.5 shadow-md shadow-gold-500/10 transition-all duration-200',
+    secondary:
+      'border border-transparent bg-smoke-700 text-smoke-50 hover:bg-smoke-600 hover:shadow-md hover:shadow-smoke-950/50 hover:-translate-y-0.5 shadow-sm transition-all duration-200',
     outline:
       'border border-smoke-600 bg-transparent text-smoke-200 hover:border-smoke-400 hover:text-smoke-50 hover:shadow-sm transition-all duration-200',
-    ghost: 'text-smoke-200 hover:bg-smoke-800 hover:text-smoke-50 hover:shadow-sm transition-all duration-200',
-    link: 'text-gold-500 underline-offset-4 hover:underline hover:text-gold-400 transition-colors duration-200',
+    'outline-gold':
+      'border border-gold-600 bg-transparent text-gold-500 hover:border-gold-500 hover:text-gold-400 hover:shadow-sm transition-all duration-200',
+    ghost:
+      'border border-transparent text-smoke-200 hover:bg-smoke-800 hover:text-smoke-50 hover:shadow-sm transition-all duration-200',
+    link: 'border border-transparent text-gold-500 underline-offset-4 hover:underline hover:text-gold-400 transition-colors duration-200',
     destructive:
-      'bg-error-600 text-white hover:bg-error-700 hover:shadow-lg hover:shadow-error-500/20 hover:-translate-y-0.5 shadow-md shadow-error-500/10 transition-all duration-200',
+      'border border-transparent bg-error-600 text-white hover:bg-error-700 hover:shadow-lg hover:shadow-error-500/20 hover:-translate-y-0.5 shadow-md shadow-error-500/10 transition-all duration-200',
     success:
-      'text-green-500 hover:text-green-400 hover:bg-green-500/10 transition-all duration-200',
+      'border border-transparent text-green-500 hover:text-green-400 hover:bg-green-500/10 transition-all duration-200',
   },
   size: {
     sm: 'h-9 px-3 py-1.5 text-sm rounded-md',

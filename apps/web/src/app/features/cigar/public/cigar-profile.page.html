@@ -5,149 +5,170 @@
       <!-- Header Skeleton -->
       <div class="space-y-3">
         <ui-skeleton size="heading-lg" />
-        <ui-skeleton size="text-sm" />
         <div class="flex items-center gap-4">
-          <ui-skeleton size="text-md" />
-          <ui-skeleton size="text-md" />
+          <ui-skeleton size="text-sm" />
+          <ui-skeleton size="text-sm" />
         </div>
       </div>
 
-      <!-- Image Skeleton -->
-      <ui-skeleton size="image-lg" class="max-w-md mx-auto" />
-
       <!-- Specs Skeleton -->
-      <ui-page-section title="Spécifications">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          @for (i of [1, 2, 3, 4]; track i) {
-            <div class="flex flex-col items-center p-4 rounded-lg bg-smoke-800 border border-smoke-700 space-y-2">
-              <ui-skeleton size="avatar-sm" />
-              <ui-skeleton size="text-sm" />
-              <ui-skeleton size="text-xs" />
-            </div>
+      <div class="flex flex-wrap gap-x-6 gap-y-2">
+        @for (i of [1, 2, 3, 4]; track i) {
+          <ui-skeleton size="text-md" />
+        }
+      </div>
+
+      <!-- Rating Skeleton -->
+      <div class="flex flex-col items-center gap-4 py-6">
+        <div class="flex gap-3">
+          @for (i of [1, 2, 3, 4, 5]; track i) {
+            <ui-skeleton size="avatar-sm" />
           }
         </div>
-      </ui-page-section>
+        <ui-skeleton size="text-sm" />
+      </div>
     </div>
   }
 
   <!-- Error State -->
   @if (error() && !loading()) {
     <div class="text-center py-12">
-      <h3 class="text-lg font-medium text-smoke-100">Impossible de charger le cigare</h3>
-      <p class="text-sm text-smoke-400 mt-2">Une erreur est survenue</p>
+      <h3 class="text-lg font-medium text-smoke-100">Cigare introuvable</h3>
+      <p class="text-sm text-smoke-400 mt-2">Ce cigare n'existe pas ou a été supprimé</p>
     </div>
   }
 
   <!-- Loaded State -->
   @if (cigar() && !loading()) {
-    <!-- Header: Signature + Image -->
-    <div class="space-y-6">
-      <!-- Cigar Name -->
-      <div class="space-y-3">
-        <div class="flex items-start justify-between gap-4">
-          <h1 class="font-display text-3xl md:text-4xl text-gold-500">{{ name() }}</h1>
-
-          <!-- Action Icons -->
-          <div class="flex items-center gap-2 flex-shrink-0">
-            <!-- Create Tasting -->
-            <div [uiTooltip]="'Créer une dégustation'" tooltipPosition="bottom">
-              <ui-button
-                size="icon"
-                variant="ghost"
-                icon="flame"
-                customClass="!rounded-lg"
-                (click)="startTasting()"
-              >
-                <span class="sr-only">Créer une dégustation</span>
-              </ui-button>
-            </div>
-          </div>
-        </div>
-
-        @if (slug()) {
-          <p class="caption text-smoke-400">/cigar/{{ slug() }}</p>
-        }
+    <!-- Section 1: Header -->
+    <div class="flex items-start justify-between gap-4">
+      <div class="min-w-0 flex-1">
+        <!-- Cigar Name -->
+        <h1 class="font-display text-2xl md:text-3xl text-gold-500 break-words">
+          {{ name() }}
+        </h1>
 
         <!-- Brand & Origin -->
-        <div class="flex items-center gap-4 text-sm text-smoke-300">
+        <div class="flex items-center gap-4 mt-1 text-sm text-smoke-400">
           @if (brandName()) {
-            <div class="flex items-center gap-2">
-              <i name="star" class="w-4 h-4 text-gold-500"></i>
-              <span>{{ brandName() }}</span>
-            </div>
+            <a [routerLink]="['/brand', brandSlug()]" class="hover:text-gold-500 transition-colors">
+              {{ brandName() }}
+            </a>
           }
-          @if (country()) {
-            <div class="flex items-center gap-2">
-              <i name="globe" class="w-4 h-4 text-gold-500"></i>
-              <span>{{ country() }}</span>
-            </div>
+          @if (brandCountry()) {
+            <span class="flex items-center gap-1">
+              <i icon name="globe" class="w-3.5 h-3.5"></i>
+              {{ brandCountry() }}
+            </span>
           }
         </div>
       </div>
 
-      <!-- Cigar Image (if available) -->
-      @if (imageUrl()) {
-        <div class="w-full max-w-md mx-auto rounded-lg overflow-hidden border-2 border-smoke-700">
-          <img [src]="imageUrl()" [alt]="name()" class="w-full h-auto" />
-        </div>
+      <!-- Action: Start Tasting -->
+      <div [uiTooltip]="'Déguster ce cigare'" tooltipPosition="bottom">
+        <ui-button
+          size="icon"
+          variant="ghost"
+          icon="flame"
+          customClass="!rounded-lg"
+          (click)="startTasting()"
+        >
+          <span class="sr-only">Déguster ce cigare</span>
+        </ui-button>
+      </div>
+    </div>
+
+    <!-- Section 2: Specifications (inline text) -->
+    <div class="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-smoke-300">
+      @if (vitola()) {
+        <span class="flex items-center gap-1.5">
+          <i icon name="box" class="w-4 h-4 text-gold-500"></i>
+          {{ vitola() }}
+        </span>
       }
 
-      <!-- Description -->
-      @if (description()) {
-        <p class="body-sm text-smoke-200 italic">{{ description() }}</p>
+      @if (dimensions()) {
+        <span class="flex items-center gap-1.5">
+          <i icon name="minus" class="w-4 h-4 text-gold-500"></i>
+          {{ dimensions() }}
+        </span>
+      }
+
+      @if (strength()) {
+        <span class="flex items-center gap-1.5">
+          <i icon name="flame" class="w-4 h-4 text-gold-500"></i>
+          Force {{ strength() }}/5
+        </span>
+      }
+
+      @if (wrapper()) {
+        <span class="flex items-center gap-1.5">
+          <i icon name="sparkles" class="w-4 h-4 text-gold-500"></i>
+          {{ wrapper() }}
+        </span>
+      }
+
+      @if (origin()) {
+        <span class="flex items-center gap-1.5">
+          <i icon name="globe" class="w-4 h-4 text-gold-500"></i>
+          {{ origin() }}
+        </span>
+      }
+
+      @if (isVerified()) {
+        <span class="flex items-center gap-1.5 text-green-500">
+          <i icon name="check-circle" class="w-4 h-4"></i>
+          Vérifié
+        </span>
       }
     </div>
 
-    <!-- Specifications -->
-    <ui-page-section title="Spécifications">
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <!-- Format -->
-        @if (format()) {
-          <div class="flex flex-col items-center p-4 rounded-lg bg-smoke-800 border border-smoke-700">
-            <i name="book-copy" class="w-5 h-5 md:w-6 md:h-6 text-gold-500 mb-2"></i>
-            <span class="text-sm font-semibold text-smoke-50">{{ format() }}</span>
-            <span class="text-xs text-smoke-400 text-center">Format</span>
-          </div>
-        }
+    <!-- Section 3: Description -->
+    @if (description()) {
+      <p class="mt-4 text-smoke-200 text-sm leading-relaxed">
+        {{ description() }}
+      </p>
+    }
 
-        <!-- Dimensions -->
-        @if (dimensions()) {
-          <div class="flex flex-col items-center p-4 rounded-lg bg-smoke-800 border border-smoke-700">
-            <i name="minus" class="w-5 h-5 md:w-6 md:h-6 text-gold-500 mb-2"></i>
-            <span class="text-sm font-semibold text-smoke-50">{{ dimensions() }}</span>
-            <span class="text-xs text-smoke-400 text-center">Dimensions</span>
-          </div>
-        }
-
-        <!-- Strength -->
-        @if (strength()) {
-          <div class="flex flex-col items-center p-4 rounded-lg bg-smoke-800 border border-smoke-700">
-            <i name="flame" class="w-5 h-5 md:w-6 md:h-6 text-gold-500 mb-2"></i>
-            <span class="text-sm font-semibold text-smoke-50">{{ strength() }}</span>
-            <span class="text-xs text-smoke-400 text-center">Puissance</span>
-          </div>
-        }
-
-        <!-- Rating -->
-        @if (averageRating()) {
-          <div class="flex flex-col items-center p-4 rounded-lg bg-smoke-800 border border-smoke-700">
-            <i name="star" class="w-5 h-5 md:w-6 md:h-6 text-gold-500 mb-2"></i>
-            <span class="text-sm font-semibold text-smoke-50">{{ averageRating() }}/5</span>
-            <span class="text-xs text-smoke-400 text-center">{{ reviewCount() }} avis</span>
-          </div>
-        }
+    <!-- Section 4: Community Rating -->
+    @if (tastingCount() > 0) {
+      <div class="mt-6 flex flex-col items-center gap-3 py-4">
+        <ui-rating-bands
+          [value]="averageRating()"
+          [readonly]="true"
+          [compact]="true"
+          [hideValue]="true"
+        />
+        <p class="text-sm text-smoke-400">
+          <span class="text-gold-500 font-semibold">{{ averageRating() }}/5</span>
+          <span class="mx-1">·</span>
+          Note communautaire basée sur {{ tastingCount() }} {{ tastingCount() === 1 ? 'dégustation' : 'dégustations' }}
+        </p>
       </div>
-    </ui-page-section>
-
-    <!-- Reviews Section (Coming Soon) -->
-    <ui-page-section title="Évaluations" [bordered]="false">
-      <div class="flex items-center justify-center p-8 rounded-lg bg-smoke-800 border border-smoke-700">
-        <div class="text-center">
-          <i name="star" class="w-8 h-8 text-smoke-500 mx-auto mb-3"></i>
-          <p class="text-sm font-medium text-smoke-400">Les évaluations arrivent bientôt</p>
-          <p class="text-xs text-smoke-500 mt-1">Partagez votre expérience avec ce cigare</p>
-        </div>
+    } @else {
+      <div class="mt-6 flex flex-col items-center gap-2 py-4">
+        <p class="text-sm text-smoke-500 italic">
+          Aucune dégustation pour le moment
+        </p>
+        <p class="text-xs text-smoke-600">
+          Soyez le premier à noter ce cigare
+        </p>
       </div>
-    </ui-page-section>
+    }
+
+    <!-- Divider -->
+    <div class="mt-4 h-px bg-smoke-600"></div>
+
+    <!-- Section 5: Tastings Grid -->
+    <ui-tastings-grid
+      [tastings]="tastings()"
+      [loading]="tastingsLoading()"
+      [showUsername]="true"
+      emptyMessage="Aucune dégustation publique"
+      emptySubMessage="Les dégustations de ce cigare apparaîtront ici"
+      [showAddButton]="true"
+      addButtonLabel="Déguster ce cigare"
+      (addClick)="startTasting()"
+    />
   }
 </div>

@@ -7,6 +7,7 @@ import {
   CreateClubDto,
   UpdateClubDto,
   ClubResponseDto,
+  ClubStatsDto,
   ClubUserStatus,
   FilterClubDto,
   PaginatedClubResponseDto,
@@ -316,7 +317,10 @@ export class ClubService {
       }
     }
 
-    return this.mapToResponse(club, club._count.members, currentUserStatus, currentUserRole);
+    // Calculate club stats
+    const stats = await this.getClubStats(club.id);
+
+    return this.mapToResponse(club, club._count.members, stats, currentUserStatus, currentUserRole);
   }
 
   async update(
@@ -705,9 +709,115 @@ export class ClubService {
     };
   }
 
+  /**
+   * Calculate club stats (tastingCount, brandCount, topCigars)
+   * Used for club profile display
+   *
+   * @param clubId - ID of the club
+   * @returns ClubStatsDto with computed stats
+   */
+  private async getClubStats(clubId: string): Promise<ClubStatsDto> {
+    // Get all completed tastings shared with the club (from both TastingOnClub and events)
+    const [tastingsOnClub, tastingsViaEvents] = await Promise.all([
+      // Get tastings shared via TastingOnClub
+      this.prisma.tasting.findMany({
+        where: {
+          status: TastingStatus.COMPLETED,
+          sharedClubs: {
+            some: { clubId },
+          },
+        },
+        select: {
+          id: true,
+          rating: true,
+          cigar: {
+            select: {
+              name: true,
+              brand: { select: { id: true } },
+            },
+          },
+        },
+      }),
+      // Get tastings via club events
+      this.prisma.tasting.findMany({
+        where: {
+          event: { clubId },
+          status: TastingStatus.COMPLETED,
+        },
+        select: {
+          id: true,
+          rating: true,
+          cigar: {
+            select: {
+              name: true,
+              brand: { select: { id: true } },
+            },
+          },
+        },
+      }),
+    ]);
+
+    // Deduplicate tastings (could be in both sources)
+    const tastingMap = new Map<string, { rating: number | null; cigarName: string; brandId: string }>();
+
+    for (const tasting of tastingsOnClub) {
+      tastingMap.set(tasting.id, {
+        rating: tasting.rating,
+        cigarName: tasting.cigar.name,
+        brandId: tasting.cigar.brand.id,
+      });
+    }
+
+    for (const tasting of tastingsViaEvents) {
+      if (!tastingMap.has(tasting.id)) {
+        tastingMap.set(tasting.id, {
+          rating: tasting.rating,
+          cigarName: tasting.cigar.name,
+          brandId: tasting.cigar.brand.id,
+        });
+      }
+    }
+
+    const allTastings = Array.from(tastingMap.values());
+    const tastingCount = allTastings.length;
+
+    // Count distinct brands
+    const uniqueBrands = new Set(allTastings.map((t) => t.brandId));
+    const brandCount = uniqueBrands.size;
+
+    // Get top 2 cigars from best rated tastings
+    let topCigars: string[] | null = null;
+    const ratedTastings = allTastings
+      .filter((t) => t.rating !== null)
+      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+
+    if (ratedTastings.length > 0) {
+      // Get unique cigar names from top rated tastings
+      const seen = new Set<string>();
+      topCigars = [];
+      for (const tasting of ratedTastings) {
+        if (!seen.has(tasting.cigarName)) {
+          seen.add(tasting.cigarName);
+          topCigars.push(tasting.cigarName);
+          if (topCigars.length >= 2) break;
+        }
+      }
+    }
+
+    return {
+      tastingCount,
+      brandCount,
+      topCigars,
+    };
+  }
+
+  /**
+   * Map club entity to response DTO
+   */
   private mapToResponse(
     club: Club,
     memberCount: number = 0,
+    stats: ClubStatsDto = { tastingCount: 0, brandCount: 0, topCigars: null },
     currentUserStatus?: ClubUserStatus,
     currentUserRole?: ClubRole,
   ): ClubResponseDto {
@@ -729,6 +839,7 @@ export class ClubService {
       createdAt: club.createdAt,
       updatedAt: club.updatedAt,
       memberCount,
+      stats,
       currentUserStatus,
       currentUserRole,
     };

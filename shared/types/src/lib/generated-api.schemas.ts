@@ -225,6 +225,15 @@ export interface CreateClubDto {
   isPublicDirectory?: boolean;
 }
 
+export interface ClubStatsDto {
+  /** Total number of tastings shared in the club */
+  tastingCount: number;
+  /** Total number of distinct brands tasted in the club */
+  brandCount: number;
+  /** Top 2 cigars from the best rated club tastings */
+  topCigars?: string[];
+}
+
 export type ClubResponseDtoVisibility = typeof ClubResponseDtoVisibility[keyof typeof ClubResponseDtoVisibility];
 
 
@@ -281,6 +290,8 @@ export interface ClubResponseDto {
   updatedAt: string;
   /** Total number of members in the club */
   memberCount: number;
+  /** Club tasting statistics */
+  stats: ClubStatsDto;
   /** Current user's status in relation to this club (member, pending, banned, or null if no relationship) */
   currentUserStatus?: ClubResponseDtoCurrentUserStatus;
   /** Current user's role in this club (only present if currentUserStatus is MEMBER) */
@@ -737,16 +748,72 @@ export interface BrandResponseDto {
   createdAt: string;
 }
 
+export interface CigarStatsDto {
+  /** Note moyenne communautaire (0-5) */
+  averageRating: number;
+  /** Nombre de dégustations */
+  tastingCount: number;
+}
+
+/**
+ * Format du cigare
+ */
+export type CigarResponseDtoVitola = { [key: string]: unknown };
+
+/**
+ * Longueur en mm
+ */
+export type CigarResponseDtoLength = { [key: string]: unknown };
+
+/**
+ * Ring gauge (diamètre)
+ */
+export type CigarResponseDtoRingGauge = { [key: string]: unknown };
+
+/**
+ * Type de cape
+ */
+export type CigarResponseDtoWrapper = { [key: string]: unknown };
+
+/**
+ * Pays d'origine
+ */
+export type CigarResponseDtoOrigin = { [key: string]: unknown };
+
+/**
+ * Force (1-5)
+ */
+export type CigarResponseDtoStrength = { [key: string]: unknown };
+
+/**
+ * Description détaillée
+ */
+export type CigarResponseDtoDescription = { [key: string]: unknown };
+
 export interface CigarResponseDto {
   id: string;
   name: string;
   slug: string;
-  vitola: string;
-  strength: number;
   brand: BrandResponseDto;
+  /** Format du cigare */
+  vitola?: CigarResponseDtoVitola;
+  /** Longueur en mm */
+  length?: CigarResponseDtoLength;
+  /** Ring gauge (diamètre) */
+  ringGauge?: CigarResponseDtoRingGauge;
+  /** Type de cape */
+  wrapper?: CigarResponseDtoWrapper;
+  /** Pays d'origine */
+  origin?: CigarResponseDtoOrigin;
+  /** Force (1-5) */
+  strength?: CigarResponseDtoStrength;
+  /** Description détaillée */
+  description?: CigarResponseDtoDescription;
   isVerified: boolean;
   status: string;
   createdAt: string;
+  /** Statistiques communautaires */
+  stats: CigarStatsDto;
 }
 
 export interface CreateCigarDto {

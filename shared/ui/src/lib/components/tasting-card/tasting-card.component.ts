@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import type { TastingResponseDto } from '@cigar-platform/types';
 
@@ -13,6 +13,7 @@ import type { TastingResponseDto } from '@cigar-platform/types';
  * - Cover image with gradient overlay for text readability
  * - Default fallback image when no photo
  * - Hover scale effect
+ * - Smooth image loading transition
  *
  * @example
  * ```html
@@ -36,12 +37,15 @@ import type { TastingResponseDto } from '@cigar-platform/types';
       class="relative aspect-4/5 rounded-sm overflow-hidden border border-smoke-600 bg-smoke-800 group cursor-pointer hover:scale-105 transition-transform"
       (click)="onCardClick()"
     >
-      <!-- Photo (with fallback) -->
+      <!-- Photo with loading state -->
       <img
         [src]="imageUrl()"
         [alt]="altText()"
-        class="absolute inset-0 w-full h-full object-cover object-center"
-        [class.opacity-30]="!hasImage()"
+        class="absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-300"
+        [class.opacity-0]="!imageLoaded()"
+        [class.opacity-100]="imageLoaded() && hasImage()"
+        [class.opacity-30]="imageLoaded() && !hasImage()"
+        (load)="onImageLoad()"
       />
 
       <!-- Gradient overlay -->
@@ -72,6 +76,9 @@ export class TastingCardComponent {
 
   // Outputs
   readonly cardClick = output<string>();
+
+  // Internal state
+  readonly imageLoaded = signal(false);
 
   // Default image path
   private readonly defaultImageUrl = '/images/tasting-default.png';
@@ -132,6 +139,10 @@ export class TastingCardComponent {
   }
 
   // Event handlers
+  onImageLoad(): void {
+    this.imageLoaded.set(true);
+  }
+
   onCardClick(): void {
     const tasting = this.tasting();
     if (tasting?.id) {

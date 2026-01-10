@@ -26,6 +26,7 @@ export * from './lib/components/skeleton';
 export * from './lib/components/slider';
 export * from './lib/components/switch';
 export * from './lib/components/tasting-card';
+export * from './lib/components/tastings-grid';
 
 // Directives
 export * from './lib/directives/icon';

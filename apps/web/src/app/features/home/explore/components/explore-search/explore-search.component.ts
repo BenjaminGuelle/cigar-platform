@@ -104,15 +104,6 @@ export interface SearchResultClickEvent {
                 (clicked)="onResultClick({ id: cigar.id, type: 'cigar', name: cigar.name, subtitle: cigar.metadata ?? '', avatarUrl: cigar.imageUrl ?? undefined })"
               />
             }
-
-            @if (hasMoreCigars()) {
-              <div
-                class="px-4 py-2 text-xs text-gold-500 hover:text-gold-400 cursor-pointer font-medium border-t border-smoke-700/30 transition-colors"
-                (click)="seeAll.emit('cigar')"
-              >
-                → Voir tous les cigares ({{ results().cigars!.length }})
-              </div>
-            }
           }
 
           @if (results().searchType === 'global' && !hasExactCigarMatch()) {
@@ -122,30 +113,6 @@ export interface SearchResultClickEvent {
               [entityType]="'cigar'"
               (clicked)="createCigar.emit()"
             />
-          }
-        </ui-search-result-group>
-      }
-
-      <!-- Brands Group -->
-      @if (results().brands && results().brands!.length > 0) {
-        <ui-search-result-group title="MARQUES" icon="star">
-          @for (brand of limitedBrands(); track brand.id) {
-            <ui-search-result-item
-              [title]="brand.name"
-              [subtitle]="brand.metadata ?? brand.country"
-              [avatarUrl]="brand.imageUrl"
-              [entityType]="'brand'"
-              (clicked)="onResultClick({ id: brand.id, type: 'brand', name: brand.name, subtitle: brand.metadata ?? brand.country, avatarUrl: brand.imageUrl ?? undefined })"
-            />
-          }
-
-          @if (hasMoreBrands()) {
-            <div
-              class="px-4 py-2 text-xs text-gold-500 hover:text-gold-400 cursor-pointer font-medium border-t border-smoke-700/30 transition-colors"
-              (click)="seeAll.emit('brand')"
-            >
-              → Voir toutes les marques ({{ results().brands!.length }})
-            </div>
           }
         </ui-search-result-group>
       }
@@ -163,15 +130,6 @@ export interface SearchResultClickEvent {
               (clicked)="onResultClick({ id: club.id, type: 'club', name: club.name, subtitle: '#' + club.slug, avatarUrl: club.imageUrl ?? undefined, iconBadge: club.visibility === 'PUBLIC' ? 'public' : 'private' })"
             />
           }
-
-          @if (hasMoreClubs()) {
-            <div
-              class="px-4 py-2 text-xs text-gold-500 hover:text-gold-400 cursor-pointer font-medium border-t border-smoke-700/30 transition-colors"
-              (click)="seeAll.emit('club')"
-            >
-              → Voir tous les clubs ({{ results().clubs!.length }})
-            </div>
-          }
         </ui-search-result-group>
       }
 
@@ -186,15 +144,6 @@ export interface SearchResultClickEvent {
               [entityType]="'user'"
               (clicked)="onResultClick({ id: user.id, type: 'user', name: user.name, subtitle: '@' + user.username, avatarUrl: user.imageUrl ?? undefined })"
             />
-          }
-
-          @if (hasMoreUsers()) {
-            <div
-              class="px-4 py-2 text-xs text-gold-500 hover:text-gold-400 cursor-pointer font-medium border-t border-smoke-700/30 transition-colors"
-              (click)="seeAll.emit('user')"
-            >
-              → Voir tous les membres ({{ results().users!.length }})
-            </div>
           }
         </ui-search-result-group>
       }

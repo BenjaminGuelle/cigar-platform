@@ -1,135 +1,245 @@
-import { Component, inject, computed, signal, effect, Signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { map } from 'rxjs/operators';
 import { ContextStore } from '../../../../core/stores/context.store';
 import { injectClubStore } from '../../../../core/stores/club.store';
+import { injectTastingStore } from '../../../../core/stores/tasting.store';
+import { ToastService } from '../../../../core/services';
+import { LayoutService } from '../../../../core/layout';
 import {
-  IconDirective,
   ButtonComponent,
   TooltipDirective,
-  SkeletonProfileComponent,
+  SkeletonProfilePageComponent,
+  ModalComponent,
+  TastingsGridComponent,
 } from '@cigar-platform/shared/ui';
-import {
-  ParcoursSectionComponent,
-  AromaSignatureSectionComponent,
-  TerroirsSectionComponent,
-  JournalSectionComponent,
-} from '../components';
-import type { ClubResponseDto, ClubProfileStatsResponseDto } from '@cigar-platform/types';
 
 /**
- * Club Profile Page
+ * Club Profile Page (Unified)
  *
- * Route: /profile (when context = club)
- * Accessible: To all club members (member, admin, owner)
- * Context-driven: Uses ContextStore.clubId
+ * Handles BOTH modes:
+ * - Context-driven: /profile (when context = club)
+ * - URL-driven: /club/:slug (public profile)
  *
- * Features:
- * - Display club information (avatar, name, description)
- * - Show parcours stats (tastings, members, events)
- * - Show aroma signature (from Premium members' chronic data)
- * - Show terroirs explored (from Premium members' chronic data)
- * - Show journal (last 3 tastings shared with club)
- * - Quick action CTAs
- *
- * Architecture: ALL STARS
- * - Uses profile-stats API for data
- * - Section components for modularity
+ * Architecture:
+ * - Single component, unified data source
+ * - Uses isMember() to differentiate display (like isOwner for user)
+ * - Instagram-like tasting grid with infinite scroll
  */
 @Component({
   selector: 'app-club-profile',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     RouterLink,
-    IconDirective,
     ButtonComponent,
     TooltipDirective,
-    SkeletonProfileComponent,
-    ParcoursSectionComponent,
-    AromaSignatureSectionComponent,
-    TerroirsSectionComponent,
-    JournalSectionComponent,
+    SkeletonProfilePageComponent,
+    ModalComponent,
+    TastingsGridComponent,
   ],
   templateUrl: './club-profile.page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ClubProfilePage {
-  readonly contextStore = inject(ContextStore);
-  readonly clubStore = injectClubStore();
+  readonly #route = inject(ActivatedRoute);
+  readonly #router = inject(Router);
+  readonly #contextStore = inject(ContextStore);
+  readonly #clubStore = injectClubStore();
+  readonly #tastingStore = injectTastingStore();
+  readonly #toastService = inject(ToastService);
+  readonly #layout = inject(LayoutService);
 
-  // Context ID
-  readonly clubId = signal<string>('');
+  // Layout
+  readonly isDesktop = this.#layout.isDesktop;
 
-  // Reactive queries with getter pattern
-  readonly clubQuery = this.clubStore.getClubById(() => this.clubId());
-  readonly profileStatsQuery = this.clubStore.getClubProfileStats(() => this.clubId());
+  // URL param (null if context-driven mode)
+  readonly slugParam = toSignal(
+    this.#route.paramMap.pipe(map((p) => p.get('slug'))),
+    { initialValue: null }
+  );
 
-  // Computed states
-  readonly loading = computed(() => this.clubQuery.loading());
-  readonly profileStatsLoading = computed(() => this.profileStatsQuery.loading());
-  readonly error = this.clubQuery.error;
-  readonly club: Signal<ClubResponseDto | null> = this.clubQuery.data;
-  readonly profileStats: Signal<ClubProfileStatsResponseDto | null> = this.profileStatsQuery.data;
+  // Mode detection: context-driven vs URL-driven
+  readonly isUrlMode = computed(() => this.slugParam() !== null);
 
-  // Club basic info
-  readonly name = computed(() => this.club()?.name ?? 'Club');
-  readonly description = computed(() => this.club()?.description ?? null);
-  readonly slug = computed(() => this.club()?.slug ?? '');
-
-  // Profile Stats computed values
-  readonly hasChronicData = computed(() => this.profileStats()?.hasChronicData ?? false);
-  readonly chronicTastingCount = computed(() => this.profileStats()?.chronicTastingCount ?? 0);
-
-  // Parcours stats
-  readonly tastingCount = computed(() => this.profileStats()?.parcours?.tastingCount ?? 0);
-  readonly memberCount = computed(() => this.profileStats()?.parcours?.memberCount ?? 0);
-  readonly eventCount = computed(() => this.profileStats()?.parcours?.eventCount ?? 0);
-
-  // Aroma signature
-  readonly aromaSignature = computed(() => this.profileStats()?.aromaSignature ?? null);
-
-  // Terroirs
-  readonly terroirs = computed(() => this.profileStats()?.terroirs ?? null);
-
-  // Journal
-  readonly journal = computed(() => this.profileStats()?.journal ?? null);
-
-  // Profile URL for sharing
-  readonly profileUrl = computed(() => {
-    const club = this.club();
-    if (!club) return '';
-    return `${window.location.origin}/club/${club.slug}`;
+  // Target club identifier (from URL or context)
+  readonly targetClubId = computed(() => {
+    const urlSlug = this.slugParam();
+    if (urlSlug) {
+      return urlSlug.startsWith('#') ? urlSlug.slice(1) : urlSlug;
+    }
+    const context = this.#contextStore.context();
+    return context.type === 'club' ? context.clubId ?? '' : '';
   });
 
-  // Permissions
-  readonly canAccessSettings = computed(() => this.contextStore.canAccessSettings());
-  readonly canManageClub = computed(() => this.contextStore.canManageClub());
+  // Query for club data (backend accepts both ID and slug)
+  readonly clubQuery = this.#clubStore.getClubById(() => this.targetClubId());
 
-  constructor() {
-    // Update club ID from context
-    effect(() => {
-      const context = this.contextStore.context();
-      if (context.type === 'club' && context.clubId) {
-        this.clubId.set(context.clubId);
-      } else {
-        this.clubId.set('');
-      }
-    });
-  }
+  // Computed states from query
+  readonly loading = this.clubQuery.loading;
+  readonly error = this.clubQuery.error;
+  readonly club = this.clubQuery.data;
+
+  // isMember: true if current user is a member of this club
+  readonly isMember = computed(() => {
+    const clubData = this.club();
+    if (!clubData) return false;
+    return clubData.currentUserStatus === 'member';
+  });
+
+  // Club computed values
+  readonly name = computed(() => this.club()?.name ?? '');
+  readonly slug = computed(() => this.club()?.slug ?? '');
+  readonly description = computed(() => this.club()?.description ?? null);
+  readonly imageUrl = computed(() => this.club()?.imageUrl ?? null);
+  readonly initial = computed(() => this.name().charAt(0).toUpperCase() || 'C');
+
+  // Stats (from API)
+  readonly memberCount = computed(() => this.club()?.memberCount ?? 0);
+  readonly tastingCount = computed(() => this.club()?.stats?.tastingCount ?? 0);
+  readonly brandCount = computed(() => this.club()?.stats?.brandCount ?? 0);
+
+  // Favorite cigars (from club tastings)
+  readonly hasTastings = computed(() => this.tastingCount() > 0);
+  readonly topCigars = computed(() => {
+    const cigars = this.club()?.stats?.topCigars ?? [];
+    return cigars.length > 0 ? cigars.join(', ') : '';
+  });
+
+  // Join status (for non-members)
+  readonly isPending = computed(() => this.club()?.currentUserStatus === 'pending');
+  readonly isBanned = computed(() => this.club()?.currentUserStatus === 'banned');
+  readonly shouldShowJoinButton = computed(() => {
+    const status = this.club()?.currentUserStatus;
+    return !status || status === 'rejected';
+  });
+
+  // Join state (from store mutations)
+  readonly joiningClub = this.#clubStore.joinClub.loading;
+  readonly joiningByCode = this.#clubStore.joinByCode.loading;
+
+  // Join button label (based on club visibility)
+  readonly joinButtonLabel = computed(() => {
+    return this.club()?.visibility === 'PUBLIC' ? 'Rejoindre' : "Demander l'accès";
+  });
+
+  // Dynamic join status label (handles all states)
+  readonly joinStatusLabel = computed(() => {
+    if (this.joiningClub()) return 'En cours...';
+    if (this.isPending()) return 'Demande en attente';
+    if (this.isBanned()) return 'Accès restreint';
+    return this.joinButtonLabel();
+  });
+
+  // Dynamic join button variant (handles all states)
+  readonly joinButtonVariant = computed(() => {
+    if (this.isPending()) return 'outline' as const;
+    if (this.isBanned()) return 'destructive' as const;
+    return 'primary' as const;
+  });
+
+  // Invite code modal state
+  readonly showInviteCodeModal = signal(false);
+  readonly inviteCode = signal('');
+
+  // Club tastings query (uses club ID from loaded club data)
+  readonly clubTastingsQuery = this.#tastingStore.getTastingsByClub(() => this.club()?.id ?? '');
+  readonly tastings = computed(() => this.clubTastingsQuery.data() ?? []);
+  readonly tastingsLoading = computed(() => this.clubTastingsQuery.loading());
 
   /**
    * Copy club profile link to clipboard
    */
   async copyClubLink(): Promise<void> {
-    const url = this.profileUrl();
-    if (!url) return;
+    const clubSlug = this.club()?.slug ?? '';
+    if (!clubSlug) return;
+
+    const url = `${window.location.origin}/club/${clubSlug}`;
 
     try {
       await navigator.clipboard.writeText(url);
-      // TODO: Add toast notification
+      this.#toastService.success('Lien copié dans le presse-papier');
     } catch {
-      // TODO: Show error toast
+      this.#toastService.error('Impossible de copier le lien');
     }
+  }
+
+  /**
+   * Join club or request access
+   */
+  async onJoinClub(): Promise<void> {
+    const currentClub = this.club();
+    if (!currentClub) return;
+
+    await this.#clubStore.joinClub.mutate({
+      clubId: currentClub.id,
+      data: {},
+    });
+
+    if (this.#clubStore.joinClub.error()) {
+      this.#toastService.error("Échec de la demande d'adhésion");
+      return;
+    }
+
+    const isPublic = currentClub.visibility === 'PUBLIC';
+    const autoApprove = currentClub.autoApproveMembers ?? false;
+
+    if (isPublic && autoApprove) {
+      this.#toastService.success(`Vous avez rejoint ${currentClub.name}`);
+    } else {
+      this.#toastService.success('Demande envoyée avec succès');
+    }
+  }
+
+  /**
+   * Open invite code modal
+   */
+  openInviteCodeModal(): void {
+    this.showInviteCodeModal.set(true);
+    this.inviteCode.set('');
+  }
+
+  /**
+   * Close invite code modal
+   */
+  closeInviteCodeModal(): void {
+    this.showInviteCodeModal.set(false);
+    this.inviteCode.set('');
+  }
+
+  /**
+   * Join club by invite code
+   */
+  async onJoinByCode(): Promise<void> {
+    const code = this.inviteCode().trim();
+    if (!code) return;
+
+    await this.#clubStore.joinByCode.mutate({ code });
+
+    if (this.#clubStore.joinByCode.error()) {
+      this.#toastService.error("Code d'invitation invalide ou expiré");
+      return;
+    }
+
+    this.#toastService.success('Vous avez rejoint le club avec succès');
+    this.closeInviteCodeModal();
+  }
+
+  /**
+   * Navigate to tasting detail page
+   */
+  onTastingClick(tastingId: string): void {
+    void this.#router.navigate(['/tastings', tastingId]);
+  }
+
+  /**
+   * Navigate to create new tasting
+   */
+  navigateToCreateTasting(): void {
+    void this.#router.navigate(['/tasting/new']);
   }
 }

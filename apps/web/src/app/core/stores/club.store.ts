@@ -270,6 +270,9 @@ export function injectClubStore(): ClubStore {
 
       // Invalidate my-clubs to refresh user's club list in ContextStore
       queryCache.invalidateQueriesMatching(['clubs', 'my-clubs']);
+
+      // Invalidate user clubs queries (used by user profile page)
+      queryCache.invalidateQueriesMatching(['users', 'clubs']);
     },
 
     onError: (error: Error) => {
@@ -427,6 +430,9 @@ export function injectClubStore(): ClubStore {
 
       // Invalidate my-clubs to refresh user's club list in ContextStore
       queryCache.invalidateQueriesMatching(['clubs', 'my-clubs']);
+
+      // Invalidate user clubs queries (used by user profile page)
+      queryCache.invalidateQueriesMatching(['users', 'clubs']);
     },
 
     onError: (error: Error) => {

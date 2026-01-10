@@ -1,4 +1,4 @@
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ClubVisibility, ClubRole } from '@cigar-platform/prisma-client';
 
@@ -15,6 +15,28 @@ export enum ClubUserStatus {
   REJECTED = 'rejected',
   /** User is banned from the club */
   BANNED = 'banned',
+}
+
+/**
+ * Club Stats DTO
+ * Aggregated statistics for a club's tasting activity
+ */
+export class ClubStatsDto {
+  @Expose()
+  @ApiProperty({ example: 42, description: 'Total number of tastings shared in the club' })
+  tastingCount: number;
+
+  @Expose()
+  @ApiProperty({ example: 8, description: 'Total number of distinct brands tasted in the club' })
+  brandCount: number;
+
+  @Expose()
+  @ApiPropertyOptional({
+    type: [String],
+    example: ['Cohiba Behike', 'Davidoff Anniversario'],
+    description: 'Top 2 cigars from the best rated club tastings',
+  })
+  topCigars: string[] | null;
 }
 
 export class ClubResponseDto {
@@ -85,6 +107,11 @@ export class ClubResponseDto {
   @Expose()
   @ApiProperty({ example: 42, description: 'Total number of members in the club' })
   memberCount: number;
+
+  @Expose()
+  @Type(() => ClubStatsDto)
+  @ApiProperty({ type: ClubStatsDto, description: 'Club tasting statistics' })
+  stats: ClubStatsDto;
 
   @Expose()
   @ApiPropertyOptional({
