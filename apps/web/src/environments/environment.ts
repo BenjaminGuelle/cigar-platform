@@ -4,5 +4,5 @@ export const environment = {
   supabasePublishableKey: 'sb_publishable_W4RYnfAOAj3Pbssz_dCYNQ_Tegxq6qM',
   // ⚠️ NEVER add SECRET_KEY here - it's BACKEND ONLY (in .env)!
   apiUrl: 'http://localhost:3000/api',
-  version: '0.1.6',
+  version: '0.1.8',
 };
