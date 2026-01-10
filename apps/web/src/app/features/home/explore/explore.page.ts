@@ -107,16 +107,16 @@ export class ExplorePage {
     return query.length > 0 && !this.loading() && !this.hasResults();
   });
 
-  // Limited results (3 per group in global view)
-  readonly limitedCigars = computed(() => (this.searchResults().cigars ?? []).slice(0, 3));
-  readonly limitedBrands = computed(() => (this.searchResults().brands ?? []).slice(0, 3));
-  readonly limitedClubs = computed(() => (this.searchResults().clubs ?? []).slice(0, 3));
-  readonly limitedUsers = computed(() => (this.searchResults().users ?? []).slice(0, 3));
+  // Limited results (5 per group in global view)
+  readonly limitedCigars = computed(() => (this.searchResults().cigars ?? []).slice(0, 5));
+  readonly limitedBrands = computed(() => (this.searchResults().brands ?? []).slice(0, 5));
+  readonly limitedClubs = computed(() => (this.searchResults().clubs ?? []).slice(0, 5));
+  readonly limitedUsers = computed(() => (this.searchResults().users ?? []).slice(0, 5));
 
-  readonly hasMoreCigars = computed(() => (this.searchResults().cigars?.length ?? 0) > 3);
-  readonly hasMoreBrands = computed(() => (this.searchResults().brands?.length ?? 0) > 3);
-  readonly hasMoreClubs = computed(() => (this.searchResults().clubs?.length ?? 0) > 3);
-  readonly hasMoreUsers = computed(() => (this.searchResults().users?.length ?? 0) > 3);
+  readonly hasMoreCigars = computed(() => (this.searchResults().cigars?.length ?? 0) > 5);
+  readonly hasMoreBrands = computed(() => (this.searchResults().brands?.length ?? 0) > 5);
+  readonly hasMoreClubs = computed(() => (this.searchResults().clubs?.length ?? 0) > 5);
+  readonly hasMoreUsers = computed(() => (this.searchResults().users?.length ?? 0) > 5);
 
   readonly hasExactCigarMatch = computed(() => {
     const query = this.#debouncedQuery().toLowerCase().trim();
