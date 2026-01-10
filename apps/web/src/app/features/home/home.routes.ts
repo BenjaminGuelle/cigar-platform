@@ -52,13 +52,13 @@ export const homeRoutes: Route[] = [
       {
         path: 'club/:slug',
         loadComponent: () =>
-          import('../club/public/club-profile.page').then((m) => m.ClubProfilePage),
+          import('./profile/club/club-profile-public.page').then((m) => m.ClubProfilePublicPage),
       },
-      // User public profile (Prestige URL: /user/@username)
+      // User profile (Prestige URL: /user/@username) - Unified component
       {
         path: 'user/:username',
         loadComponent: () =>
-          import('../user/public/user-profile.page').then((m) => m.UserProfilePage),
+          import('./profile/user/user-profile.page').then((m) => m.UserProfilePage),
       },
       // Cigar public profile (Prestige URL: /cigar/slug)
       {
@@ -83,7 +83,7 @@ export const homeRoutes: Route[] = [
         path: 'membres',
         canActivate: [clubContextGuard],
         loadComponent: () =>
-          import('../club/internal/members.page').then((m) => m.MembersPage),
+          import('./profile/club/members.page').then((m) => m.MembersPage),
       },
       // TODO: Add more features here (degustations, evenements, notifications, etc.)
       // {

@@ -15,7 +15,13 @@ import {
 } from '@angular/core';
 
 import type {
-  DiscoverResponseDto
+  DeepNonNullable
+} from '@orval/core';
+
+import type {
+  DiscoverControllerGetPublicTastingsParams,
+  DiscoverResponseDto,
+  PaginatedTastingResponseDto
 } from '../generated-api.schemas';
 
 import { customInstance } from '../../../../../apps/web/src/app/core/api/custom-instance';
@@ -50,6 +56,32 @@ Features:
       this.http,
       );
     }
+  /**
+ * 
+Returns paginated public tastings for the discovery feed:
+- All PUBLIC, COMPLETED tastings from all users
+- Ordered by date (newest first)
+- Includes user info for display in global context
+- 9 items per page by default
+
+Features:
+- No authentication required
+- Infinite scroll support
+- Optimized for mobile grid display
+    
+ * @summary Get public tastings with pagination
+ */
+ discoverControllerGetPublicTastings<TData = PaginatedTastingResponseDto>(
+    params?: DeepNonNullable<DiscoverControllerGetPublicTastingsParams>,
+ ) {
+      return customInstance<TData>(
+      {url: `/api/discover/tastings`, method: 'GET',
+        params
+    },
+      this.http,
+      );
+    }
   };
 
 export type DiscoverControllerGetDiscoveryContentClientResult = NonNullable<DiscoverResponseDto>
+export type DiscoverControllerGetPublicTastingsClientResult = NonNullable<PaginatedTastingResponseDto>

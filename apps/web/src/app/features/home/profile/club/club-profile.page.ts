@@ -18,7 +18,7 @@ import {
 import type { ClubResponseDto, ClubProfileStatsResponseDto } from '@cigar-platform/types';
 
 /**
- * Club Profile Private Page
+ * Club Profile Page
  *
  * Route: /profile (when context = club)
  * Accessible: To all club members (member, admin, owner)
@@ -37,7 +37,7 @@ import type { ClubResponseDto, ClubProfileStatsResponseDto } from '@cigar-platfo
  * - Section components for modularity
  */
 @Component({
-  selector: 'app-club-profile-private',
+  selector: 'app-club-profile',
   standalone: true,
   imports: [
     CommonModule,
@@ -51,10 +51,10 @@ import type { ClubResponseDto, ClubProfileStatsResponseDto } from '@cigar-platfo
     TerroirsSectionComponent,
     JournalSectionComponent,
   ],
-  templateUrl: './club-profile-private.page.html',
+  templateUrl: './club-profile.page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ClubProfilePrivatePage {
+export class ClubProfilePage {
   readonly contextStore = inject(ContextStore);
   readonly clubStore = injectClubStore();
 

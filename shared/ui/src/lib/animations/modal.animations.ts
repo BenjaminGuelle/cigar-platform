@@ -144,3 +144,18 @@ export const backdropFade: AnimationTriggerMetadata = trigger('backdropFade', [
   transition('void => enter', animate('250ms cubic-bezier(0.16, 1, 0.3, 1)')),
   transition('enter => void', animate('200ms ease-out')),
 ]);
+
+/**
+ * Route/Component Fade Animation
+ * For conditional rendering with @if
+ * Uses :enter/:leave for void => * and * => void transitions
+ */
+export const routeFade: AnimationTriggerMetadata = trigger('routeFade', [
+  transition(':enter', [
+    style({ opacity: 0 }),
+    animate('200ms ease-out', style({ opacity: 1 })),
+  ]),
+  transition(':leave', [
+    animate('150ms ease-in', style({ opacity: 0 })),
+  ]),
+]);

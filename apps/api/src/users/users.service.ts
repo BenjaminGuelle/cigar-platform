@@ -1,20 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../app/prisma.service';
 import { StorageService } from '../common/services/storage.service';
-import { PlanService } from '../plan/plan.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { TastingStatus, User } from '@cigar-platform/prisma-client';
 import { UserNotFoundException } from '../common/exceptions';
 import { UserPublicProfileDto } from './dto/user-public-profile.dto';
-import {
-  UserProfileStatsResponseDto,
-  AromaStatDto,
-  TerroirStatDto,
-  JournalTastingDto,
-} from './dto/profile-stats.dto';
 import { ClubResponseDto } from '../club/dto';
 import { isUuid, normalizeUsername } from '../common/utils/identifier.util';
-import { getCountryCode } from '../common/utils/country-code.util';
 
 /**
  * Service for managing user profiles
@@ -25,8 +17,7 @@ export class UsersService {
 
   constructor(
     private readonly prismaService: PrismaService,
-    private readonly storageService: StorageService,
-    private readonly planService: PlanService
+    private readonly storageService: StorageService
   ) {}
 
   /**
@@ -185,28 +176,72 @@ export class UsersService {
       where: { userId },
     });
 
-    // Get favorite brand (most tasted brand)
+    // Get favorite brand (most tasted brand) and brandCount
     let favoriteBrand: string | null = null;
+    let brandCount = 0;
     if (tastingCount > 0) {
-      const brandStats = await this.prismaService.tasting.groupBy({
-        by: ['cigarId'],
+      // Get distinct brands from tastings
+      const tastingsWithBrand = await this.prismaService.tasting.findMany({
         where: { userId },
-        _count: { cigarId: true },
-        orderBy: { _count: { cigarId: 'desc' } },
-        take: 1,
-      });
-
-      if (brandStats.length > 0) {
-        const topCigar = await this.prismaService.cigar.findUnique({
-          where: { id: brandStats[0].cigarId },
-          select: {
-            brand: {
-              select: { name: true },
+        select: {
+          cigar: {
+            select: {
+              brand: {
+                select: { id: true, name: true },
+              },
             },
           },
-        });
-        favoriteBrand = topCigar?.brand.name ?? null;
+        },
+      });
+
+      const brandCounts = new Map<string, { name: string; count: number }>();
+      for (const t of tastingsWithBrand) {
+        const brandId = t.cigar.brand.id;
+        const existing = brandCounts.get(brandId);
+        if (existing) {
+          existing.count++;
+        } else {
+          brandCounts.set(brandId, { name: t.cigar.brand.name, count: 1 });
+        }
       }
+
+      brandCount = brandCounts.size;
+
+      // Get favorite brand (most tasted)
+      const sortedBrands = Array.from(brandCounts.values()).sort(
+        (a, b) => b.count - a.count
+      );
+      favoriteBrand = sortedBrands[0]?.name ?? null;
+    }
+
+    // Get top 2 cigars from 5 best rated COMPLETED tastings (excludes drafts)
+    let topCigars: string[] | null = null;
+    if (tastingCount > 0) {
+      const topRatedTastings = await this.prismaService.tasting.findMany({
+        where: {
+          userId,
+          status: TastingStatus.COMPLETED,
+          rating: { gt: 0 }, // Only tastings with a positive rating
+        },
+        include: {
+          cigar: {
+            select: { name: true },
+          },
+        },
+        orderBy: { rating: 'desc' },
+        take: 5,
+      });
+
+      // Get unique cigar names, keeping only top 2
+      const seenCigars = new Set<string>();
+      const uniqueTopCigars: string[] = [];
+      for (const t of topRatedTastings) {
+        if (!seenCigars.has(t.cigar.name) && uniqueTopCigars.length < 2) {
+          seenCigars.add(t.cigar.name);
+          uniqueTopCigars.push(t.cigar.name);
+        }
+      }
+      topCigars = uniqueTopCigars.length > 0 ? uniqueTopCigars : null;
     }
 
     // Get club count
@@ -223,8 +258,10 @@ export class UsersService {
       bio: user.bio,
       createdAt: user.createdAt,
       stats: {
-        evaluationCount: tastingCount, // Renamed field for backward compatibility
+        evaluationCount: tastingCount,
+        brandCount,
         favoriteBrand,
+        topCigars,
         clubCount,
       },
     };
@@ -318,151 +355,5 @@ export class UsersService {
     // 1. No user found with this username
     // 2. OR the user found is the current user (updating their own profile)
     return !existingUser || existingUser.id === currentUserId;
-  }
-
-  /**
-   * Get profile stats for the current user (Solo context)
-   * Includes parcours, aroma signature, terroirs, and journal
-   *
-   * @param userId - ID of the user
-   * @returns Complete profile stats
-   */
-  async getProfileStats(userId: string): Promise<UserProfileStatsResponseDto> {
-    this.logger.log(`Getting profile stats for user ${userId}`);
-
-    // Get user with plan
-    const user = await this.prismaService.user.findUnique({
-      where: { id: userId },
-      include: { plan: true },
-    });
-
-    if (!user) {
-      throw new UserNotFoundException(userId);
-    }
-
-    // Check Premium status
-    const isPremium = this.planService.isPremium(user.plan);
-
-    // Get completed tastings with observations and cigar data
-    const tastings = await this.prismaService.tasting.findMany({
-      where: {
-        userId,
-        status: TastingStatus.COMPLETED,
-      },
-      include: {
-        cigar: {
-          include: {
-            brand: true,
-          },
-        },
-        observations: true,
-      },
-      orderBy: { date: 'desc' },
-    });
-
-    // Calculate parcours stats
-    const brandIds = new Set(tastings.map((t) => t.cigar.brandId));
-    const origins = new Set(
-      tastings.map((t) => t.cigar.origin).filter(Boolean)
-    );
-
-    const parcours = {
-      tastingCount: tastings.length,
-      brandCount: brandIds.size,
-      terroirCount: origins.size,
-    };
-
-    // Check if user has chronic data (tastings with observations)
-    const chronicTastings = tastings.filter((t) => t.observations.length > 0);
-    const hasChronicData = chronicTastings.length > 0;
-
-    // Calculate aroma signature and terroirs only if Premium AND has chronic data
-    let aromaSignature: AromaStatDto[] | null = null;
-    let terroirs: TerroirStatDto[] | null = null;
-
-    if (isPremium && hasChronicData) {
-      // Aggregate aromas from all observations
-      const aromaCount = new Map<string, number>();
-      let totalObservations = 0;
-
-      for (const tasting of chronicTastings) {
-        for (const observation of tasting.observations) {
-          totalObservations++;
-          for (const aroma of observation.aromas) {
-            aromaCount.set(aroma, (aromaCount.get(aroma) ?? 0) + 1);
-          }
-        }
-      }
-
-      // Calculate top 4 aromas by frequency
-      if (totalObservations > 0) {
-        aromaSignature = Array.from(aromaCount.entries())
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 4)
-          .map(([name, count]) => ({
-            name,
-            percentage: Math.round((count / totalObservations) * 100),
-          }));
-      }
-
-      // Calculate terroir stats from chronic tastings only
-      const terroirCount = new Map<string, number>();
-      for (const tasting of chronicTastings) {
-        const origin = tasting.cigar.origin;
-        if (origin) {
-          terroirCount.set(origin, (terroirCount.get(origin) ?? 0) + 1);
-        }
-      }
-
-      if (terroirCount.size > 0) {
-        const totalChronicTastings = chronicTastings.length;
-        terroirs = Array.from(terroirCount.entries())
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 3)
-          .map(([country, count]) => ({
-            country,
-            code: getCountryCode(country),
-            percentage: Math.round((count / totalChronicTastings) * 100),
-          }));
-      }
-    }
-
-    // Build journal (last 3 completed tastings)
-    const journal: JournalTastingDto[] = tastings.slice(0, 3).map((tasting) => {
-      // Get top 2-3 aromas from observations (only if Premium and has observations)
-      let aromas: string[] | null = null;
-      if (isPremium && tasting.observations.length > 0) {
-        const tastingAromaCount = new Map<string, number>();
-        for (const observation of tasting.observations) {
-          for (const aroma of observation.aromas) {
-            tastingAromaCount.set(aroma, (tastingAromaCount.get(aroma) ?? 0) + 1);
-          }
-        }
-        aromas = Array.from(tastingAromaCount.entries())
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 2)
-          .map(([name]) => name);
-      }
-
-      return {
-        id: tasting.id,
-        cigarName: tasting.cigar.name,
-        brandName: tasting.cigar.brand.name,
-        brandLogoUrl: tasting.cigar.brand.logoUrl,
-        rating: tasting.rating,
-        date: tasting.date,
-        aromas,
-        user: null, // Solo context - no user info needed
-      };
-    });
-
-    return {
-      parcours,
-      isPremium,
-      hasChronicData,
-      aromaSignature,
-      terroirs,
-      journal,
-    };
   }
 }

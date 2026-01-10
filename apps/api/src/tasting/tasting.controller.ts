@@ -125,6 +125,34 @@ export class TastingController {
     return this.tastingService.findByClub(clubId, filter, currentUserId);
   }
 
+  @Get('user/:identifier')
+  @ApiOperation({
+    summary: 'Get tastings for a user (paginated)',
+    description:
+      'Returns all tastings if owner, public tastings if shareEvaluationsPublicly is enabled, empty otherwise',
+  })
+  @ApiParam({
+    name: 'identifier',
+    description: 'User UUID or username (with optional @ prefix)',
+    example: 'john_doe or @john_doe',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User tastings retrieved successfully',
+    type: PaginatedTastingResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  async findByUser(
+    @Param('identifier') identifier: string,
+    @Query() filter: FilterTastingDto,
+    @CurrentUser('id') currentUserId: string
+  ): Promise<PaginatedTastingResponseDto> {
+    return this.tastingService.findByUser(identifier, filter, currentUserId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get tasting by ID' })
   @ApiParam({

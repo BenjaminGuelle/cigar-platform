@@ -10,13 +10,8 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import type {
-  SearchResultDto,
-  DiscoverCigarDto,
-  DiscoverTastingDto,
-} from '@cigar-platform/types';
+import type { SearchResultDto } from '@cigar-platform/types';
 import { injectSearchStore } from '../../../core/stores/search.store';
-import { injectDiscoverStore } from '../../../core/stores/discover.store';
 import { AuthService } from '../../../core/services/auth.service';
 import { ExploreHeaderService } from '../../../core/services/explore-header.service';
 import { CreateCigarModalComponent } from '../../../shared/components/create-cigar-modal/create-cigar-modal.component';
@@ -56,7 +51,6 @@ import { ExploreSearchComponent, SearchResultClickEvent } from './components/exp
 export class ExplorePage {
   readonly #router = inject(Router);
   readonly #searchStore = injectSearchStore();
-  readonly #discoverStore = injectDiscoverStore();
   readonly #authService = inject(AuthService);
   readonly #headerService = inject(ExploreHeaderService);
 
@@ -69,19 +63,9 @@ export class ExplorePage {
 
   // Query using store pattern (reactive with getter)
   readonly #omnisearchQuery = this.#searchStore.search(() => this.#debouncedQuery());
-  readonly #discoverQuery = this.#discoverStore.getDiscoveryContent();
 
   // Loading state
   readonly loading: Signal<boolean> = this.#omnisearchQuery.loading;
-  readonly discoveryLoading: Signal<boolean> = this.#discoverQuery.loading;
-
-  // Discovery content (recent cigars + tastings)
-  readonly recentCigars: Signal<DiscoverCigarDto[]> = computed(
-    () => this.#discoverQuery.data()?.recentCigars ?? []
-  );
-  readonly recentTastings: Signal<DiscoverTastingDto[]> = computed(
-    () => this.#discoverQuery.data()?.recentTastings ?? []
-  );
 
   // Search results
   readonly searchResults: Signal<SearchResultDto> = computed<SearchResultDto>(() => {
@@ -226,19 +210,5 @@ export class ExplorePage {
   handleSeeAll(_type: 'cigar' | 'brand' | 'club' | 'user'): void {
     // For now, we could expand the view or navigate to a filtered page
     // Implementation depends on product requirements
-  }
-
-  /**
-   * Navigate to cigar page from discovery
-   */
-  handleDiscoverCigarClick(cigar: DiscoverCigarDto): void {
-    void this.#router.navigate(['/cigar', cigar.slug]);
-  }
-
-  /**
-   * Navigate to cigar page from tasting in discovery
-   */
-  handleDiscoverTastingClick(tasting: DiscoverTastingDto): void {
-    void this.#router.navigate(['/cigar', tasting.cigarSlug]);
   }
 }

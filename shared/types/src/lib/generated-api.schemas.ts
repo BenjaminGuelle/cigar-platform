@@ -574,35 +574,15 @@ export interface UpdateJoinRequestDto {
   status?: UpdateJoinRequestDtoStatus;
 }
 
-export interface ParcoursStatsDto {
-  /** Total number of tastings */
-  tastingCount: number;
-  /** Number of unique brands tasted */
-  brandCount: number;
-  /** Number of unique terroirs/countries */
-  terroirCount: number;
-}
-
-export interface UserProfileStatsResponseDto {
-  /** Parcours stats */
-  parcours: ParcoursStatsDto;
-  /** Whether the user has Premium access (needed for frontend display logic) */
-  isPremium: boolean;
-  /** Whether the user has chronic observation data */
-  hasChronicData: boolean;
-  /** Top 4 aromas (null if not Premium or no chronic data) */
-  aromaSignature?: AromaStatDto[];
-  /** Top 3 terroirs (null if not Premium or no chronic data) */
-  terroirs?: TerroirStatDto[];
-  /** Last 3 completed tastings */
-  journal: JournalTastingDto[];
-}
-
 export interface UserStatsDto {
   /** Total number of cigar evaluations by this user */
   evaluationCount: number;
+  /** Total number of distinct brands tasted by this user */
+  brandCount: number;
   /** User's favorite cigar brand (most evaluated brand) */
   favoriteBrand?: string;
+  /** Top 2 cigars from the 5 best rated tastings */
+  topCigars?: string[];
   /** Total number of clubs the user is member of */
   clubCount: number;
 }
@@ -876,6 +856,15 @@ export interface TastingClubDto {
   slug: string;
 }
 
+export type TastingUserDtoAvatarUrl = { [key: string]: unknown };
+
+export interface TastingUserDto {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl?: TastingUserDtoAvatarUrl;
+}
+
 export type TastingResponseDtoStatus = typeof TastingResponseDtoStatus[keyof typeof TastingResponseDtoStatus];
 
 
@@ -955,6 +944,8 @@ export interface TastingResponseDto {
   observations: ObservationResponseDto[];
   /** Clubs this tasting is shared with */
   clubs: TastingClubDto[];
+  /** User who created the tasting (included in discovery endpoints) */
+  user?: TastingUserDto;
 }
 
 export interface PaginatedTastingResponseDto {
@@ -1316,20 +1307,11 @@ export interface DiscoverCigarDto {
   createdAt: string;
 }
 
-export interface DiscoverTastingDto {
-  id: string;
-  cigarName: string;
-  cigarSlug: string;
-  rating: number;
-  username: string;
-  createdAt: string;
-}
-
 export interface DiscoverResponseDto {
   /** Recently added cigars (newest first) */
   recentCigars: DiscoverCigarDto[];
   /** Recent public tastings (newest first) */
-  recentTastings: DiscoverTastingDto[];
+  recentTastings: TastingResponseDto[];
 }
 
 export type ClubControllerFindAllParams = {
@@ -1644,6 +1626,72 @@ export const TastingControllerFindByClubStatus = {
   COMPLETED: 'COMPLETED',
 } as const;
 
+export type TastingControllerFindByUserParams = {
+/**
+ * Page number
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Items per page
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+/**
+ * Sort by field
+ */
+sortBy?: TastingControllerFindByUserSortBy;
+/**
+ * Sort order
+ */
+order?: TastingControllerFindByUserOrder;
+/**
+ * Filter by status
+ */
+status?: TastingControllerFindByUserStatus;
+/**
+ * Filter by cigar ID
+ */
+cigarId?: string;
+/**
+ * Filter by user ID
+ */
+userId?: string;
+/**
+ * Filter by event ID
+ */
+eventId?: string;
+};
+
+export type TastingControllerFindByUserSortBy = typeof TastingControllerFindByUserSortBy[keyof typeof TastingControllerFindByUserSortBy];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TastingControllerFindByUserSortBy = {
+  date: 'date',
+  rating: 'rating',
+  createdAt: 'createdAt',
+} as const;
+
+export type TastingControllerFindByUserOrder = typeof TastingControllerFindByUserOrder[keyof typeof TastingControllerFindByUserOrder];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TastingControllerFindByUserOrder = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;
+
+export type TastingControllerFindByUserStatus = typeof TastingControllerFindByUserStatus[keyof typeof TastingControllerFindByUserStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TastingControllerFindByUserStatus = {
+  DRAFT: 'DRAFT',
+  COMPLETED: 'COMPLETED',
+} as const;
+
 export type FeedbackControllerFindAllParams = {
 /**
  * Page number
@@ -1728,4 +1776,18 @@ export const AnalyticsControllerFindAllOrder = {
   asc: 'asc',
   desc: 'desc',
 } as const;
+
+export type DiscoverControllerGetPublicTastingsParams = {
+/**
+ * Page number
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Items per page
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+};
 

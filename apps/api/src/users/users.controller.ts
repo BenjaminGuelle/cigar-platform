@@ -29,7 +29,6 @@ import {
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UserPublicProfileDto } from './dto/user-public-profile.dto';
-import { UserProfileStatsResponseDto } from './dto/profile-stats.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { MAX_IMAGE_SIZE, ALLOWED_IMAGE_MIMES } from '../common/config/image-presets.config';
 import { ClubResponseDto } from '../club/dto';
@@ -42,30 +41,6 @@ import sharp from 'sharp';
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
-
-  /**
-   * Get profile stats for the current user (Solo context)
-   * GET /users/me/profile-stats
-   * Returns parcours, aroma signature, terroirs, and journal
-   */
-  @Get('me/profile-stats')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Get current user profile stats (Solo context)' })
-  @ApiResponse({
-    status: 200,
-    description: 'Profile stats retrieved successfully',
-    type: UserProfileStatsResponseDto,
-  })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'User not found' })
-  async getProfileStats(
-    @Request() req: Express.Request & { user: { dbUser: { id: string } } }
-  ): Promise<UserProfileStatsResponseDto> {
-    const userId = req.user.dbUser.id;
-    return this.usersService.getProfileStats(userId);
-  }
 
   /**
    * Get public profile for a user

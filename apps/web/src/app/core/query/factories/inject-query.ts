@@ -79,9 +79,17 @@ export function injectQuery<T>(optionsFactory: () => QueryOptions<T>): Query<T> 
   const initialEnabled = initialInfo.opts.enabled ?? true;
   const isInitialEnabled = typeof initialEnabled === 'boolean' ? initialEnabled : initialEnabled();
   if (isInitialEnabled) {
-    initialStore.fetch().catch(() => {
-      // Error handled by query store
-    });
+    // If we have cached data, refetch in background (no loader, keeps old data visible)
+    // Otherwise, do a normal fetch (shows loader)
+    if (initialStore.data() !== null) {
+      initialStore.refetchInBackground().catch(() => {
+        // Error handled by query store
+      });
+    } else {
+      initialStore.fetch().catch(() => {
+        // Error handled by query store
+      });
+    }
   }
 
   // Watch for queryKey changes and switch cache stores
@@ -112,9 +120,17 @@ export function injectQuery<T>(optionsFactory: () => QueryOptions<T>): Query<T> 
       const enabled = opts.enabled ?? true;
       const isEnabled = typeof enabled === 'boolean' ? enabled : enabled();
       if (isEnabled) {
-        store.fetch().catch(() => {
-          // Error handled by query store
-        });
+        // If we have cached data, refetch in background (no loader)
+        // Otherwise, do a normal fetch (shows loader)
+        if (store.data() !== null) {
+          store.refetchInBackground().catch(() => {
+            // Error handled by query store
+          });
+        } else {
+          store.fetch().catch(() => {
+            // Error handled by query store
+          });
+        }
       }
     }
   });

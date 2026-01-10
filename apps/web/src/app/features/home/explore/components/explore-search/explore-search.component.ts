@@ -46,6 +46,7 @@ export interface SearchResultClickEvent {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <div class="animate-fade-in">
     <!-- Search Hints (shown when query is empty) -->
     @if (showHints()) {
       <div class="pt-2 space-y-3">
@@ -216,6 +217,7 @@ export interface SearchResultClickEvent {
         </ui-search-result-group>
       }
     }
+    </div>
   `,
 })
 export class ExploreSearchComponent {

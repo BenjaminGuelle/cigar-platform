@@ -1,7 +1,8 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagger';
 import { DiscoverService } from './discover.service';
-import { DiscoverResponseDto } from './dto';
+import { DiscoverResponseDto, PaginationQueryDto } from './dto';
+import { PaginatedTastingResponseDto } from '../tasting/dto';
 
 /**
  * Discover Controller
@@ -37,5 +38,32 @@ Features:
   })
   async getDiscoveryContent(): Promise<DiscoverResponseDto> {
     return this.discoverService.getDiscoveryContent();
+  }
+
+  @Get('tastings')
+  @ApiOperation({
+    summary: 'Get public tastings with pagination',
+    description: `
+Returns paginated public tastings for the discovery feed:
+- All PUBLIC, COMPLETED tastings from all users
+- Ordered by date (newest first)
+- Includes user info for display in global context
+- 9 items per page by default
+
+Features:
+- No authentication required
+- Infinite scroll support
+- Optimized for mobile grid display
+    `,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated public tastings',
+    type: PaginatedTastingResponseDto,
+  })
+  async getPublicTastings(
+    @Query() query: PaginationQueryDto,
+  ): Promise<PaginatedTastingResponseDto> {
+    return this.discoverService.findPublicTastingsPaginated(query);
   }
 }

@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { TastingResponseDto } from '../../tasting/dto/tasting-response.dto';
 
 /**
  * Simplified cigar info for discovery feed
@@ -21,29 +22,6 @@ export class DiscoverCigarDto {
 }
 
 /**
- * Simplified tasting info for discovery feed
- */
-export class DiscoverTastingDto {
-  @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440000' })
-  id: string;
-
-  @ApiProperty({ example: 'Montecristo No.2 Edición Limitada' })
-  cigarName: string;
-
-  @ApiProperty({ example: 'cohiba-behike-52' })
-  cigarSlug: string;
-
-  @ApiProperty({ example: 4.5 })
-  rating: number;
-
-  @ApiProperty({ example: 'benjamin' })
-  username: string;
-
-  @ApiProperty({ example: '2024-12-31T20:00:00.000Z' })
-  createdAt: Date;
-}
-
-/**
  * Discovery Response DTO
  * Contains recent cigars and public tastings for the explore page
  */
@@ -55,8 +33,8 @@ export class DiscoverResponseDto {
   recentCigars: DiscoverCigarDto[];
 
   @ApiProperty({
-    type: [DiscoverTastingDto],
+    type: [TastingResponseDto],
     description: 'Recent public tastings (newest first)',
   })
-  recentTastings: DiscoverTastingDto[];
+  recentTastings: TastingResponseDto[];
 }

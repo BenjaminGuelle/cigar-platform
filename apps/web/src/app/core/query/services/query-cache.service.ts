@@ -95,15 +95,28 @@ export class QueryCacheService {
    * Invalidate all queries matching a partial key
    * Useful for invalidating all queries of a type
    *
+   * Active queries (refs > 0) are refetched in background to update UI immediately.
+   * Inactive queries are just marked as stale (lazy refetch on next use).
+   *
    * @example
    * invalidateQueriesMatching(['clubs']) // Invalidates all club queries
    */
   invalidateQueriesMatching(partialKey: unknown[]): void {
-    const prefix = this.#serializeKey(partialKey);
-
     for (const [key, entry] of this.#cache.entries()) {
-      if (key.startsWith(prefix)) {
-        entry.instance.invalidate();
+      // Parse the cache key and compare arrays element by element
+      const parsedKey = JSON.parse(key) as unknown[];
+      const matchesPrefix = partialKey.every((val, idx) => parsedKey[idx] === val);
+
+      if (matchesPrefix) {
+        if (entry.refs > 0) {
+          // Active query: refetch in background (keeps current data visible, updates UI)
+          void entry.instance.refetchInBackground().catch(() => {
+            // Silent fail - error is stored in query state
+          });
+        } else {
+          // Inactive query: just mark as stale (will refetch on next mount)
+          entry.instance.invalidate();
+        }
       }
     }
   }

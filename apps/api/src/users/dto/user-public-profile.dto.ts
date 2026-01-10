@@ -10,22 +10,37 @@ export class UserStatsDto {
   @Expose()
   @ApiProperty({
     example: 42,
-    description: 'Total number of cigar evaluations by this user'
+    description: 'Total number of cigar evaluations by this user',
   })
   evaluationCount: number;
+
+  @Expose()
+  @ApiProperty({
+    example: 8,
+    description: 'Total number of distinct brands tasted by this user',
+  })
+  brandCount: number;
 
   @Expose()
   @ApiPropertyOptional({
     type: String,
     example: 'Cohiba',
-    description: 'User\'s favorite cigar brand (most evaluated brand)'
+    description: "User's favorite cigar brand (most evaluated brand)",
   })
   favoriteBrand: string | null;
 
   @Expose()
+  @ApiPropertyOptional({
+    type: [String],
+    example: ['Cohiba Behike', 'Davidoff Anniversario'],
+    description: 'Top 2 cigars from the 5 best rated tastings',
+  })
+  topCigars: string[] | null;
+
+  @Expose()
   @ApiProperty({
     example: 5,
-    description: 'Total number of clubs the user is member of'
+    description: 'Total number of clubs the user is member of',
   })
   clubCount: number;
 }

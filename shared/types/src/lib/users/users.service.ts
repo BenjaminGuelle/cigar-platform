@@ -21,7 +21,6 @@ import type {
 import type {
   ClubResponseDto,
   UpdateProfileDto,
-  UserProfileStatsResponseDto,
   UserPublicProfileDto,
   UsersControllerCheckUsernameAvailability200,
   UsersControllerCheckUsernameAvailabilityParams,
@@ -41,18 +40,6 @@ import { customInstance } from '../../../../../apps/web/src/app/core/api/custom-
 export class UsersService {
   private readonly http = inject(HttpClient);
 /**
- * @summary Get current user profile stats (Solo context)
- */
- usersControllerGetProfileStats<TData = UserProfileStatsResponseDto>(
-    
- ) {
-      return customInstance<TData>(
-      {url: `/api/users/me/profile-stats`, method: 'GET'
-    },
-      this.http,
-      );
-    }
-  /**
  * @summary Get user public profile with stats
  */
  usersControllerGetPublicProfile<TData = UserPublicProfileDto>(
@@ -126,7 +113,6 @@ if(usersControllerUploadAvatarBody.avatar !== undefined) {
     }
   };
 
-export type UsersControllerGetProfileStatsClientResult = NonNullable<UserProfileStatsResponseDto>
 export type UsersControllerGetPublicProfileClientResult = NonNullable<UserPublicProfileDto>
 export type UsersControllerGetUserClubsClientResult = NonNullable<ClubResponseDto[]>
 export type UsersControllerUpdateProfileClientResult = NonNullable<void>

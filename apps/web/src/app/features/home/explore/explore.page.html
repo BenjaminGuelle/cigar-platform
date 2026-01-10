@@ -9,15 +9,9 @@
 -->
 <div class="container-page content-section-lg">
   <!-- Content Zone -->
-    <!-- Discovery Mode -->
+    <!-- Discovery Mode (component owns its data) -->
     @if (isDiscoveryMode()) {
-      <app-explore-discovery
-        [loading]="discoveryLoading()"
-        [cigars]="recentCigars()"
-        [tastings]="recentTastings()"
-        (cigarClick)="handleDiscoverCigarClick($event)"
-        (tastingClick)="handleDiscoverTastingClick($event)"
-      />
+      <app-explore-discovery />
     }
 
     <!-- Search Mode -->

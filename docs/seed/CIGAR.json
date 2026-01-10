@@ -1,0 +1,274 @@
+[
+  {
+    "id": "cohiba-robusto",
+    "brandId": "cohiba",
+    "name": "Robusto",
+    "vitola": "Robusto",
+    "lengthMm": 124,
+    "ringGauge": 50,
+    "country": "Cuba",
+    "strength": "Medium to Full",
+    "isVerified": true,
+    "isSeed": true
+  },
+  {
+    "id": "cohiba-esplendidos",
+    "brandId": "cohiba",
+    "name": "Espléndidos",
+    "vitola": "Churchill",
+    "lengthMm": 178,
+    "ringGauge": 47,
+    "country": "Cuba",
+    "strength": "Medium",
+    "isVerified": true,
+    "isSeed": true
+  },
+  {
+    "id": "montecristo-no2",
+    "brandId": "montecristo",
+    "name": "No. 2",
+    "vitola": "Piramide",
+    "lengthMm": 156,
+    "ringGauge": 52,
+    "country": "Cuba",
+    "strength": "Medium to Full",
+    "isVerified": true,
+    "isSeed": true
+  },
+  {
+    "id": "montecristo-edmundo",
+    "brandId": "montecristo",
+    "name": "Edmundo",
+    "vitola": "Robusto Extra",
+    "lengthMm": 135,
+    "ringGauge": 52,
+    "country": "Cuba",
+    "strength": "Medium",
+    "isVerified": true,
+    "isSeed": true
+  },
+  {
+    "id": "partagas-serie-d-no4",
+    "brandId": "partagas",
+    "name": "Serie D No. 4",
+    "vitola": "Robusto",
+    "lengthMm": 124,
+    "ringGauge": 50,
+    "country": "Cuba",
+    "strength": "Full",
+    "isVerified": true,
+    "isSeed": true
+  },
+  {
+    "id": "partagas-lusitanias",
+    "brandId": "partagas",
+    "name": "Lusitanias",
+    "vitola": "Double Corona",
+    "lengthMm": 194,
+    "ringGauge": 49,
+    "country": "Cuba",
+    "strength": "Full",
+    "isVerified": true,
+    "isSeed": true
+  },
+  {
+    "id": "romeyo-robusto",
+    "brandId": "romeyjulieta",
+    "name": "Short Churchill",
+    "vitola": "Robusto",
+    "lengthMm": 124,
+    "ringGauge": 50,
+    "country": "Cuba",
+    "strength": "Medium",
+    "isVerified": true,
+    "isSeed": true
+  },
+  {
+    "id": "romeyo-churchill",
+    "brandId": "romeyjulieta",
+    "name": "Churchill",
+    "vitola": "Churchill",
+    "lengthMm": 178,
+    "ringGauge": 47,
+    "country": "Cuba",
+    "strength": "Medium",
+    "isVerified": true,
+    "isSeed": true
+  },
+  {
+    "id": "bolivar-belicosos",
+    "brandId": "bolivar",
+    "name": "Belicosos Finos",
+    "vitola": "Campana",
+    "lengthMm": 140,
+    "ringGauge": 52,
+    "country": "Cuba",
+    "strength": "Full",
+    "isVerified": true,
+    "isSeed": true
+  },
+  {
+    "id": "bolivar-royal-coronas",
+    "brandId": "bolivar",
+    "name": "Royal Coronas",
+    "vitola": "Robusto",
+    "lengthMm": 124,
+    "ringGauge": 50,
+    "country": "Cuba",
+    "strength": "Full",
+    "isVerified": true,
+    "isSeed": true
+  },
+  {
+    "id": "hoyo-epicure-no2",
+    "brandId": "hoyo",
+    "name": "Epicure No. 2",
+    "vitola": "Robusto",
+    "lengthMm": 124,
+    "ringGauge": 50,
+    "country": "Cuba",
+    "strength": "Light to Medium",
+    "isVerified": true,
+    "isSeed": true
+  },
+  {
+    "id": "hoyo-double-coronas",
+    "brandId": "hoyo",
+    "name": "Double Coronas",
+    "vitola": "Double Corona",
+    "lengthMm": 194,
+    "ringGauge": 49,
+    "country": "Cuba",
+    "strength": "Light to Medium",
+    "isVerified": true,
+    "isSeed": true
+  },
+
+  {
+    "id": "padron-1964-robusto",
+    "brandId": "padron",
+    "name": "1964 Anniversary Robusto",
+    "vitola": "Robusto",
+    "lengthMm": 127,
+    "ringGauge": 50,
+    "country": "Nicaragua",
+    "strength": "Full",
+    "isVerified": true,
+    "isSeed": true
+  },
+  {
+    "id": "padron-1926-no2",
+    "brandId": "padron",
+    "name": "1926 Series No. 2",
+    "vitola": "Torpedo",
+    "lengthMm": 156,
+    "ringGauge": 52,
+    "country": "Nicaragua",
+    "strength": "Full",
+    "isVerified": true,
+    "isSeed": true
+  },
+
+  {
+    "id": "davidoff-millennium-robusto",
+    "brandId": "davidoff",
+    "name": "Millennium Robusto",
+    "vitola": "Robusto",
+    "lengthMm": 133,
+    "ringGauge": 50,
+    "country": "Dominican Republic",
+    "strength": "Medium to Full",
+    "isVerified": true,
+    "isSeed": true
+  },
+  {
+    "id": "davidoff-signature-no2",
+    "brandId": "davidoff",
+    "name": "Signature No. 2",
+    "vitola": "Panetela",
+    "lengthMm": 152,
+    "ringGauge": 38,
+    "country": "Dominican Republic",
+    "strength": "Light",
+    "isVerified": true,
+    "isSeed": true
+  },
+
+  {
+    "id": "arturofuente-opusx-robusto",
+    "brandId": "arturofuente",
+    "name": "Opus X Robusto",
+    "vitola": "Robusto",
+    "lengthMm": 127,
+    "ringGauge": 50,
+    "country": "Dominican Republic",
+    "strength": "Full",
+    "isVerified": true,
+    "isSeed": true
+  },
+
+  {
+    "id": "myfather-lebijou-1922",
+    "brandId": "myfather",
+    "name": "Le Bijou 1922",
+    "vitola": "Toro",
+    "lengthMm": 152,
+    "ringGauge": 52,
+    "country": "Nicaragua",
+    "strength": "Full",
+    "isVerified": true,
+    "isSeed": true
+  },
+
+  {
+    "id": "ajfernandez-new-world-robusto",
+    "brandId": "ajfernandez",
+    "name": "New World Robusto",
+    "vitola": "Robusto",
+    "lengthMm": 133,
+    "ringGauge": 55,
+    "country": "Nicaragua",
+    "strength": "Medium to Full",
+    "isVerified": true,
+    "isSeed": true
+  },
+
+  {
+    "id": "oliva-serie-v-melanio",
+    "brandId": "oliva",
+    "name": "Serie V Melanio Torpedo",
+    "vitola": "Torpedo",
+    "lengthMm": 165,
+    "ringGauge": 52,
+    "country": "Nicaragua",
+    "strength": "Full",
+    "isVerified": true,
+    "isSeed": true
+  },
+
+  {
+    "id": "tatuaje-cojonu-2012",
+    "brandId": "tatuaje",
+    "name": "Cojonu 2012",
+    "vitola": "Robusto",
+    "lengthMm": 127,
+    "ringGauge": 52,
+    "country": "Nicaragua",
+    "strength": "Full",
+    "isVerified": true,
+    "isSeed": true
+  },
+
+  {
+    "id": "plasencia-alma-fuerte",
+    "brandId": "plascencia",
+    "name": "Alma Fuerte Robustus I",
+    "vitola": "Robusto",
+    "lengthMm": 133,
+    "ringGauge": 54,
+    "country": "Nicaragua",
+    "strength": "Full",
+    "isVerified": true,
+    "isSeed": true
+  }
+]

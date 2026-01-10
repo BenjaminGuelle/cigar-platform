@@ -63,15 +63,6 @@ import type { JournalTastingDto } from '@cigar-platform/types';
             />
           }
         </div>
-
-        <!-- View All Button -->
-        <div class="mt-4 text-center">
-          <a routerLink="/tastings">
-            <ui-button size="sm" variant="ghost">
-              Voir tout
-            </ui-button>
-          </a>
-        </div>
       } @else {
         <!-- Empty State -->
         <div class="flex flex-col items-center justify-center py-8 px-4 rounded-lg bg-smoke-800 border border-smoke-700 text-center">

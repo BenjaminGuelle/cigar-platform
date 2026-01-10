@@ -1,0 +1,22 @@
+[
+  { "id": "cohiba", "name": "Cohiba", "country": "Cuba", "isVerified": true, "isSeed": true },
+  { "id": "montecristo", "name": "Montecristo", "country": "Cuba", "isVerified": true, "isSeed": true },
+  { "id": "partagas", "name": "Partagás", "country": "Cuba", "isVerified": true, "isSeed": true },
+  { "id": "romeyjulieta", "name": "Romeo y Julieta", "country": "Cuba", "isVerified": true, "isSeed": true },
+  { "id": "bolivar", "name": "Bolívar", "country": "Cuba", "isVerified": true, "isSeed": true },
+  { "id": "hoyo", "name": "Hoyo de Monterrey", "country": "Cuba", "isVerified": true, "isSeed": true },
+  { "id": "padron", "name": "Padrón", "country": "Nicaragua", "isVerified": true, "isSeed": true },
+  { "id": "davidoff", "name": "Davidoff", "country": "Dominican Republic", "isVerified": true, "isSeed": true },
+  { "id": "arturofuente", "name": "Arturo Fuente", "country": "Dominican Republic", "isVerified": true, "isSeed": true },
+  { "id": "myfather", "name": "My Father Cigars", "country": "Nicaragua", "isVerified": true, "isSeed": true },
+  { "id": "ajfernandez", "name": "AJ Fernandez", "country": "Nicaragua", "isVerified": true, "isSeed": true },
+  { "id": "oliva", "name": "Oliva", "country": "Nicaragua", "isVerified": true, "isSeed": true },
+  { "id": "laaurora", "name": "La Aurora", "country": "Dominican Republic", "isVerified": true, "isSeed": true },
+  { "id": "perdomo", "name": "Perdomo", "country": "Nicaragua", "isVerified": true, "isSeed": true },
+  { "id": "rockypatel", "name": "Rocky Patel", "country": "Honduras", "isVerified": true, "isSeed": true },
+  { "id": "flordecano", "name": "Flor de Caña Cigars", "country": "Nicaragua", "isVerified": true, "isSeed": true },
+  { "id": "leonjimenez", "name": "León Jimenes", "country": "Dominican Republic", "isVerified": true, "isSeed": true },
+  { "id": "cao", "name": "CAO", "country": "Nicaragua", "isVerified": true, "isSeed": true },
+  { "id": "tatuaje", "name": "Tatuaje", "country": "Nicaragua", "isVerified": true, "isSeed": true },
+  { "id": "plascencia", "name": "Plasencia", "country": "Nicaragua", "isVerified": true, "isSeed": true }
+]

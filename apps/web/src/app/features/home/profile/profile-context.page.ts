@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { ContextRouterComponent } from '../../../shared/components/context-switcher/context-switcher.component';
-import { UserProfilePrivatePage } from './user/user-profile-private.page';
-import { ClubProfilePrivatePage } from './club/club-profile-private.page';
+import { UserProfilePage } from './user/user-profile.page';
+import { ClubProfilePage } from './club/club-profile.page';
 
 /**
  * Profile Context Page (Shell)
@@ -12,7 +12,7 @@ import { ClubProfilePrivatePage } from './club/club-profile-private.page';
  * Pattern:
  * - Zero business logic (pure shell)
  * - Uses generic ContextRouterComponent
- * - Switches between UserProfilePrivatePage and ClubProfilePrivatePage
+ * - Switches between UserProfilePage and ClubProfilePage
  * - Based on ContextStore.context()
  *
  * The context selects the page.
@@ -25,13 +25,13 @@ import { ClubProfilePrivatePage } from './club/club-profile-private.page';
   standalone: true,
   imports: [
     ContextRouterComponent,
-    UserProfilePrivatePage,
-    ClubProfilePrivatePage,
+    UserProfilePage,
+    ClubProfilePage,
   ],
   template: `
     <app-context-router>
-      <app-user-profile-private solo />
-      <app-club-profile-private club />
+      <app-user-profile solo />
+      <app-club-profile club />
     </app-context-router>
   `,
 })

@@ -1,29 +1,37 @@
 import {
   Component,
-  input,
-  output,
+  computed,
+  inject,
+  effect,
   ChangeDetectionStrategy,
+  ElementRef,
+  viewChild,
+  DestroyRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import type { DiscoverCigarDto, DiscoverTastingDto } from '@cigar-platform/types';
-import { IconDirective, SkeletonComponent } from '@cigar-platform/shared/ui';
+import { Router } from '@angular/router';
+import type { DiscoverCigarDto } from '@cigar-platform/types';
+import { SkeletonComponent, TastingCardComponent } from '@cigar-platform/shared/ui';
+import { injectDiscoverStore } from '../../../../../core/stores/discover.store';
 
 /**
  * Explore Discovery Component
  *
  * Displays discovery content when search is not active:
- * - Recent cigars added to the platform
- * - Recent tastings from the community
+ * - Recent cigars added to the platform (3 items)
+ * - Public tastings from the community (paginated, infinite scroll)
+ *
+ * Owns its own data via DiscoverStore (ALL STARS pattern)
  *
  * Used in: ExplorePage (discovery mode)
  */
 @Component({
   selector: 'app-explore-discovery',
   standalone: true,
-  imports: [CommonModule, IconDirective, SkeletonComponent],
+  imports: [CommonModule, SkeletonComponent, TastingCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="pt-2">
+    <div class="pt-2 animate-fade-in">
       <!-- Skeleton Loading State -->
       @if (loading()) {
         <div class="space-y-6">
@@ -40,18 +48,12 @@ import { IconDirective, SkeletonComponent } from '@cigar-platform/shared/ui';
             </div>
           </section>
 
-          <!-- Skeleton: Dernières dégustations -->
+          <!-- Skeleton: Dernières dégustations (grid) -->
           <section>
             <ui-skeleton size="text-sm" class="mb-3" />
-            <div class="space-y-3">
-              @for (i of [1, 2, 3, 4, 5, 6]; track i) {
-                <div>
-                  <ui-skeleton size="text-md" class="mb-1" />
-                  <div class="flex items-center gap-2">
-                    <ui-skeleton size="text-xs" />
-                    <ui-skeleton size="text-xs" />
-                  </div>
-                </div>
+            <div class="grid grid-cols-3 gap-2">
+              @for (i of [1, 2, 3, 4, 5, 6, 7, 8, 9]; track i) {
+                <div class="aspect-4/5 rounded-sm bg-smoke-800"></div>
               }
             </div>
           </section>
@@ -69,7 +71,7 @@ import { IconDirective, SkeletonComponent } from '@cigar-platform/shared/ui';
               @for (cigar of cigars(); track cigar.id) {
                 <div
                   class="flex items-baseline gap-2 cursor-pointer group"
-                  (click)="cigarClick.emit(cigar)"
+                  (click)="handleCigarClick(cigar)"
                 >
                   <span class="text-sm text-smoke-200 group-hover:text-gold-500 transition-colors font-medium">
                     {{ cigar.name }}
@@ -82,32 +84,35 @@ import { IconDirective, SkeletonComponent } from '@cigar-platform/shared/ui';
           </section>
         }
 
-        <!-- Section: Dernières dégustations -->
+        <!-- Section: Dernières dégustations (grid with infinite scroll) -->
         @if (tastings().length > 0) {
           <section class="mb-6">
             <h2 class="text-xs font-semibold text-smoke-500 uppercase tracking-wider mb-3">
               Dernières dégustations
             </h2>
-            <div class="space-y-3">
+            <div class="grid grid-cols-3 gap-2">
               @for (tasting of tastings(); track tasting.id) {
-                <div
-                  class="cursor-pointer group"
-                  (click)="tastingClick.emit(tasting)"
-                >
-                  <p class="text-sm text-smoke-200 group-hover:text-gold-500 transition-colors font-medium truncate">
-                    {{ tasting.cigarName }}
-                  </p>
-                  <div class="flex items-center gap-1.5 mt-0.5">
-                    <i uiIcon name="star" class="w-3 h-3 text-gold-500"></i>
-                    <span class="text-xs text-smoke-300">{{ tasting.rating }}</span>
-                    <span class="text-smoke-600">·</span>
-                    <span class="text-xs text-smoke-500">@{{ tasting.username }}</span>
-                    <span class="text-smoke-600">·</span>
-                    <span class="text-xs text-smoke-600">{{ formatRelativeTime(tasting.createdAt) }}</span>
-                  </div>
-                </div>
+                <ui-tasting-card
+                  [tasting]="tasting"
+                  [showUsername]="true"
+                  (cardClick)="handleTastingClick($event)"
+                />
               }
             </div>
+
+            <!-- Load More Trigger (intersection observer target) -->
+            @if (hasMore()) {
+              <div #loadMoreTrigger class="h-px"></div>
+            }
+
+            <!-- Loading more indicator -->
+            @if (loadingMore()) {
+              <div class="grid grid-cols-3 gap-2 mt-2">
+                @for (i of [1, 2, 3]; track i) {
+                  <div class="aspect-4/5 rounded-sm bg-smoke-800 animate-pulse"></div>
+                }
+              </div>
+            }
           </section>
         }
 
@@ -122,38 +127,75 @@ import { IconDirective, SkeletonComponent } from '@cigar-platform/shared/ui';
   `,
 })
 export class ExploreDiscoveryComponent {
-  /** Loading state */
-  readonly loading = input.required<boolean>();
+  readonly #router = inject(Router);
+  readonly #discoverStore = injectDiscoverStore();
 
-  /** Recent cigars */
-  readonly cigars = input.required<DiscoverCigarDto[]>();
+  // Queries
+  readonly #discoveryQuery = this.#discoverStore.getDiscoveryContent();
+  readonly #tastingsQuery = this.#discoverStore.getPublicTastings();
 
-  /** Recent tastings */
-  readonly tastings = input.required<DiscoverTastingDto[]>();
+  // Load more trigger element
+  readonly loadMoreTrigger = viewChild<ElementRef<HTMLDivElement>>('loadMoreTrigger');
 
-  /** Emitted when a cigar is clicked */
-  readonly cigarClick = output<DiscoverCigarDto>();
+  // Intersection observer for infinite scroll (created lazily)
+  #observer: IntersectionObserver | null = null;
 
-  /** Emitted when a tasting is clicked */
-  readonly tastingClick = output<DiscoverTastingDto>();
+  // Computed signals for UI
+  readonly loading = computed(
+    () => this.#discoveryQuery.loading() || this.#tastingsQuery.query.loading()
+  );
+
+  readonly cigars = computed(() => this.#discoveryQuery.data()?.recentCigars ?? []);
+
+  readonly tastings = this.#tastingsQuery.allTastings;
+  readonly hasMore = this.#tastingsQuery.hasMore;
+  readonly loadingMore = this.#tastingsQuery.loadingMore;
+
+  constructor() {
+    const destroyRef = inject(DestroyRef);
+
+    // Watch for trigger element changes and setup observer lazily
+    effect(() => {
+      const trigger = this.loadMoreTrigger();
+      if (!trigger?.nativeElement) return;
+
+      // Create observer lazily on first trigger appearance
+      if (!this.#observer) {
+        this.#observer = new IntersectionObserver(
+          (entries) => {
+            const [entry] = entries;
+            if (entry?.isIntersecting && this.hasMore() && !this.loadingMore()) {
+              void this.#tastingsQuery.loadMore();
+            }
+          },
+          {
+            rootMargin: '100px',
+            threshold: 0,
+          }
+        );
+      }
+
+      // Observe the trigger element
+      this.#observer.observe(trigger.nativeElement);
+    });
+
+    // Cleanup observer on destroy
+    destroyRef.onDestroy(() => {
+      this.#observer?.disconnect();
+    });
+  }
 
   /**
-   * Format relative time for display (e.g., "2h", "3j")
+   * Navigate to cigar page
    */
-  formatRelativeTime(date: Date | string): string {
-    const now = new Date();
-    const pastDate = new Date(date);
-    const diffMs = now.getTime() - pastDate.getTime();
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  handleCigarClick(cigar: DiscoverCigarDto): void {
+    void this.#router.navigate(['/cigar', cigar.slug]);
+  }
 
-    if (diffMins < 60) {
-      return `${Math.max(1, diffMins)}m`;
-    } else if (diffHours < 24) {
-      return `${diffHours}h`;
-    } else {
-      return `${diffDays}j`;
-    }
+  /**
+   * Navigate to tasting page
+   */
+  handleTastingClick(tastingId: string): void {
+    void this.#router.navigate(['/tastings', tastingId]);
   }
 }

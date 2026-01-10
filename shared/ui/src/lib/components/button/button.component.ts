@@ -33,7 +33,7 @@ const CLASSES = {
       'bg-gold-500 text-smoke-950 hover:bg-gold-600 hover:shadow-lg hover:shadow-gold-500/20 hover:-translate-y-0.5 shadow-md shadow-gold-500/10 transition-all duration-200',
     secondary: 'bg-smoke-700 text-smoke-50 hover:bg-smoke-600 hover:shadow-md hover:shadow-smoke-950/50 hover:-translate-y-0.5 shadow-sm transition-all duration-200',
     outline:
-      'border-2 border-gold-500 bg-transparent text-gold-500 hover:bg-gold-500/10 hover:shadow-sm hover:shadow-gold-500/10 transition-all duration-200',
+      'border border-smoke-600 bg-transparent text-smoke-200 hover:border-smoke-400 hover:text-smoke-50 hover:shadow-sm transition-all duration-200',
     ghost: 'text-smoke-200 hover:bg-smoke-800 hover:text-smoke-50 hover:shadow-sm transition-all duration-200',
     link: 'text-gold-500 underline-offset-4 hover:underline hover:text-gold-400 transition-colors duration-200',
     destructive:

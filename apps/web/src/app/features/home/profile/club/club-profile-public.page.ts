@@ -4,8 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs/operators';
-import { injectClubStore } from '../../../core/stores/club.store';
-import { ToastService } from '../../../core/services';
+import { injectClubStore } from '../../../../core/stores/club.store';
+import { ToastService } from '../../../../core/services';
 import {
   PageSectionComponent,
   ButtonComponent,
@@ -37,7 +37,7 @@ import {
  * - Uses slug from URL (supports #slug or slug)
  */
 @Component({
-  selector: 'app-club-profile',
+  selector: 'app-club-profile-public',
   standalone: true,
   imports: [
     CommonModule,
@@ -48,9 +48,9 @@ import {
     SkeletonComponent,
     SkeletonListComponent,
   ],
-  templateUrl: './club-profile.page.html',
+  templateUrl: './club-profile-public.page.html',
 })
-export class ClubProfilePage {
+export class ClubProfilePublicPage {
   #route = inject(ActivatedRoute);
   #router = inject(Router);
   #clubStore = injectClubStore();

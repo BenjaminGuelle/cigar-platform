@@ -25,7 +25,11 @@ export * from './lib/components/sidebar-profile';
 export * from './lib/components/skeleton';
 export * from './lib/components/slider';
 export * from './lib/components/switch';
+export * from './lib/components/tasting-card';
 
 // Directives
 export * from './lib/directives/icon';
 export * from './lib/directives/tooltip';
+
+// Animations
+export * from './lib/animations';

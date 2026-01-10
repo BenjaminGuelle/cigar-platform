@@ -24,6 +24,7 @@ import type {
   PaginatedTastingResponseDto,
   TastingControllerFindByCigarParams,
   TastingControllerFindByClubParams,
+  TastingControllerFindByUserParams,
   TastingControllerFindMineParams,
   TastingResponseDto,
   UpdateTastingDto
@@ -95,6 +96,21 @@ export class TastingsService {
       );
     }
   /**
+ * Returns all tastings if owner, public tastings if shareEvaluationsPublicly is enabled, empty otherwise
+ * @summary Get tastings for a user (paginated)
+ */
+ tastingControllerFindByUser<TData = PaginatedTastingResponseDto>(
+    identifier: string,
+    params?: DeepNonNullable<TastingControllerFindByUserParams>,
+ ) {
+      return customInstance<TData>(
+      {url: `/api/tastings/user/${identifier}`, method: 'GET',
+        params
+    },
+      this.http,
+      );
+    }
+  /**
  * @summary Get tasting by ID
  */
  tastingControllerFindOne<TData = TastingResponseDto>(
@@ -154,6 +170,7 @@ export type TastingControllerCreateClientResult = NonNullable<TastingResponseDto
 export type TastingControllerFindMineClientResult = NonNullable<PaginatedTastingResponseDto>
 export type TastingControllerFindByCigarClientResult = NonNullable<PaginatedTastingResponseDto>
 export type TastingControllerFindByClubClientResult = NonNullable<PaginatedTastingResponseDto>
+export type TastingControllerFindByUserClientResult = NonNullable<PaginatedTastingResponseDto>
 export type TastingControllerFindOneClientResult = NonNullable<TastingResponseDto>
 export type TastingControllerUpdateClientResult = NonNullable<TastingResponseDto>
 export type TastingControllerRemoveClientResult = NonNullable<void>

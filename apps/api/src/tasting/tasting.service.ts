@@ -15,6 +15,7 @@ import {
   TastingAlreadyCompletedException,
   TastingForbiddenException,
 } from './exceptions';
+import { isUuid } from '../common/utils/identifier.util';
 
 /**
  * Common include for tasting queries
@@ -328,6 +329,112 @@ export class TastingService {
   }
 
   /**
+   * Get tastings for a user (paginated)
+   *
+   * Business rules:
+   * - If currentUser === targetUser (owner): returns ALL tastings (including DRAFT)
+   * - If !owner && targetUser.shareEvaluationsPublicly: returns PUBLIC + COMPLETED tastings
+   * - If !owner && !targetUser.shareEvaluationsPublicly: returns empty array
+   *
+   * @param identifier - User ID (UUID) or username
+   * @param filter - Pagination and filters
+   * @param currentUserId - Current authenticated user ID
+   * @returns Paginated tastings
+   */
+  async findByUser(
+    identifier: string,
+    filter: FilterTastingDto,
+    currentUserId: string
+  ): Promise<PaginatedTastingResponseDto> {
+    const {
+      page = 1,
+      limit = 20,
+      sortBy = 'date',
+      order = 'desc',
+      status,
+      cigarId,
+      eventId,
+    } = filter;
+    const skip = (page - 1) * limit;
+
+    // Resolve identifier to user (supports UUID or username)
+    const normalizedUsername = identifier.replace(/^@/, '');
+    const targetUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          ...(isUuid(identifier) ? [{ id: identifier }] : []),
+          { username: normalizedUsername },
+        ],
+      },
+      select: { id: true, shareEvaluationsPublicly: true },
+    });
+
+    if (!targetUser) {
+      return {
+        data: [],
+        meta: { total: 0, page, limit },
+      };
+    }
+
+    // Check if currentUser is the owner
+    const isOwner = currentUserId === targetUser.id;
+
+    // Build where clause based on ownership
+    let where: Prisma.TastingWhereInput;
+
+    if (isOwner) {
+      // Owner: return all tastings (including DRAFT)
+      where = {
+        userId: targetUser.id,
+        ...(status && { status }),
+        ...(cigarId && { cigarId }),
+        ...(eventId && { eventId }),
+      };
+    } else if (targetUser.shareEvaluationsPublicly) {
+      // Not owner but sharing enabled: return PUBLIC + COMPLETED only
+      where = {
+        userId: targetUser.id,
+        visibility: 'PUBLIC',
+        status: TastingStatus.COMPLETED,
+      };
+    } else {
+      // Not owner and sharing disabled: return empty
+      return {
+        data: [],
+        meta: { total: 0, page, limit },
+      };
+    }
+
+    // Build orderBy clause
+    const orderBy: Prisma.TastingOrderByWithRelationInput = {
+      [sortBy]: order,
+    };
+
+    // Execute queries in parallel
+    const [tastings, total] = await Promise.all([
+      this.prisma.tasting.findMany({
+        where,
+        orderBy,
+        skip,
+        take: limit,
+        include: {
+          cigar: true,
+        },
+      }),
+      this.prisma.tasting.count({ where }),
+    ]);
+
+    return {
+      data: tastings.map((tasting) => this.mapToResponse(tasting)),
+      meta: {
+        total,
+        page,
+        limit,
+      },
+    };
+  }
+
+  /**
    * Get tastings for a cigar (paginated)
    * Only returns PUBLIC tastings or user's own tastings
    * @param cigarId - Cigar ID
@@ -502,6 +609,32 @@ export class TastingService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Get recent public tastings for discovery
+   * Returns completed, public tastings ordered by date (newest first)
+   * @param limit - Maximum number of tastings to return
+   * @returns Recent public tastings
+   */
+  async findRecentPublic(limit = 6): Promise<TastingResponseDto[]> {
+    const tastings = await this.prisma.tasting.findMany({
+      where: {
+        visibility: 'PUBLIC',
+        status: 'COMPLETED',
+      },
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        cigar: {
+          include: {
+            brand: true,
+          },
+        },
+      },
+    });
+
+    return tastings.map((tasting) => this.mapToResponse(tasting));
   }
 
   /**

@@ -2,13 +2,13 @@ import { Route } from '@angular/router';
 
 /**
  * Tastings Routes
- * List and view completed tastings
+ * View individual tasting details
  */
 export const tastingsRoutes: Route[] = [
   {
     path: '',
-    loadComponent: () =>
-      import('./pages/tastings-list.page').then((m) => m.TastingsListPage),
+    redirectTo: '/profile',
+    pathMatch: 'full',
   },
   {
     path: ':id',

@@ -1,4 +1,4 @@
-import { inject, signal } from '@angular/core';
+import { inject } from '@angular/core';
 import { injectQuery, injectMutation } from '../query';
 import type { Query, Mutation } from '../query';
 import { AuthService } from '../services/auth.service';
@@ -9,7 +9,6 @@ import type {
   UpdateProfileDto,
   UserPublicProfileDto,
   ClubResponseDto,
-  UserProfileStatsResponseDto,
 } from '@cigar-platform/types';
 
 /**
@@ -49,12 +48,6 @@ export interface UserStore {
    * Current authenticated user query
    */
   currentUser: Query<UserDto>;
-
-  /**
-   * Get profile stats for current user (Solo context)
-   * Includes parcours, aroma signature, terroirs, and journal
-   */
-  profileStats: Query<UserProfileStatsResponseDto>;
 
   /**
    * Get public profile for a user by ID (reactive - pass a getter function)
@@ -104,14 +97,6 @@ export function injectUserStore(): UserStore {
   if (initialUser) {
     currentUser.setDataFresh(initialUser as UserDto);
   }
-
-  // Query: Profile Stats for current user (Solo context)
-  const profileStats = injectQuery<UserProfileStatsResponseDto>(() => ({
-    queryKey: ['users', 'profile-stats', 'me'],
-    queryFn: () => usersService.usersControllerGetProfileStats(),
-    staleTime: 2 * 60 * 1000, // 2 minutes (stats may change after tastings)
-    enabled: !!initialUser, // Only fetch if user is authenticated
-  }));
 
   /**
    * Get public profile for a user by ID (returns a reactive query)
@@ -225,7 +210,6 @@ export function injectUserStore(): UserStore {
 
   return {
     currentUser,
-    profileStats,
     getUserPublicProfile,
     getUserClubs,
     updateProfile,

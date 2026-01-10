@@ -57,9 +57,9 @@ function getFlavorLabel(id: string): string {
     <div class="mx-auto max-w-4xl space-y-6 md:space-y-8 px-4 md:px-6 py-6 md:py-8">
       <!-- Back Button -->
       <div>
-        <a routerLink="/tastings" class="inline-flex items-center gap-2 text-smoke-400 hover:text-gold-500 transition-colors">
+        <a routerLink="/profile" class="inline-flex items-center gap-2 text-smoke-400 hover:text-gold-500 transition-colors">
           <i name="arrow-left" class="w-4 h-4"></i>
-          <span class="text-sm">Retour aux dégustations</span>
+          <span class="text-sm">Retour au profil</span>
         </a>
       </div>
 
@@ -92,9 +92,9 @@ function getFlavorLabel(id: string): string {
         <div class="text-center py-12">
           <i name="alert-circle" class="w-12 h-12 text-red-500 mx-auto mb-4"></i>
           <p class="text-smoke-400">Dégustation introuvable</p>
-          <a routerLink="/tastings" class="mt-4 inline-block">
+          <a routerLink="/profile" class="mt-4 inline-block">
             <ui-button variant="ghost" size="sm">
-              Retour à la liste
+              Retour au profil
             </ui-button>
           </a>
         </div>

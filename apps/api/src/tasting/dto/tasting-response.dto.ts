@@ -10,6 +10,7 @@ import {
 import { CigarResponseDto } from '../../cigar/dto/cigar-response.dto';
 import { ObservationResponseDto } from './observation-response.dto';
 import { TastingClubDto } from './tasting-club.dto';
+import { TastingUserDto } from './tasting-user.dto';
 
 /**
  * Tasting Response DTO
@@ -114,4 +115,13 @@ export class TastingResponseDto {
     description: 'Clubs this tasting is shared with',
   })
   clubs: TastingClubDto[];
+
+  // User info (optional, included in discovery context)
+  @Expose()
+  @Type(() => TastingUserDto)
+  @ApiPropertyOptional({
+    type: TastingUserDto,
+    description: 'User who created the tasting (included in discovery endpoints)',
+  })
+  user?: TastingUserDto;
 }

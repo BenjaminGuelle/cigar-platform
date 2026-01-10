@@ -11,16 +11,33 @@ import type {
 } from '@cigar-platform/types';
 import { PwaService } from '../services/pwa.service';
 
-const TASTINGS_PER_PAGE = 20;
+const TASTINGS_PER_PAGE = 9;
+
+/**
+ * Paginated User Tastings Query
+ * Returned by getTastingsByUser with pagination support
+ */
+export interface PaginatedUserTastingsQuery {
+  /** First page query */
+  query: Query<PaginatedTastingResponseDto>;
+  /** All loaded tastings (accumulated across pages) */
+  allTastings: () => TastingResponseDto[];
+  /** Check if there are more tastings to load */
+  hasMore: () => boolean;
+  /** Load more tastings (next page) */
+  loadMore: () => Promise<void>;
+  /** Loading state for load more */
+  loadingMore: () => boolean;
+}
 
 /**
  * Tasting Store
  * Manages tasting data with Query Layer
  *
  * Features:
- * - My tastings (paginated)
  * - Tasting details by ID
- * - CRUD mutations with optimistic updates
+ * - User tastings (paginated, backend handles owner/public logic)
+ * - CRUD mutations with cache invalidation
  * - Reactive getters for cigar/club tastings
  * - Auto-save pattern for DRAFT tastings
  *
@@ -42,31 +59,6 @@ const TASTINGS_PER_PAGE = 20;
  */
 export interface TastingStore {
   /**
-   * My tastings query (paginated with load more)
-   */
-  myTastings: Query<PaginatedTastingResponseDto>;
-
-  /**
-   * All loaded tastings (accumulated across pages)
-   */
-  allMyTastings: () => TastingResponseDto[];
-
-  /**
-   * Check if there are more tastings to load
-   */
-  hasMoreTastings: () => boolean;
-
-  /**
-   * Load more tastings (next page)
-   */
-  loadMoreTastings: () => Promise<void>;
-
-  /**
-   * Loading state for load more
-   */
-  loadingMore: () => boolean;
-
-  /**
    * Get tasting by ID (reactive - pass a getter function)
    */
   getTastingById: (idGetter: () => string) => Query<TastingResponseDto>;
@@ -80,6 +72,18 @@ export interface TastingStore {
    * Get tastings by club ID (reactive - pass a getter function)
    */
   getTastingsByClub: (clubIdGetter: () => string) => Query<TastingResponseDto[]>;
+
+  /**
+   * Get tastings for a user (reactive - pass a getter function)
+   * Supports both UUID and username (with or without @ prefix)
+   *
+   * Returns paginated query with load more support.
+   * Backend handles owner vs public logic:
+   * - Owner: returns ALL tastings (including DRAFT)
+   * - Non-owner with shareEvaluationsPublicly: returns PUBLIC + COMPLETED
+   * - Non-owner without sharing: returns empty
+   */
+  getTastingsByUser: (userIdGetter: () => string) => PaginatedUserTastingsQuery;
 
   /**
    * Get current user's draft tastings (status = IN_PROGRESS)
@@ -116,64 +120,6 @@ export function injectTastingStore(): TastingStore {
   const tastingsService = inject(TastingsService);
   const queryCache = inject(QueryCacheService);
   const pwaService = inject(PwaService);
-
-  // Load more state
-  const currentPage = signal(1);
-  const additionalTastings = signal<TastingResponseDto[]>([]);
-  const loadingMore = signal(false);
-
-  // Query: My Tastings (first page)
-  const myTastings = injectQuery<PaginatedTastingResponseDto>(() => ({
-    queryKey: ['tastings', 'me'],
-    queryFn: async () => {
-      // Reset additional tastings when first page is refetched
-      additionalTastings.set([]);
-      currentPage.set(1);
-      const response = await tastingsService.tastingControllerFindMine({
-        limit: TASTINGS_PER_PAGE,
-        page: 1,
-        sortBy: 'date',
-        order: 'desc',
-      });
-      return response;
-    },
-    staleTime: 2 * 60 * 1000, // 2 minutes
-  }));
-
-  // All tastings (first page + additional pages)
-  const allMyTastings = computed(() => {
-    const firstPage = myTastings.data()?.data ?? [];
-    return [...firstPage, ...additionalTastings()];
-  });
-
-  // Check if there are more tastings to load
-  const hasMoreTastings = computed(() => {
-    const meta = myTastings.data()?.meta;
-    if (!meta) return false;
-    const totalLoaded = allMyTastings().length;
-    return totalLoaded < meta.total;
-  });
-
-  // Load more tastings
-  const loadMoreTastings = async (): Promise<void> => {
-    if (loadingMore() || !hasMoreTastings()) return;
-
-    loadingMore.set(true);
-    try {
-      const nextPage = currentPage() + 1;
-      const response = await tastingsService.tastingControllerFindMine({
-        limit: TASTINGS_PER_PAGE,
-        page: nextPage,
-        sortBy: 'date',
-        order: 'desc',
-      });
-
-      additionalTastings.update((prev) => [...prev, ...(response.data ?? [])]);
-      currentPage.set(nextPage);
-    } finally {
-      loadingMore.set(false);
-    }
-  };
 
   /**
    * Get tasting by ID (returns a reactive query)
@@ -232,6 +178,86 @@ export function injectTastingStore(): TastingStore {
   };
 
   /**
+   * Get tastings for a user (returns a paginated query with load more support)
+   * Supports both UUID and username (with or without @ prefix)
+   *
+   * Backend handles owner vs public logic automatically.
+   */
+  const getTastingsByUser = (userIdGetter: () => string): PaginatedUserTastingsQuery => {
+    // Pagination state for this specific user query
+    const userCurrentPage = signal(1);
+    const userAdditionalTastings = signal<TastingResponseDto[]>([]);
+    const userLoadingMore = signal(false);
+
+    // First page query
+    const query = injectQuery<PaginatedTastingResponseDto>(() => ({
+      queryKey: ['tastings', 'by-user', userIdGetter()],
+      queryFn: async () => {
+        const identifier = userIdGetter();
+        if (!identifier) {
+          return { data: [], meta: { total: 0, page: 1, limit: TASTINGS_PER_PAGE } };
+        }
+        // Reset pagination on refetch
+        userAdditionalTastings.set([]);
+        userCurrentPage.set(1);
+        const response = await tastingsService.tastingControllerFindByUser(identifier, {
+          limit: TASTINGS_PER_PAGE,
+          page: 1,
+          sortBy: 'date',
+          order: 'desc',
+        });
+        return response;
+      },
+      enabled: !!userIdGetter(),
+      staleTime: 2 * 60 * 1000, // 2 minutes
+    }));
+
+    // All tastings (first page + additional pages)
+    const allTastings = computed(() => {
+      const firstPage = query.data()?.data ?? [];
+      return [...firstPage, ...userAdditionalTastings()];
+    });
+
+    // Check if there are more tastings to load
+    const hasMore = computed(() => {
+      const meta = query.data()?.meta;
+      if (!meta) return false;
+      const totalLoaded = allTastings().length;
+      return totalLoaded < meta.total;
+    });
+
+    // Load more tastings
+    const loadMore = async (): Promise<void> => {
+      const identifier = userIdGetter();
+      if (!identifier || userLoadingMore() || !hasMore()) return;
+
+      userLoadingMore.set(true);
+      try {
+        const nextPage = userCurrentPage() + 1;
+        const response = await tastingsService.tastingControllerFindByUser(identifier, {
+          limit: TASTINGS_PER_PAGE,
+          page: nextPage,
+          sortBy: 'date',
+          order: 'desc',
+        });
+
+        userAdditionalTastings.update((prev) => [...prev, ...(response.data ?? [])]);
+        userCurrentPage.set(nextPage);
+      } finally {
+        userLoadingMore.set(false);
+      }
+    };
+
+    return {
+      query,
+      allTastings: () => allTastings(),
+      hasMore: () => hasMore(),
+      loadMore,
+      loadingMore: () => userLoadingMore(),
+    };
+  };
+
+  /**
    * Get current user's draft tastings (status = IN_PROGRESS)
    * Optionally filtered by cigarId
    */
@@ -258,8 +284,11 @@ export function injectTastingStore(): TastingStore {
     mutationFn: (data: CreateTastingDto) => tastingsService.tastingControllerCreate(data),
 
     onSuccess: (newTasting: TastingResponseDto) => {
-      // Invalidate my tastings to include new tasting
-      myTastings.invalidate();
+      // Invalidate user tastings (for profile page)
+      queryCache.invalidateQueriesMatching(['tastings', 'by-user']);
+
+      // Invalidate user public profile (stats change - evaluationCount)
+      queryCache.invalidateQueriesMatching(['users', 'profile']);
 
       // Invalidate cigar tastings if applicable
       if (newTasting.cigarId) {
@@ -277,8 +306,8 @@ export function injectTastingStore(): TastingStore {
       // Invalidate specific tasting detail
       queryCache.invalidateQuery(['tastings', 'detail', updatedTasting.id]);
 
-      // Invalidate my tastings
-      myTastings.invalidate();
+      // Invalidate user tastings (for profile page)
+      queryCache.invalidateQueriesMatching(['tastings', 'by-user']);
 
       // Invalidate cigar/club tastings if applicable
       if (updatedTasting.cigarId) {
@@ -296,16 +325,16 @@ export function injectTastingStore(): TastingStore {
       // Invalidate specific tasting detail
       queryCache.invalidateQuery(['tastings', 'detail', completedTasting.id]);
 
-      // Invalidate my tastings
-      myTastings.invalidate();
+      // Invalidate user tastings (for profile page)
+      queryCache.invalidateQueriesMatching(['tastings', 'by-user']);
+
+      // Invalidate user public profile (stats change - evaluationCount)
+      queryCache.invalidateQueriesMatching(['users', 'profile']);
 
       // Invalidate cigar tastings (completed tastings are public)
       if (completedTasting.cigarId) {
         queryCache.invalidateQueriesMatching(['tastings', 'by-cigar', completedTasting.cigarId]);
       }
-
-      // Invalidate user profile-stats (new completed tasting affects stats & journal)
-      queryCache.invalidateQuery(['users', 'profile-stats', 'me']);
 
       // Invalidate club profile-stats if tasting is shared with clubs
       const sharedClubs = (completedTasting as TastingResponseDto & { sharedClubs?: Array<{ club: { id: string } }> }).sharedClubs;
@@ -325,11 +354,14 @@ export function injectTastingStore(): TastingStore {
     mutationFn: (id: string) => tastingsService.tastingControllerRemove(id),
 
     onSuccess: (_result: void, tastingId: string) => {
-      // Invalidate my tastings
-      myTastings.invalidate();
-
       // Invalidate specific tasting detail
       queryCache.invalidateQuery(['tastings', 'detail', tastingId]);
+
+      // Invalidate user tastings (for profile page)
+      queryCache.invalidateQueriesMatching(['tastings', 'by-user']);
+
+      // Invalidate user public profile (stats change - evaluationCount)
+      queryCache.invalidateQueriesMatching(['users', 'profile']);
 
       // Invalidate all cigar tastings (we don't know which cigar this tasting belonged to)
       queryCache.invalidateQueriesMatching(['tastings', 'by-cigar']);
@@ -337,21 +369,16 @@ export function injectTastingStore(): TastingStore {
       // Invalidate all club tastings (we don't know which club this tasting belonged to)
       queryCache.invalidateQueriesMatching(['tastings', 'by-club']);
 
-      // Invalidate profile-stats (deleted tasting may affect stats & journal)
-      queryCache.invalidateQuery(['users', 'profile-stats', 'me']);
+      // Invalidate club profile-stats
       queryCache.invalidateQueriesMatching(['clubs', 'profile-stats']);
     },
   });
 
   return {
-    myTastings,
-    allMyTastings: () => allMyTastings(),
-    hasMoreTastings: () => hasMoreTastings(),
-    loadMoreTastings,
-    loadingMore: () => loadingMore(),
     getTastingById,
     getTastingsByCigar,
     getTastingsByClub,
+    getTastingsByUser,
     getDrafts,
     createTasting,
     updateTasting,
